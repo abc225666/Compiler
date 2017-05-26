@@ -33,9 +33,9 @@ typedef enum
 	KIND_VARIABLE,
 	KIND_PARAMETER,
 	KIND_CONSTANT,
-
 	KIND_CONST_VAL,
-	KIND_RVAL
+	KIND_RVAL,
+	KIND_LVAL,
 } enum_kind;
 
 typedef enum
@@ -61,6 +61,7 @@ typedef enum
 	ERROR_ID_REDCLARED, //8
 	ERROR_JUMP_STATMENT, //9
 	ERROR_ASSIGN_CONST, //10
+	ERROR_NO_BOOL, //11
 } enum_error;
 
 typedef struct S_invo_val
@@ -135,11 +136,17 @@ void dump_cur_table();
 void dump_error(int error);
 
 int find_redclair(char* name);
-int find_id_in_table(char* in,int *re_type);
-int find_func_in_table(invo_val *in,int *re_type);
-int find_arr_in_table(invo_val *in, int *re_type);
-arr_val* count_arr_ref(char* name);
 
+int check_parameter(symbol_list* sym,invo_val *invo);
+int check_step(symbol_list*sym,invo_val *invo);
+arr_val* count_arr_ref(char* name);
+symbol_list* find_symbol(char* name);
+const_val *geneOneVal(const_val *a,int m_type);
+const_val *geneValConstOne(const_val *a, const_val *b, int m_type);
+const_val *geneValConst(const_val *a, const_val *b);
+int check_and_set_scalar(const_val *a);
+int check_type_three(const_val *a,const_val *b);
+int check_type_one(const_val *a, const_val *b,int m_type);
 int is_const_var(char* name);
 
 
@@ -1377,593 +1384,220 @@ expr
 	{
 		const_val *v1=(const_val*)$1;
 		const_val *v2=(const_val*)$3;
-
-		const_val *p=NEW_VAL(const_val);
-
-		p->type = (v1->type>v2->type)?(v1->type):(v2->type);
-
-		if(v1->type==TYPE_BOOL || v1->type==TYPE_STRING || v1->type==TYPE_VOID ||
-			v2->type==TYPE_BOOL || v2->type==TYPE_STRING || v2->type==TYPE_VOID)
+		const_val *output;
+		check_and_set_scalar(v1);
+		check_and_set_scalar(v2);
+		if(!check_type_three(v1,v2))
 		{
-			p->type = TYPE_INT;
 			dump_error(ERROR_TYPE_ERROR);
 		}
-
-		if( v1->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v1->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-		if( v2->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v2->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-
-
-		if(v1->kind==KIND_RVAL)
-		{
-			p->kind=KIND_RVAL;
-			p->value=v1->value;
-		}
-		else if(v2->kind==KIND_RVAL)
-		{
-			p->kind=KIND_RVAL;
-			p->value=v2->value;
-		}
-		else
-		{
-			p->kind=KIND_CONST_VAL;
-			p->value=v1->value;
-		}
-
-		$$ = (void*)p;
+		output=geneValConst(v1,v2);
+		$$=(void*)output;
 	}
 | expr '/' expr
 	{
 		const_val *v1=(const_val*)$1;
 		const_val *v2=(const_val*)$3;
-
-		const_val *p=NEW_VAL(const_val);
-
-		p->type = (v1->type>v2->type)?(v1->type):(v2->type);
-
-		if(v1->type==TYPE_BOOL || v1->type==TYPE_STRING || v1->type==TYPE_VOID ||
-			v2->type==TYPE_BOOL || v2->type==TYPE_STRING || v2->type==TYPE_VOID)
+		const_val *output;
+		check_and_set_scalar(v1);
+		check_and_set_scalar(v2);
+		if(!check_type_three(v1,v2))
 		{
-			p->type = TYPE_INT;
 			dump_error(ERROR_TYPE_ERROR);
 		}
-
-		
-		if( v1->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v1->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-		if( v2->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v2->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-
-		if(v1->kind==KIND_RVAL)
-		{
-			p->kind=KIND_RVAL;
-			p->value=v1->value;
-		}
-		else if(v2->kind==KIND_RVAL)
-		{
-			p->kind=KIND_RVAL;
-			p->value=v2->value;
-		}
-		else
-		{
-			p->kind=KIND_CONST_VAL;
-			p->value=v1->value;
-		}
-
-		$$ = (void*)p;
+		output=geneValConst(v1,v2);
+		$$=(void*)output;
 	}
 | expr '+' expr
 	{
 		const_val *v1=(const_val*)$1;
 		const_val *v2=(const_val*)$3;
-
-		const_val *p=NEW_VAL(const_val);
-
-		p->type = (v1->type>v2->type)?(v1->type):(v2->type);
-
-		if(v1->type==TYPE_BOOL || v1->type==TYPE_STRING || v1->type==TYPE_VOID ||
-			v2->type==TYPE_BOOL || v2->type==TYPE_STRING || v2->type==TYPE_VOID)
+		const_val *output;
+		check_and_set_scalar(v1);
+		check_and_set_scalar(v2);
+		if(!check_type_three(v1,v2))
 		{
-			p->type = TYPE_INT;
 			dump_error(ERROR_TYPE_ERROR);
 		}
-
-
-		if( v1->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v1->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-		if( v2->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v2->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-
-		if(v1->kind==KIND_RVAL)
-		{
-			p->kind=KIND_RVAL;
-			p->value=v1->value;
-		}
-		else if(v2->kind==KIND_RVAL)
-		{
-			p->kind=KIND_RVAL;
-			p->value=v2->value;
-		}
-		else
-		{
-			p->kind=KIND_CONST_VAL;
-			p->value=v1->value;
-		}
-
-		$$ = (void*)p;
+		output=geneValConst(v1,v2);
+		$$=(void*)output;
 	}
 | expr '-' expr
 	{
 		const_val *v1=(const_val*)$1;
 		const_val *v2=(const_val*)$3;
-
-		const_val *p=NEW_VAL(const_val);
-
-		p->type = (v1->type>v2->type)?(v1->type):(v2->type);
-
-		if(v1->type==TYPE_BOOL || v1->type==TYPE_STRING || v1->type==TYPE_VOID ||
-			v2->type==TYPE_BOOL || v2->type==TYPE_STRING || v2->type==TYPE_VOID)
+		const_val *output;
+		check_and_set_scalar(v1);
+		check_and_set_scalar(v2);
+		if(!check_type_three(v1,v2))
 		{
-			p->type = TYPE_INT;
 			dump_error(ERROR_TYPE_ERROR);
 		}
-
-
-		if( v1->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v1->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-		if( v2->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v2->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-
-		if(v1->kind==KIND_RVAL)
-		{
-			p->kind=KIND_RVAL;
-			p->value=v1->value;
-		}
-		else if(v2->kind==KIND_RVAL)
-		{
-			p->kind=KIND_RVAL;
-			p->value=v2->value;
-		}
-		else
-		{
-			p->kind=KIND_CONST_VAL;
-			p->value=v1->value;
-		}
-
-		$$ = (void*)p;
+		output=geneValConst(v1,v2);
+		$$=(void*)output;
 	}
 | expr '%' expr
 	{
 		const_val *v1=(const_val*)$1;
 		const_val *v2=(const_val*)$3;
-
-		if(v1->type!=TYPE_INT || v2->type!=TYPE_INT)
+		const_val *output;
+		check_and_set_scalar(v1);
+		check_and_set_scalar(v2);
+		if(!check_type_one(v1,v2,TYPE_INT))
 		{
 			dump_error(ERROR_TYPE_ERROR);
 		}
-
-		const_val *p=NEW_VAL(const_val);
-		p->type=TYPE_INT;
-
-
-		if( v1->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v1->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-		if( v2->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v2->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-
-		if(v1->kind==KIND_RVAL)
-		{
-			p->kind=KIND_RVAL;
-			p->value=v1->value;
-		}
-		else if(v2->kind==KIND_RVAL)
-		{
-			p->kind=KIND_RVAL;
-			p->value=v2->value;
-		}
-		else
-		{
-			p->kind=KIND_CONST_VAL;
-			p->value=v1->value;
-		}
-
-		$$ = (void*)p;
-
+		output=geneValConstOne(v1,v2,TYPE_INT);
+		$$=(void*)output;
 	}
 | expr '<' expr 
 	{
 		const_val *v1=(const_val*)$1;
 		const_val *v2=(const_val*)$3;
-
-		const_val *p=NEW_VAL(const_val);
-
-		p->type = TYPE_BOOL;
-
-		if(v1->type==TYPE_BOOL || v1->type==TYPE_STRING || v1->type==TYPE_VOID ||
-			v2->type==TYPE_BOOL || v2->type==TYPE_STRING || v2->type==TYPE_VOID)
+		const_val *output;
+		check_and_set_scalar(v1);
+		check_and_set_scalar(v2);
+		if(!check_type_three(v1,v2))
 		{
 			dump_error(ERROR_TYPE_ERROR);
 		}
-
-
-		if( v1->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v1->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-		if( v2->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v2->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-
-		p->kind=KIND_CONST_VAL;
-		p->value=(void*)strdup("true");
-
-		$$ = (void*)p;
+		output=geneValConstOne(v1,v2,TYPE_BOOL);
+		$$=(void*)output;
 	}
 | expr LE expr
 	{
 		const_val *v1=(const_val*)$1;
 		const_val *v2=(const_val*)$3;
-
-		const_val *p=NEW_VAL(const_val);
-
-		p->type = TYPE_BOOL;
-
-		if(v1->type==TYPE_BOOL || v1->type==TYPE_STRING || v1->type==TYPE_VOID ||
-			v2->type==TYPE_BOOL || v2->type==TYPE_STRING || v2->type==TYPE_VOID)
+		const_val *output;
+		check_and_set_scalar(v1);
+		check_and_set_scalar(v2);
+		if(!check_type_three(v1,v2))
 		{
 			dump_error(ERROR_TYPE_ERROR);
 		}
-
-		
-		if( v1->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v1->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-		if( v2->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v2->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-
-		p->kind=KIND_CONST_VAL;
-		p->value=(void*)strdup("true");
-
-		$$ = (void*)p;
+		output=geneValConstOne(v1,v2,TYPE_BOOL);
+		$$=(void*)output;
 	}
 | expr '>' expr
 	{
 		const_val *v1=(const_val*)$1;
 		const_val *v2=(const_val*)$3;
-
-		const_val *p=NEW_VAL(const_val);
-
-		p->type = TYPE_BOOL;
-
-		if(v1->type==TYPE_BOOL || v1->type==TYPE_STRING || v1->type==TYPE_VOID ||
-			v2->type==TYPE_BOOL || v2->type==TYPE_STRING || v2->type==TYPE_VOID)
+		const_val *output;
+		check_and_set_scalar(v1);
+		check_and_set_scalar(v2);
+		if(!check_type_three(v1,v2))
 		{
 			dump_error(ERROR_TYPE_ERROR);
 		}
-
-		
-		if( v1->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v1->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-		if( v2->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v2->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-		
-
-		p->kind=KIND_CONST_VAL;
-		p->value=(void*)strdup("true");
-
-		$$ = (void*)p;
+		output=geneValConstOne(v1,v2,TYPE_BOOL);
+		$$=(void*)output;
 	}
 | expr GE expr
 	{
 		const_val *v1=(const_val*)$1;
 		const_val *v2=(const_val*)$3;
-
-		const_val *p=NEW_VAL(const_val);
-
-		p->type = TYPE_BOOL;
-
-		if(v1->type==TYPE_BOOL || v1->type==TYPE_STRING || v1->type==TYPE_VOID ||
-			v2->type==TYPE_BOOL || v2->type==TYPE_STRING || v2->type==TYPE_VOID)
+		const_val *output;
+		check_and_set_scalar(v1);
+		check_and_set_scalar(v2);
+		if(!check_type_three(v1,v2))
 		{
 			dump_error(ERROR_TYPE_ERROR);
 		}
-
-
-		if( v1->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v1->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-		if( v2->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v2->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-
-		p->kind=KIND_CONST_VAL;
-		p->value=(void*)strdup("true");
-
-		$$ = (void*)p;
+		output=geneValConstOne(v1,v2,TYPE_BOOL);
+		$$=(void*)output;
 	}
 | expr EQ expr
 	{
 		const_val *v1=(const_val*)$1;
 		const_val *v2=(const_val*)$3;
-
-		const_val *p=NEW_VAL(const_val);
-
-		p->type = TYPE_BOOL;
-
-		if(v1->type==TYPE_BOOL || v1->type==TYPE_STRING || v1->type==TYPE_VOID ||
-			v2->type==TYPE_BOOL || v2->type==TYPE_STRING || v2->type==TYPE_VOID)
+		const_val *output;
+		check_and_set_scalar(v1);
+		check_and_set_scalar(v2);
+		if(!check_type_three(v1,v2))
 		{
-			if(v1->type!=TYPE_BOOL || v2->type!=TYPE_BOOL);
+			if(!check_type_one(v1,v2,TYPE_BOOL))
 				dump_error(ERROR_TYPE_ERROR);
 		}
-
-		if( v1->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v1->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-		if( v2->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v2->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-
-		p->kind=KIND_CONST_VAL;
-		p->value=(void*)strdup("true");
-
-		$$ = (void*)p;
+		output=geneValConstOne(v1,v2,TYPE_BOOL);
+		$$=(void*)output;
 	}
 | expr NE expr
 	{
 		const_val *v1=(const_val*)$1;
 		const_val *v2=(const_val*)$3;
-
-		const_val *p=NEW_VAL(const_val);
-
-		p->type = TYPE_BOOL;
-
-		if(v1->type==TYPE_BOOL || v1->type==TYPE_STRING || v1->type==TYPE_VOID ||
-			v2->type==TYPE_BOOL || v2->type==TYPE_STRING || v2->type==TYPE_VOID)
+		const_val *output;
+		check_and_set_scalar(v1);
+		check_and_set_scalar(v2);
+		if(!check_type_three(v1,v2))
 		{
-			if(v1->type!=TYPE_BOOL || v2->type!=TYPE_BOOL);
+			if(!check_type_one(v1,v2,TYPE_BOOL))
 				dump_error(ERROR_TYPE_ERROR);
 		}
-
-		if( v1->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v1->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-		if( v2->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v2->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-
-		p->kind=KIND_CONST_VAL;
-		p->value=(void*)strdup("true");
-
-		$$ = (void*)p;
+		output=geneValConstOne(v1,v2,TYPE_BOOL);
+		$$=(void*)output;
 	}
 | '(' expr ')'
 	{
+		const_val *v1=(const_val*)$2;
+		check_and_set_scalar(v1);
 		$$ = $2;
 	}
 | '-' expr %prec UMINUS
 	{
 		const_val *v1=(const_val*)$2;
-
-		const_val *p=NEW_VAL(const_val);
-
-		p->type = v1->type;
-
-		if(v1->type==TYPE_BOOL || v1->type==TYPE_STRING || v1->type==TYPE_VOID)
-		{
-			p->type = TYPE_INT;
+		const_val *output;
+		check_and_set_scalar(v1);
+		if(v1->type!=TYPE_INT && v1->type!=TYPE_DOUBLE && v1->type!=TYPE_FLOAT)
+		{	
 			dump_error(ERROR_TYPE_ERROR);
 		}
+		output=geneOneVal(v1,v1->type);
+		$$=(void*)v1;
 
-
-		if( v1->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v1->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-
-		p->kind=v1->kind;
-		p->value=v1->value;
-
-		$$ = (void*)p;
 	}
 | expr AND expr
 	{
 		const_val *v1=(const_val*)$1;
 		const_val *v2=(const_val*)$3;
-
-		if(v1->type!=TYPE_BOOL || v2->type!=TYPE_BOOL)
+		const_val *output;
+		check_and_set_scalar(v1);
+		check_and_set_scalar(v2);
+		if(!check_type_one(v1,v2,TYPE_BOOL))
 		{
 			dump_error(ERROR_TYPE_ERROR);
 		}
-
-		const_val *p=NEW_VAL(const_val);
-		p->type=TYPE_BOOL;
-
-		
-		if( v1->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v1->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-		if( v2->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v2->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-
-		if(v1->kind==KIND_RVAL)
-		{
-			p->kind=KIND_RVAL;
-			p->value=v1->value;
-		}
-		else if(v2->kind==KIND_RVAL)
-		{
-			p->kind=KIND_RVAL;
-			p->value=v2->value;
-		}
-		else
-		{
-			p->kind=KIND_CONST_VAL;
-			p->value=v1->value;
-		}
-
-		$$ = (void*)p;
-
+		output=geneValConstOne(v1,v2,TYPE_BOOL);
+		$$=(void*)output;
 	}
 | expr OR expr
 	{
 		const_val *v1=(const_val*)$1;
 		const_val *v2=(const_val*)$3;
-
-		if(v1->type!=TYPE_BOOL || v2->type!=TYPE_BOOL)
+		const_val *output;
+		check_and_set_scalar(v1);
+		check_and_set_scalar(v2);
+		if(!check_type_one(v1,v2,TYPE_BOOL))
 		{
 			dump_error(ERROR_TYPE_ERROR);
 		}
-
-		const_val *p=NEW_VAL(const_val);
-		p->type=TYPE_BOOL;
-
-
-		if( v1->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v1->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-		if( v2->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v2->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-
-		if(v1->kind==KIND_RVAL)
-		{
-			p->kind=KIND_RVAL;
-			p->value=v1->value;
-		}
-		else if(v2->kind==KIND_RVAL)
-		{
-			p->kind=KIND_RVAL;
-			p->value=v2->value;
-		}
-		else
-		{
-			p->kind=KIND_CONST_VAL;
-			p->value=v1->value;
-		}
-
-		$$ = (void*)p;
+		output=geneValConstOne(v1,v2,TYPE_BOOL);
+		$$=(void*)output;
 	}
 | '!' expr %prec UNOT
 	{
 		const_val *v1=(const_val*)$2;
-
+		const_val *output;
+		check_and_set_scalar(v1);
 		if(v1->type!=TYPE_BOOL)
-		{
+		{	
 			dump_error(ERROR_TYPE_ERROR);
 		}
-		
-		if( v1->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v1->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
+		output=geneOneVal(v1,TYPE_BOOL);
+		$$=(void*)v1;
 
-		const_val *p=NEW_VAL(const_val);
-		p->type=TYPE_BOOL;
-		p->kind=v1->kind;
-		p->value=v1->value;
-
-		$$ =(void*)p;
 	}
 | value_type
 	{
-		// const_val
 		$$ = $1;
 	}
 | ID
@@ -1973,19 +1607,31 @@ expr
 		p->name = strdup($1);
 		p->listc = 0;
 
-		int *re_type=NEW_VAL(int);
-		*re_type=0;
+		symbol_list* sym=find_symbol(p->name);
 
-		arr_val* orig_arr = count_arr_ref(p->name);
-		
-		int result = find_arr_in_table(p,re_type);
+		const_val *q=NEW_VAL(const_val);
+		q->kind=KIND_RVAL;
+		q->type=TYPE_INT;
+		q->value= (void*)p;
 
-		if(result!=NO_ERROR) dump_error(result);
 
-		const_val *q= NEW_VAL(const_val);
-		q->kind= KIND_RVAL;
-		q->type= *re_type;
-		q->value = (void*)p;
+		if(sym!=NULL)
+		{
+			id_val *sym_id=(id_val*)sym->val;
+			if(sym_id->kind==KIND_FUNCTION)
+				dump_error(ERROR_ID_KIND);
+			q->type=sym_id->type;
+			if(sym_id->kind==KIND_CONSTANT)
+			{
+				q->kind=KIND_CONST_VAL;
+				q->value=sym_id->list;
+			}
+			else
+			{
+				q->kind=KIND_RVAL;
+				q->value= (void*)p;
+			}
+		}
 
 		$$ = (void*)q;
 	}
@@ -1993,16 +1639,30 @@ expr
 	{
 		// check func id exist and argu form correct;
 		invo_val *p=(invo_val*)$1;
+		symbol_list* sym=find_symbol(p->name);
 
-		int *re_type=NEW_VAL(int);
-		*re_type=0;
-		int result= find_func_in_table(p,re_type);
-		if(result!=NO_ERROR) dump_error(result);
-
-		const_val *q = NEW_VAL(const_val);
-		q->kind = KIND_RVAL;
-		q->type = *re_type;
+		const_val *q=NEW_VAL(const_val);
+		q->kind=KIND_RVAL;
+		q->type=TYPE_INT;
 		q->value = (void*)p;
+
+
+		if(sym!=NULL)
+		{
+			id_val *sym_id=(id_val*)sym->val;
+
+			if(sym_id->kind!=KIND_FUNCTION)
+				dump_error(ERROR_ID_KIND);
+			else
+			{
+				if(!check_parameter(sym,p))
+					dump_error(ERROR_FUNC_ARGU_NOT_MATCH);
+			}
+			const_val *q=NEW_VAL(const_val);
+			q->kind=KIND_RVAL;
+			q->type=sym_id->type;
+			q->value = (void*)p;
+		}
 
 		$$ = (void*)q;
 	}
@@ -2010,21 +1670,25 @@ expr
 	{
 		// check arr id exist and dimention correct;
 		invo_val *p=(invo_val*)$1;
-
-		int *re_type=NEW_VAL(int);
-		*re_type=0;
-
-		arr_val* orig_arr = count_arr_ref(p->name);
-
-		int result = find_arr_in_table(p,re_type);
-
-
-		if(result!=NO_ERROR) dump_error(result);
+		symbol_list* sym=find_symbol(p->name);
 
 		const_val *q= NEW_VAL(const_val);
 		q->kind= KIND_RVAL;
-		q->type= *re_type;
+		q->type= TYPE_INT;
 		q->value = (void*)p;
+
+		if(sym!=NULL)
+		{
+			id_val* sym_id=(id_val*)sym->val;
+			if(sym_id->kind==KIND_FUNCTION || sym_id->kind==KIND_CONSTANT)
+				dump_error(ERROR_ID_KIND);
+			else
+			{
+				if(!check_step(sym,p))
+					dump_error(ERROR_ARR_STEP);
+			}
+			q->type=sym_id->type;
+		}
 
 		$$ = (void*)q;
 	}
@@ -2036,7 +1700,6 @@ arr_ref
 		invo_val *p = (invo_val*)$2;
 		p->name = strdup($1);
 		
-
 		$$ = (void*)p;
 	}
 ;
@@ -2131,6 +1794,10 @@ statement
 | for_stat
 | jump_stat
 | expr ';'
+	{
+		const_val* con=(const_val*)$1;
+		check_and_set_scalar($1);
+	}
 ;
 
 
@@ -2138,50 +1805,29 @@ statement
 simple_stat
 : var_ref '=' expr ';'
 	{
-		const_val *exp = (const_val*)$3;
-		const_val *ref = (const_val*)$1;
+		const_val* con=(const_val*)$1;
+		const_val* exp=(const_val*)$3;
 
-		invo_val *ref_invo = (invo_val*)ref->value;
-		if(is_const_var(ref_invo->name))
+		if(con->kind==KIND_CONST_VAL)
 			dump_error(ERROR_ASSIGN_CONST);
 		else
 		{
-			if(ref_invo -> listc !=0)
-				dump_error(ERROR_ARR_STEP);
+			if(con->type!=exp->type)
+				dump_error(ERROR_IDTYPE_NOT_MATCH);
+			check_and_set_scalar(con);
+			check_and_set_scalar(exp);
 		}
-
-		if(exp->kind==KIND_RVAL)
-		{
-			invo_val* exp_invo = (invo_val*)exp->value;
-			if(exp_invo->listc!=0)
-				dump_error(ERROR_ARR_STEP);
-		}
-
-		if(exp->type != ref->type)
-			dump_error(ERROR_TYPE_ERROR);
 	}
 | PRINT expr ';'
 	{
-		const_val *exp = (const_val*)$2;
-		if(exp->kind==KIND_RVAL)
-		{
-			invo_val *exp_invo = (invo_val*)exp->value;
-			if(!is_const_var(exp_invo->name))
-			{
-				if(exp_invo->listc!=0)
-					dump_error(ERROR_ARR_STEP);
-			}
-		}
+		const_val* con=(const_val*)$2;
+		check_and_set_scalar(con);
+		
 	}
 | READ var_ref ';'
 	{
-		const_val *ref =(const_val*)$2;
-		invo_val *ref_invo = (invo_val*)ref->value;
-		if(!is_const_var(ref_invo->name))
-		{
-			if(ref_invo->listc!=0)
-				dump_error(ERROR_ARR_STEP);
-		}
+		const_val* con=(const_val*)$2;
+		check_and_set_scalar(con);
 	}
 ;
 
@@ -2189,45 +1835,61 @@ var_ref
 : ID
 	{
 		// same with array but step is 0
+
 		invo_val *p=NEW_VAL(invo_val);
 		p->name = strdup($1);
 		p->listc = 0;
 
-		int *re_type=NEW_VAL(int);
-		*re_type=0;
+		symbol_list* sym=find_symbol(p->name);
 
-		arr_val* orig_arr = count_arr_ref(p->name);
-		
-		int result = find_arr_in_table(p,re_type);
+		const_val *q=NEW_VAL(const_val);
+		q->kind=KIND_RVAL;
+		q->type=TYPE_INT;
+		q->value= (void*)p;
 
-		if(result!=NO_ERROR) dump_error(result);
 
-		const_val *q= NEW_VAL(const_val);
-		q->kind= KIND_RVAL;
-		q->type= *re_type;
-		q->value = (void*)p;
+		if(sym!=NULL)
+		{
+			id_val *sym_id=(id_val*)sym->val;
+			if(sym_id->kind==KIND_FUNCTION)
+				dump_error(ERROR_ID_KIND);
+			q->type=sym_id->type;
+			if(sym_id->kind==KIND_CONSTANT)
+			{
+				q->kind=KIND_CONST_VAL;
+				q->value=sym_id->list;
+			}
+			else
+			{
+				q->kind=KIND_LVAL;
+				q->value= (void*)p;
+			}
+		}
 
 		$$ = (void*)q;
 	}
 | arr_ref
 	{
-		// check arr id exist and dimention correct;
 		invo_val *p=(invo_val*)$1;
-
-		int *re_type=NEW_VAL(int);
-		*re_type=0;
-
-		arr_val* orig_arr = count_arr_ref(p->name);
-
-		int result = find_arr_in_table(p,re_type);
-
-
-		if(result!=NO_ERROR) dump_error(result);
+		symbol_list* sym=find_symbol(p->name);
 
 		const_val *q= NEW_VAL(const_val);
-		q->kind= KIND_RVAL;
-		q->type= *re_type;
+		q->kind= KIND_LVAL;
+		q->type= TYPE_INT;
 		q->value = (void*)p;
+
+		if(sym!=NULL)
+		{
+			id_val* sym_id=(id_val*)sym->val;
+			if(sym_id->kind==KIND_FUNCTION || sym_id->kind==KIND_CONSTANT)
+				dump_error(ERROR_ID_KIND);
+			else
+			{
+				if(!check_step(sym,p))
+					dump_error(ERROR_ARR_STEP);
+			}
+			q->type=sym_id->type;
+		}
 
 		$$ = (void*)q;
 	}
@@ -2241,6 +1903,15 @@ condition
 
 bool_expr
 : expr
+	{
+		const_val *con =(const_val*)$1;
+		if(con->type!=TYPE_BOOL)
+			dump_error(ERROR_NO_BOOL);
+		else
+		{
+			check_and_set_scalar(con);
+		}
+	}
 ;
 
 while_stat
@@ -2249,54 +1920,256 @@ while_stat
 ;
 
 for_stat
-: FOR '(' init_expr ';' expr ';' incr_expr ')' {isInLoop+=1;} compound {isInLoop-=1;}
+: FOR '(' init_expr ';' bool_expr ';' incr_expr ')' {isInLoop+=1;} compound {isInLoop-=1;}
 | FOR '(' init_expr ';' ';' incr_expr ')' {isInLoop+=1;} compound {isInLoop-=1;}
 ;
 
 init_expr 
 : init_expr_list var_ref '=' expr 
 	{
-		const_val *ref =(const_val*)$2;
-		invo_val *ref_invo = (invo_val*)ref->value;
-		if(!is_const_var(ref_invo->name))
+		const_val* con=(const_val*)$2;
+		const_val* exp=(const_val*)$4;
+
+		if(con->kind==KIND_CONST_VAL)
+			dump_error(ERROR_ASSIGN_CONST);
+		else
 		{
-			if(ref_invo->listc!=0)
-				dump_error(ERROR_ARR_STEP);
+			if(con->type!=exp->type)
+				dump_error(ERROR_IDTYPE_NOT_MATCH);
+			check_and_set_scalar(con);
+			check_and_set_scalar(exp);
 		}
 	}
 | init_expr_list func_invo
 	{
+		invo_val *p=(invo_val*)$2;
+		symbol_list* sym=find_symbol(p->name);
 
+		const_val *q=NEW_VAL(const_val);
+		q->kind=KIND_RVAL;
+		q->type=TYPE_INT;
+		q->value = (void*)p;
+
+
+		if(sym!=NULL)
+		{
+			id_val *sym_id=(id_val*)sym->val;
+
+			if(sym_id->kind!=KIND_FUNCTION)
+				dump_error(ERROR_ID_KIND);
+			else
+			{
+				if(!check_parameter(sym,p))
+					dump_error(ERROR_FUNC_ARGU_NOT_MATCH);
+			}
+			const_val *q=NEW_VAL(const_val);
+			q->kind=KIND_RVAL;
+			q->type=sym_id->type;
+			q->value = (void*)p;
+		}
 	}
 | func_invo
 	{
+		invo_val *p=(invo_val*)$1;
+		symbol_list* sym=find_symbol(p->name);
 
+		const_val *q=NEW_VAL(const_val);
+		q->kind=KIND_RVAL;
+		q->type=TYPE_INT;
+		q->value = (void*)p;
+
+
+		if(sym!=NULL)
+		{
+			id_val *sym_id=(id_val*)sym->val;
+
+			if(sym_id->kind!=KIND_FUNCTION)
+				dump_error(ERROR_ID_KIND);
+			else
+			{
+				if(!check_parameter(sym,p))
+					dump_error(ERROR_FUNC_ARGU_NOT_MATCH);
+			}
+			const_val *q=NEW_VAL(const_val);
+			q->kind=KIND_RVAL;
+			q->type=sym_id->type;
+			q->value = (void*)p;
+		}
 	}
 | var_ref '=' expr
 	{
+		const_val* con=(const_val*)$1;
+		const_val* exp=(const_val*)$3;
 
+		if(con->kind==KIND_CONST_VAL)
+			dump_error(ERROR_ASSIGN_CONST);
+		else
+		{
+			if(con->type!=exp->type)
+				dump_error(ERROR_IDTYPE_NOT_MATCH);
+			check_and_set_scalar(con);
+			check_and_set_scalar(exp);
+		}
 	}
 | %empty
 ;
 
 init_expr_list 
 : init_expr_list var_ref '=' expr ','
+	{
+		const_val* con=(const_val*)$2;
+		const_val* exp=(const_val*)$4;
+
+		if(con->kind==KIND_CONST_VAL)
+			dump_error(ERROR_ASSIGN_CONST);
+		else
+		{
+			if(con->type!=exp->type)
+				dump_error(ERROR_IDTYPE_NOT_MATCH);
+			check_and_set_scalar(con);
+			check_and_set_scalar(exp);
+		}
+	}
 | init_expr_list func_invo ','
+	{
+		invo_val *p=(invo_val*)$2;
+		symbol_list* sym=find_symbol(p->name);
+
+		const_val *q=NEW_VAL(const_val);
+		q->kind=KIND_RVAL;
+		q->type=TYPE_INT;
+		q->value = (void*)p;
+
+
+		if(sym!=NULL)
+		{
+			id_val *sym_id=(id_val*)sym->val;
+
+			if(sym_id->kind!=KIND_FUNCTION)
+				dump_error(ERROR_ID_KIND);
+			else
+			{
+				if(!check_parameter(sym,p))
+					dump_error(ERROR_FUNC_ARGU_NOT_MATCH);
+			}
+			const_val *q=NEW_VAL(const_val);
+			q->kind=KIND_RVAL;
+			q->type=sym_id->type;
+			q->value = (void*)p;
+		}
+	}
 | func_invo ','
+	{
+		invo_val *p=(invo_val*)$1;
+		symbol_list* sym=find_symbol(p->name);
+
+		const_val *q=NEW_VAL(const_val);
+		q->kind=KIND_RVAL;
+		q->type=TYPE_INT;
+		q->value = (void*)p;
+
+
+		if(sym!=NULL)
+		{
+			id_val *sym_id=(id_val*)sym->val;
+
+			if(sym_id->kind!=KIND_FUNCTION)
+				dump_error(ERROR_ID_KIND);
+			else
+			{
+				if(!check_parameter(sym,p))
+					dump_error(ERROR_FUNC_ARGU_NOT_MATCH);
+			}
+			const_val *q=NEW_VAL(const_val);
+			q->kind=KIND_RVAL;
+			q->type=sym_id->type;
+			q->value = (void*)p;
+		}
+	}
 | var_ref '=' expr ','
+	{
+		const_val* con=(const_val*)$1;
+		const_val* exp=(const_val*)$3;
+
+		if(con->kind==KIND_CONST_VAL)
+			dump_error(ERROR_ASSIGN_CONST);
+		else
+		{
+			if(con->type!=exp->type)
+				dump_error(ERROR_IDTYPE_NOT_MATCH);
+			check_and_set_scalar(con);
+			check_and_set_scalar(exp);
+		}
+	}
 ;
 
 
 
 incr_expr
 : incr_expr_list var_ref '=' expr ','
+	{
+		const_val* con=(const_val*)$2;
+		const_val* exp=(const_val*)$4;
+
+		if(con->kind==KIND_CONST_VAL)
+			dump_error(ERROR_ASSIGN_CONST);
+		else
+		{
+			if(con->type!=exp->type)
+				dump_error(ERROR_IDTYPE_NOT_MATCH);
+			check_and_set_scalar(con);
+			check_and_set_scalar(exp);
+		}
+	}	
 | var_ref '=' expr
+	{
+		const_val* con=(const_val*)$1;
+		const_val* exp=(const_val*)$3;
+
+		if(con->kind==KIND_CONST_VAL)
+			dump_error(ERROR_ASSIGN_CONST);
+		else
+		{
+			if(con->type!=exp->type)
+				dump_error(ERROR_IDTYPE_NOT_MATCH);
+			check_and_set_scalar(con);
+			check_and_set_scalar(exp);
+		}
+	}
 | %empty
 ;
 
 incr_expr_list
 : incr_expr_list var_ref '=' expr ','
+	{
+		const_val* con=(const_val*)$2;
+		const_val* exp=(const_val*)$4;
+
+		if(con->kind==KIND_CONST_VAL)
+			dump_error(ERROR_ASSIGN_CONST);
+		else
+		{
+			if(con->type!=exp->type)
+				dump_error(ERROR_IDTYPE_NOT_MATCH);
+			check_and_set_scalar(con);
+			check_and_set_scalar(exp);
+		}
+	}
 | var_ref '=' expr ','
+	{
+		const_val* con=(const_val*)$1;
+		const_val* exp=(const_val*)$3;
+
+		if(con->kind==KIND_CONST_VAL)
+			dump_error(ERROR_ASSIGN_CONST);
+		else
+		{
+			if(con->type!=exp->type)
+				dump_error(ERROR_IDTYPE_NOT_MATCH);
+			check_and_set_scalar(con);
+			check_and_set_scalar(exp);
+		}
+	}
 
 jump_stat
 : RETURN expr ';'
@@ -2325,6 +2198,23 @@ jump_stat
 
 %%
 
+symbol_list* find_symbol(char* name)
+{
+	symbol_table *table= cur_table;
+	while(table!=NULL)
+	{
+		symbol_list *list=table->s_list;
+		while(list!=NULL)
+		{
+			if(strcmp(list->name,name)==0)
+				return list;
+			list=list->next;
+		}
+		table=table->next;
+	}
+	dump_error(ERROR_ID_NO_FOUND);
+	return NULL;
+}
 
 int find_redclair(char* name)
 {
@@ -2341,123 +2231,171 @@ int find_redclair(char* name)
 
 }
 
-int find_id_in_table(char* in,int *re_type)
+
+const_val *geneOneVal(const_val *a, int m_type)
 {
-	symbol_table *p = cur_table;
+	const_val *output = NEW_VAL(const_val);
 
-	while(p!=NULL)
+	if(a->type==m_type)
 	{
-		symbol_list* list = p->s_list;
-		while(list!=NULL)
-		{
-			if(strcmp(list->name,in)==0)
-			{
-				id_val* pr = (id_val*)list->val;
-				*re_type = pr->type;
-				if(pr->kind!=KIND_VARIABLE && pr->kind!=KIND_PARAMETER )
-				{
-					return ERROR_ID_KIND;
-				}
-				else
-				{
-					return NO_ERROR;
-				}
-			}
-			list=list->next;
-		}
-		p=p->next;
+		output->type=m_type;
+		output->kind=a->kind;
+		output->value=a->value;
 	}
-	*re_type = TYPE_INT;
-	return ERROR_ID_NO_FOUND;
-}
-int find_func_in_table(invo_val *in,int *re_type)
-{
-	symbol_table *p =cur_table;
-
-	while(p!=NULL)
+	else
 	{
-		symbol_list* list = p->s_list;
-		while(list!=NULL)
-		{
-			if(strcmp(list->name,in->name)==0)
-			{
-				id_val* pr = (id_val*)list->val;
-				*re_type = pr->type;
-				if(pr->kind!=KIND_FUNCTION)
-					return ERROR_ID_KIND;
-				else
-				{
-					// check argu;
-					func_val* funcp= (func_val*)pr->list;
-
-					if(funcp->argc != in->listc )
-						return ERROR_FUNC_ARGU_NOT_MATCH;
-					else
-					{
-						for(int t=0;t<funcp->argc;t++)
-						{
-							const_val *constp = ((const_val*)in->listv)+t;
-							argu_val *argup = ((argu_val*)funcp->argv)+t;
-
-							invo_val* source=(invo_val*)constp->value;
-							arr_val* arr_source= count_arr_ref(source->name);
-							arr_val* arr_func =  ((arr_val*)((id_val*)argup->val)->list);
-							
-							if(arr_func->stepc == source->listc)
-							{
-								for(int i1=0,i2=arr_source->stepc-source->listc;i1<arr_func->stepc;i1++,i2++)
-								{
-									if( arr_func->stepv[i1] != *(((int*)arr_source->stepv)+i2) )
-										return ERROR_FUNC_ARGU_NOT_MATCH;
-								}
-							}
-							else
-								return ERROR_FUNC_ARGU_NOT_MATCH;
-						}
-						return NO_ERROR;
-					}
-				}
-			}
-			list=list->next;
-		}
-		p=p->next;
+		output->type=m_type;
+		output->kind=KIND_CONST_VAL;
+		output->value=a->value;
 	}
-	*re_type=TYPE_INT;
-	return ERROR_ID_NO_FOUND;
+	return output;
 }
 
-int find_arr_in_table(invo_val *in, int *re_type)
+const_val *geneValConstOne(const_val *a, const_val *b, int m_type)
 {
-	symbol_table *table = cur_table;
-	while(table!=NULL)
+	const_val *output = NEW_VAL(const_val);
+
+	int ch;
+	if(a->type==m_type)
+		ch+=1;
+	if(b->type==m_type)
+		ch+=2;
+
+	output->type=m_type;
+	if(a->kind==KIND_RVAL && ch&1)
 	{
-		symbol_list *list= table->s_list;
-		while(list!=NULL)
-		{
-			if(strcmp(in->name,list->name)==0)
-			{
-				id_val *pr=(id_val*)list->val;
-				*re_type = pr->type;
-
-
-				if(pr->kind != KIND_VARIABLE && pr->kind != KIND_PARAMETER && pr->kind!=KIND_CONSTANT)
-					return ERROR_ID_KIND;
-				else
-				{
-					arr_val* arr_step=(arr_val*)pr->list;
-					if(in->listc > arr_step->stepc)
-						return ERROR_ARR_STEP;
-					else
-						in->listc = arr_step->stepc - in->listc;
-				}
-				return NO_ERROR;
-			}
-			list= list->next;
-		}
-		table=table->next;
+		output->kind=KIND_RVAL;
+		output->value = a->value;
 	}
-	*re_type=TYPE_INT;
-	return ERROR_ID_NO_FOUND;
+	else if(b->kind==KIND_RVAL && ch==2)
+	{
+		output->kind=KIND_RVAL;
+		output->value=b->value;
+	}
+	else
+	{
+		//combine a b
+		output->kind=KIND_RVAL;
+		output->value= a->value;
+	}
+	return output;
+
+}
+
+const_val *geneValConst(const_val *a, const_val *b)
+{
+	const_val *output =NEW_VAL(const_val);
+
+	int type=TYPE_DOUBLE+1;
+	int ch=0;
+	if(a->type<=TYPE_DOUBLE && a->type > type)
+		type=a->type , ch+=1;
+	if(b->type<=TYPE_DOUBLE && b->type > type)
+		type=a->type , ch+=2;
+
+	output->type=type;
+	if(a->kind==KIND_RVAL && ch&1)
+	{
+		output->kind=KIND_RVAL;
+		output->value = a->value;
+	}
+	else if(b->kind==KIND_RVAL && ch==2)
+	{
+		output->kind=KIND_RVAL;
+		output->value = b->value;
+	}
+	else
+	{
+		//combine(a,b);
+		output->kind=KIND_CONST_VAL;
+		output->value = a->value;
+	}
+	return output;
+}
+
+
+int check_and_set_scalar(const_val *a)
+{
+	if(a->kind==KIND_CONST_VAL)
+		return 1;
+	else
+	{
+		symbol_list *list=find_symbol( ((invo_val*)a->value)->name );
+		id_val *id=(id_val*)list->val;
+		if(id->kind==KIND_FUNCTION) return 1;
+		else
+		{
+			if( ((invo_val*)a->value)->listc==0 ) return 1;
+		}
+		((invo_val*)a->value)->listc=0;
+		dump_error(ERROR_ARR_STEP);
+		return 0;
+	}
+	
+	return  0;
+}
+
+int check_type_three(const_val *a,const_val *b)
+{
+	if(a->type==TYPE_BOOL || a->type==TYPE_STRING || a->type==TYPE_VOID)
+		return 0;
+	if(b->type==TYPE_BOOL || b->type==TYPE_STRING || b->type==TYPE_VOID)
+		return 0;
+
+	return 1;
+}
+
+int check_type_one(const_val *a, const_val *b,int m_type)
+{
+	if(a->type!=m_type || b->type!=m_type) return 0;
+	return 1;
+}
+
+int check_parameter(symbol_list* list, invo_val* invo)
+{
+	id_val *id=(id_val*)list->val;
+	func_val *func=(func_val*)id->list;
+
+	if(func->argc != invo->listc)
+		return 0;
+	else
+	{
+		for(int t=0;t<func->argc;t++) //check para
+		{
+
+
+			argu_val *argu = ((argu_val*)func->argv)+t;
+			const_val *constp = ((const_val*)invo->listv)+t;
+			invo_val *source=(invo_val*)constp->value;
+
+			arr_val *arr_source = count_arr_ref(source->name);
+			arr_val *arr_func = ((arr_val*)((id_val*)argu->val)->list);
+
+			if(arr_func->stepc == source->listc)
+			{
+				for(int i1=0,i2=arr_source->stepc-source->listc;i1<arr_func->stepc;i1++,i2++)
+				{
+					if( arr_func->stepv[i1] != *(((int*)arr_source->stepv)+i2) )
+						return 0;
+				}
+			}
+			else return 0;
+
+		}
+		return 1;
+	}
+}
+
+int check_step(symbol_list *list,invo_val *invo)
+{
+	id_val *id=(id_val*)list->val;
+	arr_val *arr = (arr_val*)id->list;
+
+	if(invo->listc > arr->stepc)
+		return 0;
+	else
+		invo->listc = arr->stepc - invo->listc;
+	return 1;
 }
 
 arr_val* count_arr_ref(char* name)
@@ -2473,7 +2411,12 @@ arr_val* count_arr_ref(char* name)
 			if(strcmp(list->name,name)==0)
 			{
 				id_val* pr=(id_val*)list->val;
-				if(pr->kind==KIND_PARAMETER || pr->kind==KIND_VARIABLE || pr->kind==KIND_CONSTANT)
+				if(pr->kind==KIND_CONSTANT)
+				{
+					ans->stepc=0;
+					return ans;
+				}
+				if(pr->kind==KIND_PARAMETER || pr->kind==KIND_VARIABLE)
 				{
 					ans= (arr_val*)pr->list;
 					return ans;

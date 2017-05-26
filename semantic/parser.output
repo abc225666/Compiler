@@ -228,7 +228,7 @@ Grammar
 
   153 $@24: %empty
 
-  154 for_stat: FOR '(' init_expr ';' expr ';' incr_expr ')' $@24 compound
+  154 for_stat: FOR '(' init_expr ';' bool_expr ';' incr_expr ')' $@24 compound
 
   155 $@25: %empty
 
@@ -414,8 +414,8 @@ expr (93)
     on left: 105 106 107 108 109 110 111 112 113 114 115 116 117 118
     119 120 121 122 123 124, on right: 79 81 89 91 100 101 103 104
     105 106 107 108 109 110 111 112 113 114 115 116 117 118 119 120
-    126 127 128 129 131 132 139 140 141 147 154 157 160 162 165 166
-    167 169 170 171
+    126 127 128 129 131 132 139 140 141 147 157 160 162 165 166 167
+    169 170 171
 arr_ref (94)
     on left: 125, on right: 124 144
 arr_ref_step (95)
@@ -434,7 +434,7 @@ var_ref (100)
 condition (101)
     on left: 145 146, on right: 135
 bool_expr (102)
-    on left: 147, on right: 145 146 149 152
+    on left: 147, on right: 145 146 149 152 154
 while_stat (103)
     on left: 149 152, on right: 136
 $@21 (104)
@@ -3150,7 +3150,7 @@ State 192
 
 State 193
 
-  154 for_stat: FOR . '(' init_expr ';' expr ';' incr_expr ')' $@24 compound
+  154 for_stat: FOR . '(' init_expr ';' bool_expr ';' incr_expr ')' $@24 compound
   156         | FOR . '(' init_expr ';' ';' incr_expr ')' $@25 compound
 
     '('  shift, and go to state 234
@@ -3697,7 +3697,7 @@ State 233
 
 State 234
 
-  154 for_stat: FOR '(' . init_expr ';' expr ';' incr_expr ')' $@24 compound
+  154 for_stat: FOR '(' . init_expr ';' bool_expr ';' incr_expr ')' $@24 compound
   156         | FOR '(' . init_expr ';' ';' incr_expr ')' $@25 compound
 
     ID  shift, and go to state 258
@@ -4118,7 +4118,7 @@ State 260
 
 State 261
 
-  154 for_stat: FOR '(' init_expr . ';' expr ';' incr_expr ')' $@24 compound
+  154 for_stat: FOR '(' init_expr . ';' bool_expr ';' incr_expr ')' $@24 compound
   156         | FOR '(' init_expr . ';' ';' incr_expr ')' $@25 compound
 
     ';'  shift, and go to state 276
@@ -4321,7 +4321,7 @@ State 275
 
 State 276
 
-  154 for_stat: FOR '(' init_expr ';' . expr ';' incr_expr ')' $@24 compound
+  154 for_stat: FOR '(' init_expr ';' . bool_expr ';' incr_expr ')' $@24 compound
   156         | FOR '(' init_expr ';' . ';' incr_expr ')' $@25 compound
 
     ID            shift, and go to state 44
@@ -4339,9 +4339,10 @@ State 276
     float_value   go to state 54
     bool_value    go to state 55
     string_value  go to state 56
-    expr          go to state 288
+    expr          go to state 254
     arr_ref       go to state 58
     func_invo     go to state 59
+    bool_expr     go to state 288
 
 
 State 277
@@ -4468,34 +4469,8 @@ State 287
 
 State 288
 
-  105 expr: expr . '*' expr
-  106     | expr . '/' expr
-  107     | expr . '+' expr
-  108     | expr . '-' expr
-  109     | expr . '%' expr
-  110     | expr . '<' expr
-  111     | expr . LE expr
-  112     | expr . '>' expr
-  113     | expr . GE expr
-  114     | expr . EQ expr
-  115     | expr . NE expr
-  118     | expr . AND expr
-  119     | expr . OR expr
-  154 for_stat: FOR '(' init_expr ';' expr . ';' incr_expr ')' $@24 compound
+  154 for_stat: FOR '(' init_expr ';' bool_expr . ';' incr_expr ')' $@24 compound
 
-    OR   shift, and go to state 91
-    AND  shift, and go to state 92
-    LE   shift, and go to state 93
-    EQ   shift, and go to state 94
-    GE   shift, and go to state 95
-    NE   shift, and go to state 96
-    '<'  shift, and go to state 97
-    '>'  shift, and go to state 98
-    '+'  shift, and go to state 99
-    '-'  shift, and go to state 100
-    '*'  shift, and go to state 101
-    '/'  shift, and go to state 102
-    '%'  shift, and go to state 103
     ';'  shift, and go to state 298
 
 
@@ -4605,7 +4580,7 @@ State 297
 
 State 298
 
-  154 for_stat: FOR '(' init_expr ';' expr ';' . incr_expr ')' $@24 compound
+  154 for_stat: FOR '(' init_expr ';' bool_expr ';' . incr_expr ')' $@24 compound
 
     ID  shift, and go to state 227
 
@@ -4710,7 +4685,7 @@ State 304
 
 State 305
 
-  154 for_stat: FOR '(' init_expr ';' expr ';' incr_expr . ')' $@24 compound
+  154 for_stat: FOR '(' init_expr ';' bool_expr ';' incr_expr . ')' $@24 compound
 
     ')'  shift, and go to state 311
 
@@ -4800,7 +4775,7 @@ State 310
 
 State 311
 
-  154 for_stat: FOR '(' init_expr ';' expr ';' incr_expr ')' . $@24 compound
+  154 for_stat: FOR '(' init_expr ';' bool_expr ';' incr_expr ')' . $@24 compound
 
     $default  reduce using rule 153 ($@24)
 
@@ -4864,7 +4839,7 @@ State 315
 
 State 316
 
-  154 for_stat: FOR '(' init_expr ';' expr ';' incr_expr ')' $@24 . compound
+  154 for_stat: FOR '(' init_expr ';' bool_expr ';' incr_expr ')' $@24 . compound
 
     '{'  shift, and go to state 197
 
@@ -4882,6 +4857,6 @@ State 317
 
 State 318
 
-  154 for_stat: FOR '(' init_expr ';' expr ';' incr_expr ')' $@24 compound .
+  154 for_stat: FOR '(' init_expr ';' bool_expr ';' incr_expr ')' $@24 compound .
 
     $default  reduce using rule 154 (for_stat)

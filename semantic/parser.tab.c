@@ -98,9 +98,9 @@ typedef enum
 	KIND_VARIABLE,
 	KIND_PARAMETER,
 	KIND_CONSTANT,
-
 	KIND_CONST_VAL,
-	KIND_RVAL
+	KIND_RVAL,
+	KIND_LVAL,
 } enum_kind;
 
 typedef enum
@@ -126,6 +126,7 @@ typedef enum
 	ERROR_ID_REDCLARED, //8
 	ERROR_JUMP_STATMENT, //9
 	ERROR_ASSIGN_CONST, //10
+	ERROR_NO_BOOL, //11
 } enum_error;
 
 typedef struct S_invo_val
@@ -200,11 +201,17 @@ void dump_cur_table();
 void dump_error(int error);
 
 int find_redclair(char* name);
-int find_id_in_table(char* in,int *re_type);
-int find_func_in_table(invo_val *in,int *re_type);
-int find_arr_in_table(invo_val *in, int *re_type);
-arr_val* count_arr_ref(char* name);
 
+int check_parameter(symbol_list* sym,invo_val *invo);
+int check_step(symbol_list*sym,invo_val *invo);
+arr_val* count_arr_ref(char* name);
+symbol_list* find_symbol(char* name);
+const_val *geneOneVal(const_val *a,int m_type);
+const_val *geneValConstOne(const_val *a, const_val *b, int m_type);
+const_val *geneValConst(const_val *a, const_val *b);
+int check_and_set_scalar(const_val *a);
+int check_type_three(const_val *a,const_val *b);
+int check_type_one(const_val *a, const_val *b,int m_type);
 int is_const_var(char* name);
 
 
@@ -213,7 +220,7 @@ int main( int argc, char **argv );
 int yylex();
 
 
-#line 217 "parser.tab.c" /* yacc.c:339  */
+#line 224 "parser.tab.c" /* yacc.c:339  */
 
 # ifndef YY_NULLPTR
 #  if defined __cplusplus && 201103L <= __cplusplus
@@ -282,13 +289,13 @@ extern int yydebug;
 
 union YYSTYPE
 {
-#line 152 "parser.y" /* yacc.c:355  */
+#line 159 "parser.y" /* yacc.c:355  */
 
 	char* str;
 	void* v;
 	int c_type;
 
-#line 292 "parser.tab.c" /* yacc.c:355  */
+#line 299 "parser.tab.c" /* yacc.c:355  */
 };
 
 typedef union YYSTYPE YYSTYPE;
@@ -305,7 +312,7 @@ int yyparse (void);
 
 /* Copy the second part of user declarations.  */
 
-#line 309 "parser.tab.c" /* yacc.c:358  */
+#line 316 "parser.tab.c" /* yacc.c:358  */
 
 #ifdef short
 # undef short
@@ -547,7 +554,7 @@ union yyalloc
 /* YYFINAL -- State number of the termination state.  */
 #define YYFINAL  12
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   676
+#define YYLAST   656
 
 /* YYNTOKENS -- Number of terminals.  */
 #define YYNTOKENS  46
@@ -605,24 +612,24 @@ static const yytype_uint8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,   203,   203,   204,   205,   206,   210,   211,   212,   213,
-     214,   215,   219,   220,   221,   222,   226,   231,   254,   230,
-     262,   286,   261,   294,   311,   293,   319,   342,   318,   350,
-     374,   349,   382,   399,   381,   410,   409,   421,   420,   431,
-     432,   436,   437,   438,   439,   445,   444,   471,   470,   496,
-     495,   515,   514,   540,   539,   566,   565,   587,   599,   615,
-     631,   648,   659,   671,   689,   698,   707,   717,   726,   736,
-     745,   758,   764,   770,   776,   785,   797,   809,   820,   834,
-     852,   871,   888,   905,   952,   967,  1010,  1028,  1046,  1067,
-    1085,  1102,  1119,  1136,  1178,  1192,  1234,  1248,  1264,  1284,
-    1295,  1308,  1323,  1335,  1345,  1361,  1376,  1424,  1472,  1520,
-    1568,  1614,  1648,  1682,  1717,  1751,  1785,  1819,  1823,  1850,
-    1896,  1941,  1964,  1969,  1992,  2009,  2034,  2045,  2051,  2061,
-    2077,  2088,  2099,  2112,  2127,  2128,  2129,  2130,  2131,  2132,
-    2133,  2139,  2163,  2176,  2189,  2212,  2238,  2239,  2243,  2247,
-    2247,  2248,  2248,  2248,  2252,  2252,  2253,  2253,  2257,  2258,
-    2259,  2260,  2261,  2265,  2266,  2267,  2268,  2274,  2275,  2276,
-    2280,  2281,  2284,  2294,  2299
+       0,   210,   210,   211,   212,   213,   217,   218,   219,   220,
+     221,   222,   226,   227,   228,   229,   233,   238,   261,   237,
+     269,   293,   268,   301,   318,   300,   326,   349,   325,   357,
+     381,   356,   389,   406,   388,   417,   416,   428,   427,   438,
+     439,   443,   444,   445,   446,   452,   451,   478,   477,   503,
+     502,   522,   521,   547,   546,   573,   572,   594,   606,   622,
+     638,   655,   666,   678,   696,   705,   714,   724,   733,   743,
+     752,   765,   771,   777,   783,   792,   804,   816,   827,   841,
+     859,   878,   895,   912,   959,   974,  1017,  1035,  1053,  1074,
+    1092,  1109,  1126,  1143,  1185,  1199,  1241,  1255,  1271,  1291,
+    1302,  1315,  1330,  1342,  1352,  1368,  1383,  1397,  1411,  1425,
+    1439,  1453,  1467,  1481,  1495,  1509,  1524,  1539,  1545,  1558,
+    1572,  1586,  1599,  1603,  1638,  1669,  1698,  1708,  1714,  1724,
+    1740,  1751,  1762,  1775,  1790,  1791,  1792,  1793,  1794,  1795,
+    1796,  1806,  1821,  1827,  1835,  1871,  1900,  1901,  1905,  1918,
+    1918,  1919,  1919,  1919,  1923,  1923,  1924,  1924,  1928,  1943,
+    1971,  1999,  2014,  2018,  2033,  2061,  2089,  2109,  2124,  2139,
+    2143,  2158,  2175,  2185,  2190
 };
 #endif
 
@@ -678,38 +685,38 @@ static const yytype_uint16 yytoknum[] =
      STATE-NUM.  */
 static const yytype_int16 yypact[] =
 {
-      76,  -231,  -231,     1,    21,    76,    76,  -231,    24,    34,
+      76,  -231,  -231,     1,    23,    76,    76,  -231,    25,    34,
     -231,    45,  -231,    76,  -231,  -231,    76,  -231,  -231,  -231,
-     149,    50,    40,    13,    86,    76,  -231,  -231,  -231,     3,
-    -231,  -231,    96,   284,   165,   195,     4,   153,    51,    85,
-       1,    -6,   127,    91,   -12,  -231,  -231,  -231,  -231,   284,
+     149,    50,    40,    47,    90,    76,  -231,  -231,  -231,     3,
+    -231,  -231,    96,   284,   165,   195,     4,   153,    81,    92,
+       1,    -6,   129,    95,   -16,  -231,  -231,  -231,  -231,   284,
      284,   284,  -231,  -231,  -231,  -231,  -231,   318,  -231,  -231,
-    -231,  -231,   132,   110,  -231,  -231,   284,   231,   112,     1,
-      52,   107,    79,  -231,  -231,  -231,  -231,   153,   120,   115,
-      57,   125,  -231,   108,  -231,   100,   284,   122,  -231,   600,
-     642,   284,   284,   284,   284,   284,   284,   284,   284,   284,
-     284,   284,   284,   284,  -231,  -231,   145,   225,   103,   339,
-    -231,  -231,   110,   154,   157,    89,   164,  -231,  -231,  -231,
-    -231,   155,  -231,  -231,   182,  -231,   200,   201,   197,   202,
-    -231,   360,   284,   273,   284,  -231,   630,   642,    54,    54,
+    -231,  -231,   142,   112,  -231,  -231,   284,   231,   115,     1,
+      52,   107,    79,  -231,  -231,  -231,  -231,   153,   114,   118,
+      57,   125,  -231,   122,  -231,   100,   284,   146,  -231,   580,
+     622,   284,   284,   284,   284,   284,   284,   284,   284,   284,
+     284,   284,   284,   284,  -231,  -231,   154,   225,   103,   339,
+    -231,  -231,   112,   166,   152,    89,   182,  -231,  -231,  -231,
+    -231,   155,  -231,  -231,   198,  -231,   203,   204,   197,   211,
+    -231,   360,   284,   273,   284,  -231,   610,   622,    54,    54,
       54,    54,    54,    54,   233,   233,  -231,  -231,  -231,  -231,
     -231,   284,   381,  -231,  -231,  -231,  -231,   170,  -231,  -231,
-     206,   215,   218,  -231,  -231,   209,   217,   220,  -231,  -231,
-     219,   257,  -231,  -231,   402,  -231,   302,   423,  -231,  -231,
-    -231,  -231,   209,   230,   236,  -231,  -231,   -16,   280,   284,
-     242,  -231,   250,   251,   260,   268,   284,   270,  -231,  -231,
-     271,   209,   306,  -231,   500,   269,  -231,  -231,   274,  -231,
+     206,   217,   218,  -231,  -231,   209,   222,   223,  -231,  -231,
+     219,   262,  -231,  -231,   402,  -231,   302,   423,  -231,  -231,
+    -231,  -231,   209,   238,   245,  -231,  -231,   -15,   281,   284,
+     242,  -231,   251,   264,   268,   269,   284,   271,  -231,  -231,
+     272,   209,   307,  -231,   500,   270,  -231,  -231,   274,  -231,
     -231,  -231,  -231,  -231,  -231,   209,  -231,   276,  -231,  -231,
-    -231,  -231,  -231,   275,  -231,  -231,   209,   279,  -231,   272,
-     520,   284,   299,   284,   312,  -231,  -231,   540,   209,   283,
+    -231,  -231,  -231,   278,  -231,  -231,   209,   279,  -231,   282,
+     520,   284,   275,   284,   332,  -231,  -231,   540,   209,   299,
     -231,  -231,  -231,   240,  -231,   284,   209,   314,  -231,  -231,
-     209,   315,  -231,  -231,   617,   301,  -231,   319,   -12,   316,
-     311,   326,   312,  -231,   163,  -231,   560,   335,  -231,   336,
-    -231,   299,   361,  -231,  -231,   284,   243,   337,   333,  -231,
-    -231,  -231,  -231,   374,   359,   299,   444,   280,   580,  -231,
-     284,   299,   284,  -231,  -231,   352,   362,   280,   280,   458,
-    -231,   363,   284,  -231,   354,   371,  -231,   376,   472,   299,
-     284,  -231,  -231,  -231,  -231,   486,   299,   412,  -231
+     209,   315,  -231,  -231,   597,   319,  -231,   320,   -16,   325,
+     311,   334,   332,  -231,   163,  -231,   560,   336,  -231,   337,
+    -231,   275,   362,  -231,  -231,   284,   243,   346,   351,  -231,
+    -231,  -231,  -231,   365,   363,   275,   444,   281,   356,  -231,
+     284,   275,   284,  -231,  -231,   354,   371,   281,   281,   458,
+    -231,   379,   284,  -231,   373,   382,  -231,   378,   472,   275,
+     284,  -231,  -231,  -231,  -231,   486,   275,   395,  -231
 };
 
   /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
@@ -754,13 +761,13 @@ static const yytype_uint8 yydefact[] =
   /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int16 yypgoto[] =
 {
-    -231,  -231,   405,  -231,  -191,   117,  -231,  -231,  -231,  -231,
+    -231,  -231,   408,  -231,  -191,   117,  -231,  -231,  -231,  -231,
     -231,  -231,  -231,  -231,  -231,  -231,  -231,  -231,  -188,  -231,
-    -231,  -134,   181,   124,  -231,  -231,  -231,  -231,  -231,  -231,
-     385,   -13,  -231,     9,  -231,   364,  -231,   -35,   -34,   -31,
-     -26,  -231,  -231,   141,   394,   325,  -231,   -33,  -111,  -231,
+    -231,  -134,   191,   124,  -231,  -231,  -231,  -231,  -231,  -231,
+     401,   -12,  -231,     9,  -231,   361,  -231,   -35,   -34,   -31,
+     -26,  -231,  -231,   141,   405,   329,  -231,   -33,  -111,  -231,
     -230,  -231,  -182,  -231,  -187,  -231,  -220,  -231,  -231,  -231,
-    -231,  -231,  -231,  -231,  -231,  -231,   140,  -231,  -231
+    -231,  -231,  -231,  -231,  -231,  -231,   144,  -231,  -231
 };
 
   /* YYDEFGOTO[NTERM-NUM].  */
@@ -782,49 +789,49 @@ static const yytype_int16 yytable[] =
 {
       57,   229,    73,    74,   259,     2,    75,     2,     2,     8,
      241,    76,    11,   257,     8,     8,    88,    89,    90,   242,
-      85,    12,     8,    70,    85,     8,    86,    80,  -144,    20,
-      86,    81,   277,   109,     8,    82,   117,   118,    42,    22,
+      85,    85,     8,    12,    70,     8,    86,    86,    80,  -144,
+      20,    81,   277,   109,     8,    82,   117,   118,    42,    22,
       39,    68,    73,    74,   256,    42,    75,   260,   223,    42,
-      23,    76,   131,   133,   205,    35,   115,    37,   136,   137,
+      23,    76,   131,   133,   205,    35,   288,   115,   136,   137,
      138,   139,   140,   141,   142,   143,   144,   145,   146,   147,
      148,   205,   301,   241,   152,   278,    36,   228,    42,     1,
        2,   247,   242,   283,    99,   100,   101,   102,   103,   116,
-     205,    38,   251,    82,   124,    77,     3,   293,   125,   174,
+     205,    37,   251,    82,   124,    38,     3,   293,   125,   174,
      295,   176,    43,   300,   205,    44,    45,    46,    47,    48,
      304,   295,   267,    45,    46,   205,   269,     6,   177,   119,
-     120,   314,    13,   228,     7,   -49,   160,   205,   318,    14,
-     125,    49,    83,    26,    84,   205,    50,   130,   106,   205,
-      27,    10,    26,   153,   154,    51,    15,    19,   107,    27,
-     128,   228,   -55,   205,    19,   123,   230,    28,   122,    45,
-      46,    47,    48,   237,   134,   -47,    28,     2,   187,    45,
+     120,   314,    13,   228,     7,    77,   160,   205,   318,    14,
+     125,    49,   -49,    26,    83,   205,    50,   130,    84,   205,
+      27,    10,    26,   153,   154,    51,    15,    19,   106,    27,
+     107,   228,   122,   205,    19,   -55,   230,    28,   123,    45,
+      46,    47,    48,   237,   128,   -47,    28,     2,   187,    45,
       46,    47,    48,   188,   189,   190,   228,   191,   192,   193,
-     194,   195,   196,     3,    71,    29,   228,   228,   149,    30,
-      31,    32,   158,    33,    49,   163,   164,   159,   254,    50,
-     254,   197,   279,   170,   -53,    60,    61,    62,    51,    63,
+     194,   195,   196,     3,    71,    29,   228,   228,   134,    30,
+      31,    32,   159,    33,    49,   163,   164,   149,   254,    50,
+     254,   197,   279,   170,   158,    60,    61,    62,    51,    63,
      180,   181,   266,     2,   187,    45,    46,    47,    48,   188,
-     189,   190,   -45,   191,   192,   193,   194,   195,   196,     3,
-      44,    45,    46,    47,    48,    64,    65,    32,   168,    66,
-      49,   169,   286,   288,   171,    50,   -51,   197,    44,    45,
-      46,    47,    48,   185,    51,   213,    49,   299,   186,   254,
-     214,    50,   216,   217,   150,   101,   102,   103,   224,   308,
-      51,   110,   111,    62,    49,   112,   225,   315,   231,    50,
-      30,    31,    32,   287,    33,   227,   233,   234,    51,    44,
+     189,   190,   -53,   191,   192,   193,   194,   195,   196,     3,
+      44,    45,    46,    47,    48,    64,    65,    32,   -45,    66,
+      49,   168,   286,   254,   169,    50,   -51,   197,    44,    45,
+      46,    47,    48,   171,    51,   185,    49,   299,   186,   254,
+     213,    50,   216,   214,   150,   101,   102,   103,   217,   308,
+      51,   110,   111,    62,    49,   112,   224,   315,   231,    50,
+      30,    31,    32,   287,    33,   225,   227,   233,    51,    44,
       45,    46,    47,    48,    91,    92,    93,    94,    95,    96,
-     235,    97,    98,    99,   100,   101,   102,   103,   236,   -37,
-     240,   243,   252,  -145,   249,    49,   175,   258,   245,   248,
-      50,    86,   265,    91,    92,    93,    94,    95,    96,    51,
-      97,    98,    99,   100,   101,   102,   103,   197,   271,    91,
+     234,    97,    98,    99,   100,   101,   102,   103,   235,   236,
+     -37,   240,   243,   197,  -145,    49,   175,   249,   245,   248,
+      50,    86,   252,    91,    92,    93,    94,    95,    96,    51,
+      97,    98,    99,   100,   101,   102,   103,   258,   265,    91,
       92,    93,    94,    95,    96,   220,    97,    98,    99,   100,
-     101,   102,   103,   268,   270,   275,   273,   274,   104,   105,
-      91,    92,    93,    94,    95,    96,   276,    97,    98,    99,
-     100,   101,   102,   103,   281,   282,   284,   290,   289,   155,
-     156,    91,    92,    93,    94,    95,    96,   291,    97,    98,
-      99,   100,   101,   102,   103,   292,   302,   172,   310,   303,
-     307,   173,    91,    92,    93,    94,    95,    96,   311,    97,
-      98,    99,   100,   101,   102,   103,   312,  -170,    25,   264,
-     178,    69,   179,    91,    92,    93,    94,    95,    96,    67,
-      97,    98,    99,   100,   101,   102,   103,   157,   305,   218,
-       0,   121,     0,   219,    91,    92,    93,    94,    95,    96,
+     101,   102,   103,   268,   270,   275,   271,   273,   104,   105,
+      91,    92,    93,    94,    95,    96,   274,    97,    98,    99,
+     100,   101,   102,   103,   276,   281,   282,   284,   291,   155,
+     156,    91,    92,    93,    94,    95,    96,   289,    97,    98,
+      99,   100,   101,   102,   103,   290,   298,   172,   302,   292,
+    -170,   173,    91,    92,    93,    94,    95,    96,   303,    97,
+      98,    99,   100,   101,   102,   103,   307,   310,   312,   311,
+     178,    25,   179,    91,    92,    93,    94,    95,    96,   264,
+      97,    98,    99,   100,   101,   102,   103,    69,   121,   218,
+      67,   157,   305,   219,    91,    92,    93,    94,    95,    96,
        0,    97,    98,    99,   100,   101,   102,   103,     0,     0,
        0,     0,   221,     0,   222,    91,    92,    93,    94,    95,
       96,     0,    97,    98,    99,   100,   101,   102,   103,    91,
@@ -841,8 +848,6 @@ static const yytype_int16 yytable[] =
      263,    91,    92,    93,    94,    95,    96,     0,    97,    98,
       99,   100,   101,   102,   103,     0,     0,     0,     0,     0,
      280,    91,    92,    93,    94,    95,    96,     0,    97,    98,
-      99,   100,   101,   102,   103,     0,     0,     0,     0,     0,
-     298,    91,    92,    93,    94,    95,    96,     0,    97,    98,
       99,   100,   101,   102,   103,     0,     0,   135,    91,    92,
       93,    94,    95,    96,     0,    97,    98,    99,   100,   101,
      102,   103,    92,    93,    94,    95,    96,     0,    97,    98,
@@ -854,49 +859,49 @@ static const yytype_int16 yycheck[] =
 {
       33,   188,    37,    37,   234,     4,    37,     4,     4,     0,
      201,    37,     3,   233,     5,     6,    49,    50,    51,   201,
-      36,     0,    13,    36,    36,    16,    42,    40,    44,     5,
-      42,    37,   262,    66,    25,    41,    71,    71,    29,     5,
+      36,    36,    13,     0,    36,    16,    42,    42,    40,    44,
+       5,    37,   262,    66,    25,    41,    71,    71,    29,     5,
       37,    37,    77,    77,   232,    36,    77,   234,   182,    40,
-       5,    77,    85,    86,   165,     5,    69,    44,    91,    92,
+       5,    77,    85,    86,   165,     5,   276,    69,    91,    92,
       93,    94,    95,    96,    97,    98,    99,   100,   101,   102,
      103,   182,   292,   264,   107,   262,    36,   188,    69,     3,
        4,   215,   264,   271,    30,    31,    32,    33,    34,    37,
-     201,     5,   226,    41,    37,    44,    20,   285,    41,   132,
+     201,    44,   226,    41,    37,     5,    20,   285,    41,   132,
      287,   134,     6,   291,   215,     5,     6,     7,     8,     9,
      297,   298,   246,     6,     7,   226,   250,     0,   151,    40,
-      41,   309,     5,   234,     0,    40,    37,   238,   316,     5,
-      41,    31,     5,    16,    43,   246,    36,    37,     6,   250,
-      16,     0,    25,    40,    41,    45,     5,     6,    38,    25,
-      42,   262,    40,   264,    13,    40,   189,    16,    38,     6,
+      41,   309,     5,   234,     0,    44,    37,   238,   316,     5,
+      41,    31,    40,    16,     5,   246,    36,    37,    43,   250,
+      16,     0,    25,    40,    41,    45,     5,     6,     6,    25,
+      38,   262,    38,   264,    13,    40,   189,    16,    40,     6,
        7,     8,     9,   196,    42,    40,    25,     4,     5,     6,
        7,     8,     9,    10,    11,    12,   287,    14,    15,    16,
-      17,    18,    19,    20,    31,    36,   297,   298,    43,    40,
-      41,    42,    38,    44,    31,    40,    41,    40,   231,    36,
-     233,    38,    39,     6,    40,    40,    41,    42,    45,    44,
+      17,    18,    19,    20,    31,    36,   297,   298,    42,    40,
+      41,    42,    40,    44,    31,    40,    41,    43,   231,    36,
+     233,    38,    39,     6,    38,    40,    41,    42,    45,    44,
       40,    41,   245,     4,     5,     6,     7,     8,     9,    10,
       11,    12,    40,    14,    15,    16,    17,    18,    19,    20,
-       5,     6,     7,     8,     9,    40,    41,    42,    38,    44,
-      31,    40,   275,   276,    42,    36,    40,    38,     5,     6,
-       7,     8,     9,    38,    45,    38,    31,   290,    40,   292,
-      40,    36,    43,     6,    39,    32,    33,    34,    38,   302,
-      45,    40,    41,    42,    31,    44,    40,   310,    36,    36,
-      40,    41,    42,    40,    44,     5,    36,    36,    45,     5,
+       5,     6,     7,     8,     9,    40,    41,    42,    40,    44,
+      31,    38,   275,   276,    40,    36,    40,    38,     5,     6,
+       7,     8,     9,    42,    45,    38,    31,   290,    40,   292,
+      38,    36,    43,    40,    39,    32,    33,    34,     6,   302,
+      45,    40,    41,    42,    31,    44,    38,   310,    36,    36,
+      40,    41,    42,    40,    44,    40,     5,    36,    45,     5,
        6,     7,     8,     9,    21,    22,    23,    24,    25,    26,
-      40,    28,    29,    30,    31,    32,    33,    34,    40,    39,
-      39,     5,    40,    44,    39,    31,    43,     5,    44,    43,
-      36,    42,    39,    21,    22,    23,    24,    25,    26,    45,
-      28,    29,    30,    31,    32,    33,    34,    38,    37,    21,
+      36,    28,    29,    30,    31,    32,    33,    34,    40,    40,
+      39,    39,     5,    38,    44,    31,    43,    39,    44,    43,
+      36,    42,    40,    21,    22,    23,    24,    25,    26,    45,
+      28,    29,    30,    31,    32,    33,    34,     5,    39,    21,
       22,    23,    24,    25,    26,    43,    28,    29,    30,    31,
-      32,    33,    34,    39,    39,    44,    37,    41,    40,    41,
-      21,    22,    23,    24,    25,    26,    40,    28,    29,    30,
-      31,    32,    33,    34,    39,    39,    15,    44,    41,    40,
-      41,    21,    22,    23,    24,    25,    26,    13,    28,    29,
-      30,    31,    32,    33,    34,    36,    44,    37,    44,    37,
-      37,    41,    21,    22,    23,    24,    25,    26,    37,    28,
-      29,    30,    31,    32,    33,    34,    40,     5,    13,   238,
-      39,    36,    41,    21,    22,    23,    24,    25,    26,    35,
-      28,    29,    30,    31,    32,    33,    34,   112,   298,    37,
-      -1,    77,    -1,    41,    21,    22,    23,    24,    25,    26,
+      32,    33,    34,    39,    39,    44,    37,    37,    40,    41,
+      21,    22,    23,    24,    25,    26,    41,    28,    29,    30,
+      31,    32,    33,    34,    40,    39,    39,    15,    13,    40,
+      41,    21,    22,    23,    24,    25,    26,    41,    28,    29,
+      30,    31,    32,    33,    34,    44,    40,    37,    44,    36,
+       5,    41,    21,    22,    23,    24,    25,    26,    37,    28,
+      29,    30,    31,    32,    33,    34,    37,    44,    40,    37,
+      39,    13,    41,    21,    22,    23,    24,    25,    26,   238,
+      28,    29,    30,    31,    32,    33,    34,    36,    77,    37,
+      35,   112,   298,    41,    21,    22,    23,    24,    25,    26,
       -1,    28,    29,    30,    31,    32,    33,    34,    -1,    -1,
       -1,    -1,    39,    -1,    41,    21,    22,    23,    24,    25,
       26,    -1,    28,    29,    30,    31,    32,    33,    34,    21,
@@ -905,8 +910,6 @@ static const yytype_int16 yycheck[] =
       28,    29,    30,    31,    32,    33,    34,    21,    22,    23,
       24,    25,    26,    41,    28,    29,    30,    31,    32,    33,
       34,    21,    22,    23,    24,    25,    26,    41,    28,    29,
-      30,    31,    32,    33,    34,    -1,    -1,    -1,    -1,    -1,
-      40,    21,    22,    23,    24,    25,    26,    -1,    28,    29,
       30,    31,    32,    33,    34,    -1,    -1,    -1,    -1,    -1,
       40,    21,    22,    23,    24,    25,    26,    -1,    28,    29,
       30,    31,    32,    33,    34,    -1,    -1,    -1,    -1,    -1,
@@ -954,7 +957,7 @@ static const yytype_uint8 yystos[] =
       59,    67,    40,    40,    93,   102,    64,   102,     5,    96,
      100,   110,   111,    40,    68,    39,    93,    67,    39,    67,
       39,    37,   106,    37,    41,    44,    40,    96,   100,    39,
-      40,    39,    39,    64,    15,   104,    93,    40,    93,    41,
+      40,    39,    39,    64,    15,   104,    93,    40,   102,    41,
       44,    13,    36,    64,    41,   100,   112,   113,    40,    93,
       64,   102,    44,    37,   100,   112,    41,    37,    93,   109,
       44,    37,    40,    41,    64,    93,   108,    41,    64
@@ -1680,7 +1683,7 @@ yyreduce:
   switch (yyn)
     {
         case 17:
-#line 231 "parser.y" /* yacc.c:1661  */
+#line 238 "parser.y" /* yacc.c:1661  */
     {
 		argu_val *co=(argu_val*)(yyvsp[-1].v);
 
@@ -1703,27 +1706,27 @@ yyreduce:
 		else
 			dump_error(result);
 	}
-#line 1707 "parser.tab.c" /* yacc.c:1661  */
+#line 1710 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 18:
-#line 254 "parser.y" /* yacc.c:1661  */
+#line 261 "parser.y" /* yacc.c:1661  */
     {
 		add_newtable_with_argu((yyvsp[-6].str));
 	}
-#line 1715 "parser.tab.c" /* yacc.c:1661  */
+#line 1718 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 19:
-#line 258 "parser.y" /* yacc.c:1661  */
+#line 265 "parser.y" /* yacc.c:1661  */
     {
 		if(Opt_symbol) dump_cur_table();
 	}
-#line 1723 "parser.tab.c" /* yacc.c:1661  */
+#line 1726 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 20:
-#line 262 "parser.y" /* yacc.c:1661  */
+#line 269 "parser.y" /* yacc.c:1661  */
     {
 		argu_val *co=(argu_val*)(yyvsp[-1].v);
 
@@ -1747,27 +1750,27 @@ yyreduce:
 		else
 			dump_error(result);
 	}
-#line 1751 "parser.tab.c" /* yacc.c:1661  */
+#line 1754 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 21:
-#line 286 "parser.y" /* yacc.c:1661  */
+#line 293 "parser.y" /* yacc.c:1661  */
     {
 		add_newtable_with_argu((yyvsp[-5].str));
 	}
-#line 1759 "parser.tab.c" /* yacc.c:1661  */
+#line 1762 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 22:
-#line 290 "parser.y" /* yacc.c:1661  */
+#line 297 "parser.y" /* yacc.c:1661  */
     {
 		if(Opt_symbol) dump_cur_table();
 	}
-#line 1767 "parser.tab.c" /* yacc.c:1661  */
+#line 1770 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 23:
-#line 294 "parser.y" /* yacc.c:1661  */
+#line 301 "parser.y" /* yacc.c:1661  */
     {
 		id_val *p = NEW_VAL(id_val);
 
@@ -1784,27 +1787,27 @@ yyreduce:
 		else
 			dump_error(result);
 	}
-#line 1788 "parser.tab.c" /* yacc.c:1661  */
+#line 1791 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 24:
-#line 311 "parser.y" /* yacc.c:1661  */
+#line 318 "parser.y" /* yacc.c:1661  */
     {
 		add_newtable();
 	}
-#line 1796 "parser.tab.c" /* yacc.c:1661  */
+#line 1799 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 25:
-#line 315 "parser.y" /* yacc.c:1661  */
+#line 322 "parser.y" /* yacc.c:1661  */
     {
 		if(Opt_symbol) dump_cur_table();
 	}
-#line 1804 "parser.tab.c" /* yacc.c:1661  */
+#line 1807 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 26:
-#line 319 "parser.y" /* yacc.c:1661  */
+#line 326 "parser.y" /* yacc.c:1661  */
     {
 		argu_val *co=(argu_val*)(yyvsp[-1].v);
 
@@ -1827,27 +1830,27 @@ yyreduce:
 		else
 			dump_error(result);
 	}
-#line 1831 "parser.tab.c" /* yacc.c:1661  */
+#line 1834 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 27:
-#line 342 "parser.y" /* yacc.c:1661  */
+#line 349 "parser.y" /* yacc.c:1661  */
     {
 		add_newtable_with_argu((yyvsp[-6].str));
 	}
-#line 1839 "parser.tab.c" /* yacc.c:1661  */
+#line 1842 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 28:
-#line 346 "parser.y" /* yacc.c:1661  */
+#line 353 "parser.y" /* yacc.c:1661  */
     {
 		if(Opt_symbol) dump_cur_table();
 	}
-#line 1847 "parser.tab.c" /* yacc.c:1661  */
+#line 1850 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 29:
-#line 350 "parser.y" /* yacc.c:1661  */
+#line 357 "parser.y" /* yacc.c:1661  */
     {
 		argu_val *co=(argu_val*)(yyvsp[-1].v);
 
@@ -1871,27 +1874,27 @@ yyreduce:
 		else
 			dump_error(result);
 	}
-#line 1875 "parser.tab.c" /* yacc.c:1661  */
+#line 1878 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 30:
-#line 374 "parser.y" /* yacc.c:1661  */
+#line 381 "parser.y" /* yacc.c:1661  */
     {
 		add_newtable_with_argu((yyvsp[-5].str));
 	}
-#line 1883 "parser.tab.c" /* yacc.c:1661  */
+#line 1886 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 31:
-#line 378 "parser.y" /* yacc.c:1661  */
+#line 385 "parser.y" /* yacc.c:1661  */
     {
 		if(Opt_symbol) dump_cur_table();
 	}
-#line 1891 "parser.tab.c" /* yacc.c:1661  */
+#line 1894 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 32:
-#line 382 "parser.y" /* yacc.c:1661  */
+#line 389 "parser.y" /* yacc.c:1661  */
     {
 		id_val *p = NEW_VAL(id_val);
 
@@ -1908,62 +1911,62 @@ yyreduce:
 		else
 			dump_error(result);
 	}
-#line 1912 "parser.tab.c" /* yacc.c:1661  */
+#line 1915 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 33:
-#line 399 "parser.y" /* yacc.c:1661  */
+#line 406 "parser.y" /* yacc.c:1661  */
     {
 		add_newtable();
 	}
-#line 1920 "parser.tab.c" /* yacc.c:1661  */
+#line 1923 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 34:
-#line 403 "parser.y" /* yacc.c:1661  */
+#line 410 "parser.y" /* yacc.c:1661  */
     {
 		if(Opt_symbol) dump_cur_table();
 	}
-#line 1928 "parser.tab.c" /* yacc.c:1661  */
+#line 1931 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 35:
-#line 410 "parser.y" /* yacc.c:1661  */
+#line 417 "parser.y" /* yacc.c:1661  */
     { 
 		add_newtable();
 	}
-#line 1936 "parser.tab.c" /* yacc.c:1661  */
+#line 1939 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 36:
-#line 414 "parser.y" /* yacc.c:1661  */
+#line 421 "parser.y" /* yacc.c:1661  */
     {
 		if(Opt_symbol)
 		{
 			dump_cur_table();
 		}
 	}
-#line 1947 "parser.tab.c" /* yacc.c:1661  */
+#line 1950 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 37:
-#line 421 "parser.y" /* yacc.c:1661  */
+#line 428 "parser.y" /* yacc.c:1661  */
     {
 		add_newtable();
 	}
-#line 1955 "parser.tab.c" /* yacc.c:1661  */
+#line 1958 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 38:
-#line 425 "parser.y" /* yacc.c:1661  */
+#line 432 "parser.y" /* yacc.c:1661  */
     {
 		if(Opt_symbol) dump_cur_table();
 	}
-#line 1963 "parser.tab.c" /* yacc.c:1661  */
+#line 1966 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 45:
-#line 445 "parser.y" /* yacc.c:1661  */
+#line 452 "parser.y" /* yacc.c:1661  */
     {
 		
 		argu_val *co=(argu_val*)(yyvsp[-1].v);
@@ -1988,11 +1991,11 @@ yyreduce:
 			dump_error(result);
 
 	}
-#line 1992 "parser.tab.c" /* yacc.c:1661  */
+#line 1995 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 47:
-#line 471 "parser.y" /* yacc.c:1661  */
+#line 478 "parser.y" /* yacc.c:1661  */
     {
 		argu_val *co=(argu_val*)(yyvsp[-1].v);
 
@@ -2016,11 +2019,11 @@ yyreduce:
 		else
 			dump_error(result);
 	}
-#line 2020 "parser.tab.c" /* yacc.c:1661  */
+#line 2023 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 49:
-#line 496 "parser.y" /* yacc.c:1661  */
+#line 503 "parser.y" /* yacc.c:1661  */
     {
 		id_val *p = NEW_VAL(id_val);
 
@@ -2038,11 +2041,11 @@ yyreduce:
 		else
 			dump_error(result);
 	}
-#line 2042 "parser.tab.c" /* yacc.c:1661  */
+#line 2045 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 51:
-#line 515 "parser.y" /* yacc.c:1661  */
+#line 522 "parser.y" /* yacc.c:1661  */
     {
 		argu_val *co=(argu_val*)(yyvsp[-1].v);
 
@@ -2066,11 +2069,11 @@ yyreduce:
 			dump_error(result);
 
 	}
-#line 2070 "parser.tab.c" /* yacc.c:1661  */
+#line 2073 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 53:
-#line 540 "parser.y" /* yacc.c:1661  */
+#line 547 "parser.y" /* yacc.c:1661  */
     {
 		argu_val *co=(argu_val*)(yyvsp[-1].v);
 
@@ -2095,11 +2098,11 @@ yyreduce:
 			dump_error(result);
 		
 	}
-#line 2099 "parser.tab.c" /* yacc.c:1661  */
+#line 2102 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 55:
-#line 566 "parser.y" /* yacc.c:1661  */
+#line 573 "parser.y" /* yacc.c:1661  */
     {
 		id_val *p=NEW_VAL(id_val);
 		p->kind = KIND_FUNCTION;
@@ -2116,11 +2119,11 @@ yyreduce:
 		else
 			dump_error(result);
 	}
-#line 2120 "parser.tab.c" /* yacc.c:1661  */
+#line 2123 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 57:
-#line 588 "parser.y" /* yacc.c:1661  */
+#line 595 "parser.y" /* yacc.c:1661  */
     {
 		func_val *p = (func_val*)(yyvsp[-2].v);
 
@@ -2132,11 +2135,11 @@ yyreduce:
 
 		(yyval.v) = (void*)p;
 	}
-#line 2136 "parser.tab.c" /* yacc.c:1661  */
+#line 2139 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 58:
-#line 600 "parser.y" /* yacc.c:1661  */
+#line 607 "parser.y" /* yacc.c:1661  */
     {
 		func_val *p = NEW_VAL(func_val);
 
@@ -2149,11 +2152,11 @@ yyreduce:
 
 		(yyval.v) = (void*)p;
 	}
-#line 2153 "parser.tab.c" /* yacc.c:1661  */
+#line 2156 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 59:
-#line 616 "parser.y" /* yacc.c:1661  */
+#line 623 "parser.y" /* yacc.c:1661  */
     {
 		argu_val *p = NEW_VAL(argu_val);
 		p->name=strdup((yyvsp[0].str));
@@ -2169,11 +2172,11 @@ yyreduce:
 
 		(yyval.v) = (void*)p;
 	}
-#line 2173 "parser.tab.c" /* yacc.c:1661  */
+#line 2176 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 60:
-#line 632 "parser.y" /* yacc.c:1661  */
+#line 639 "parser.y" /* yacc.c:1661  */
     {
 		argu_val *p = NEW_VAL(argu_val);
 		p->name=strdup((yyvsp[-1].str));
@@ -2186,11 +2189,11 @@ yyreduce:
 
 		(yyval.v) = (void*)p;
 	}
-#line 2190 "parser.tab.c" /* yacc.c:1661  */
+#line 2193 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 61:
-#line 649 "parser.y" /* yacc.c:1661  */
+#line 656 "parser.y" /* yacc.c:1661  */
     {
 		arr_val *p = (arr_val*)(yyvsp[-3].v);
 
@@ -2201,11 +2204,11 @@ yyreduce:
 		(yyval.v) = (void*)p;
 
 	}
-#line 2205 "parser.tab.c" /* yacc.c:1661  */
+#line 2208 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 62:
-#line 660 "parser.y" /* yacc.c:1661  */
+#line 667 "parser.y" /* yacc.c:1661  */
     {
 		arr_val* p =NEW_VAL(arr_val);
 		p->stepc=1;
@@ -2214,11 +2217,11 @@ yyreduce:
 
 		(yyval.v) = (void*)p;
 	}
-#line 2218 "parser.tab.c" /* yacc.c:1661  */
+#line 2221 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 63:
-#line 672 "parser.y" /* yacc.c:1661  */
+#line 679 "parser.y" /* yacc.c:1661  */
     {
 		if(!strcmp((yyvsp[0].str),"bool"))
 			(yyval.c_type) = TYPE_BOOL;
@@ -2233,19 +2236,19 @@ yyreduce:
 		else if(!strcmp((yyvsp[0].str),"boolean"))
 			(yyval.c_type) = TYPE_BOOL;
 	}
-#line 2237 "parser.tab.c" /* yacc.c:1661  */
+#line 2240 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 64:
-#line 690 "parser.y" /* yacc.c:1661  */
+#line 697 "parser.y" /* yacc.c:1661  */
     {
 		(yyval.c_type) = TYPE_VOID;
 	}
-#line 2245 "parser.tab.c" /* yacc.c:1661  */
+#line 2248 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 65:
-#line 699 "parser.y" /* yacc.c:1661  */
+#line 706 "parser.y" /* yacc.c:1661  */
     {
 		const_val *in = (const_val*)(yyvsp[0].v);
 		id_val *p = NEW_VAL(id_val);
@@ -2254,11 +2257,11 @@ yyreduce:
 		p->list=in->value;
 		(yyval.v) = (void*)p;
 	}
-#line 2258 "parser.tab.c" /* yacc.c:1661  */
+#line 2261 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 66:
-#line 708 "parser.y" /* yacc.c:1661  */
+#line 715 "parser.y" /* yacc.c:1661  */
     {
 		const_val *in = (const_val*)(yyvsp[0].v);
 		id_val* p = NEW_VAL(id_val);
@@ -2268,11 +2271,11 @@ yyreduce:
 		*(int*)p->list= -*((int*)p->list);
 		(yyval.v) = (void*)p;
 	}
-#line 2272 "parser.tab.c" /* yacc.c:1661  */
+#line 2275 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 67:
-#line 718 "parser.y" /* yacc.c:1661  */
+#line 725 "parser.y" /* yacc.c:1661  */
     {
 		const_val *in= (const_val*)(yyvsp[0].v);
 		id_val* p = NEW_VAL(id_val);
@@ -2281,11 +2284,11 @@ yyreduce:
 		p->list=in->value;
 		(yyval.v) = (void*)p;
 	}
-#line 2285 "parser.tab.c" /* yacc.c:1661  */
+#line 2288 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 68:
-#line 727 "parser.y" /* yacc.c:1661  */
+#line 734 "parser.y" /* yacc.c:1661  */
     {
 		const_val *in= (const_val*)(yyvsp[0].v);
 		id_val* p = NEW_VAL(id_val);
@@ -2295,11 +2298,11 @@ yyreduce:
 		*(double*)p->list= -*((double*)p->list);
 		(yyval.v) = (void*)p;
 	}
-#line 2299 "parser.tab.c" /* yacc.c:1661  */
+#line 2302 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 69:
-#line 737 "parser.y" /* yacc.c:1661  */
+#line 744 "parser.y" /* yacc.c:1661  */
     {
 		const_val *in= (const_val*)(yyvsp[0].v);
 		id_val* p = NEW_VAL(id_val);
@@ -2308,11 +2311,11 @@ yyreduce:
 		p->list=in->value;
 		(yyval.v) = (void*)p;
 	}
-#line 2312 "parser.tab.c" /* yacc.c:1661  */
+#line 2315 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 70:
-#line 746 "parser.y" /* yacc.c:1661  */
+#line 753 "parser.y" /* yacc.c:1661  */
     {
 		const_val *in= (const_val*)(yyvsp[0].v);
 		id_val* p = NEW_VAL(id_val);
@@ -2321,51 +2324,51 @@ yyreduce:
 		p->list=in->value;
 		(yyval.v) = (void*)p;
 	}
-#line 2325 "parser.tab.c" /* yacc.c:1661  */
+#line 2328 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 71:
-#line 759 "parser.y" /* yacc.c:1661  */
+#line 766 "parser.y" /* yacc.c:1661  */
     {
 		const_val* p = (const_val*)(yyvsp[0].v);
 		p->kind=KIND_CONST_VAL;
 		(yyval.v) = (void*)p;
 	}
-#line 2335 "parser.tab.c" /* yacc.c:1661  */
+#line 2338 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 72:
-#line 765 "parser.y" /* yacc.c:1661  */
+#line 772 "parser.y" /* yacc.c:1661  */
     {
 		const_val* p = (const_val*)(yyvsp[0].v);
 		p->kind=KIND_CONST_VAL;
 		(yyval.v) = (void*)p;
 	}
-#line 2345 "parser.tab.c" /* yacc.c:1661  */
+#line 2348 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 73:
-#line 771 "parser.y" /* yacc.c:1661  */
+#line 778 "parser.y" /* yacc.c:1661  */
     {
 		const_val* p = (const_val*)(yyvsp[0].v);
 		p->kind=KIND_CONST_VAL;
 		(yyval.v) = (void*)p;
 	}
-#line 2355 "parser.tab.c" /* yacc.c:1661  */
+#line 2358 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 74:
-#line 777 "parser.y" /* yacc.c:1661  */
+#line 784 "parser.y" /* yacc.c:1661  */
     {
 		const_val* p = (const_val*)(yyvsp[0].v);
 		p->kind=KIND_CONST_VAL;
 		(yyval.v) = (void*)p;
 	}
-#line 2365 "parser.tab.c" /* yacc.c:1661  */
+#line 2368 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 75:
-#line 786 "parser.y" /* yacc.c:1661  */
+#line 793 "parser.y" /* yacc.c:1661  */
     {
 		const_val *p = NEW_VAL(const_val);
 		int *val = NEW_VAL(int);
@@ -2374,11 +2377,11 @@ yyreduce:
 		p->type = TYPE_INT;
 		(yyval.v) = (void*)p;
 	}
-#line 2378 "parser.tab.c" /* yacc.c:1661  */
+#line 2381 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 76:
-#line 798 "parser.y" /* yacc.c:1661  */
+#line 805 "parser.y" /* yacc.c:1661  */
     {
 		const_val *p = NEW_VAL(const_val);
 		float *val = NEW_VAL(float);
@@ -2387,11 +2390,11 @@ yyreduce:
 		p->type = TYPE_DOUBLE;
 		(yyval.v) = (void*)p;
 	}
-#line 2391 "parser.tab.c" /* yacc.c:1661  */
+#line 2394 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 77:
-#line 810 "parser.y" /* yacc.c:1661  */
+#line 817 "parser.y" /* yacc.c:1661  */
     {
 		const_val *p = NEW_VAL(const_val);
 		char *ou=strdup((yyvsp[0].str));
@@ -2399,11 +2402,11 @@ yyreduce:
 		p->type = TYPE_BOOL;
 		(yyval.v) = (void*)p;
 	}
-#line 2403 "parser.tab.c" /* yacc.c:1661  */
+#line 2406 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 78:
-#line 821 "parser.y" /* yacc.c:1661  */
+#line 828 "parser.y" /* yacc.c:1661  */
     {
 		const_val *p = NEW_VAL(const_val);
 		char *ou=strdup((yyvsp[0].str));
@@ -2411,11 +2414,11 @@ yyreduce:
 		p->type = TYPE_STRING;
 		(yyval.v) = (void*)p;
 	}
-#line 2415 "parser.tab.c" /* yacc.c:1661  */
+#line 2418 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 79:
-#line 835 "parser.y" /* yacc.c:1661  */
+#line 842 "parser.y" /* yacc.c:1661  */
     {
 		(yyval.c_type) = (yyvsp[-3].c_type);
 		id_val *p=NEW_VAL(id_val);
@@ -2433,11 +2436,11 @@ yyreduce:
 		else
 			dump_error(result);
 	}
-#line 2437 "parser.tab.c" /* yacc.c:1661  */
+#line 2440 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 80:
-#line 853 "parser.y" /* yacc.c:1661  */
+#line 860 "parser.y" /* yacc.c:1661  */
     {
 		(yyval.c_type) = (yyvsp[-5].c_type);
 		id_val *p=NEW_VAL(id_val);
@@ -2456,11 +2459,11 @@ yyreduce:
 		else
 			dump_error(result);
 	}
-#line 2460 "parser.tab.c" /* yacc.c:1661  */
+#line 2463 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 81:
-#line 872 "parser.y" /* yacc.c:1661  */
+#line 879 "parser.y" /* yacc.c:1661  */
     {
 		(yyval.c_type) = (yyvsp[-2].c_type);
 		id_val *p=NEW_VAL(id_val);
@@ -2477,11 +2480,11 @@ yyreduce:
 		else
 			dump_error(result);
 	}
-#line 2481 "parser.tab.c" /* yacc.c:1661  */
+#line 2484 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 82:
-#line 889 "parser.y" /* yacc.c:1661  */
+#line 896 "parser.y" /* yacc.c:1661  */
     {
 		(yyval.c_type) = (yyvsp[-4].c_type);
 		id_val *p=NEW_VAL(id_val);
@@ -2498,11 +2501,11 @@ yyreduce:
 		else
 			dump_error(result);
 	}
-#line 2502 "parser.tab.c" /* yacc.c:1661  */
+#line 2505 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 83:
-#line 906 "parser.y" /* yacc.c:1661  */
+#line 913 "parser.y" /* yacc.c:1661  */
     {
 		(yyval.c_type) = (yyvsp[-6].c_type);
 
@@ -2549,11 +2552,11 @@ yyreduce:
 		else
 			dump_error(result);
 	}
-#line 2553 "parser.tab.c" /* yacc.c:1661  */
+#line 2556 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 84:
-#line 953 "parser.y" /* yacc.c:1661  */
+#line 960 "parser.y" /* yacc.c:1661  */
     {
 		(yyval.c_type) = (yyvsp[-4].c_type);
 		id_val *p= NEW_VAL(id_val);
@@ -2568,11 +2571,11 @@ yyreduce:
 		else
 			dump_error(result);
 	}
-#line 2572 "parser.tab.c" /* yacc.c:1661  */
+#line 2575 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 85:
-#line 968 "parser.y" /* yacc.c:1661  */
+#line 975 "parser.y" /* yacc.c:1661  */
     {
 		(yyval.c_type) = (yyvsp[-5].c_type);
 		id_val *p= NEW_VAL(id_val);
@@ -2615,11 +2618,11 @@ yyreduce:
 		else
 			dump_error(result);
 	}
-#line 2619 "parser.tab.c" /* yacc.c:1661  */
+#line 2622 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 86:
-#line 1011 "parser.y" /* yacc.c:1661  */
+#line 1018 "parser.y" /* yacc.c:1661  */
     {
 		(yyval.c_type) = (yyvsp[-3].c_type);
 		id_val *p=NEW_VAL(id_val);
@@ -2634,11 +2637,11 @@ yyreduce:
 		else
 			dump_error(result);
 	}
-#line 2638 "parser.tab.c" /* yacc.c:1661  */
+#line 2641 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 87:
-#line 1029 "parser.y" /* yacc.c:1661  */
+#line 1036 "parser.y" /* yacc.c:1661  */
     {
 		(yyval.c_type) = (yyvsp[-5].c_type);
 
@@ -2656,11 +2659,11 @@ yyreduce:
 		else
 			dump_error(result);
 	}
-#line 2660 "parser.tab.c" /* yacc.c:1661  */
+#line 2663 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 88:
-#line 1047 "parser.y" /* yacc.c:1661  */
+#line 1054 "parser.y" /* yacc.c:1661  */
     {
 		(yyval.c_type) = (yyvsp[-4].c_type);
 
@@ -2678,11 +2681,11 @@ yyreduce:
 		else
 			dump_error(result);
 	}
-#line 2682 "parser.tab.c" /* yacc.c:1661  */
+#line 2685 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 89:
-#line 1068 "parser.y" /* yacc.c:1661  */
+#line 1075 "parser.y" /* yacc.c:1661  */
     {
 		id_val* p=NEW_VAL(id_val);
 		p->kind = KIND_VARIABLE;
@@ -2700,11 +2703,11 @@ yyreduce:
 		else
 			dump_error(result);
 	}
-#line 2704 "parser.tab.c" /* yacc.c:1661  */
+#line 2707 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 90:
-#line 1086 "parser.y" /* yacc.c:1661  */
+#line 1093 "parser.y" /* yacc.c:1661  */
     {
 		id_val* p=NEW_VAL(id_val);
 		p->kind = KIND_VARIABLE;
@@ -2721,11 +2724,11 @@ yyreduce:
 		else
 			dump_error(result);
 	}
-#line 2725 "parser.tab.c" /* yacc.c:1661  */
+#line 2728 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 91:
-#line 1103 "parser.y" /* yacc.c:1661  */
+#line 1110 "parser.y" /* yacc.c:1661  */
     {
 		id_val* p=NEW_VAL(id_val);
 		p->kind = KIND_VARIABLE;
@@ -2742,11 +2745,11 @@ yyreduce:
 		else
 			dump_error(result);
 	}
-#line 2746 "parser.tab.c" /* yacc.c:1661  */
+#line 2749 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 92:
-#line 1120 "parser.y" /* yacc.c:1661  */
+#line 1127 "parser.y" /* yacc.c:1661  */
     {
 		id_val* p=NEW_VAL(id_val);
 		p->kind = KIND_VARIABLE;
@@ -2763,11 +2766,11 @@ yyreduce:
 		else
 			dump_error(result);
 	}
-#line 2767 "parser.tab.c" /* yacc.c:1661  */
+#line 2770 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 93:
-#line 1137 "parser.y" /* yacc.c:1661  */
+#line 1144 "parser.y" /* yacc.c:1661  */
     {
 		id_val* p=NEW_VAL(id_val);
 		p->kind = KIND_VARIABLE;
@@ -2809,11 +2812,11 @@ yyreduce:
 		else
 			dump_error(result);
 	}
-#line 2813 "parser.tab.c" /* yacc.c:1661  */
+#line 2816 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 94:
-#line 1179 "parser.y" /* yacc.c:1661  */
+#line 1186 "parser.y" /* yacc.c:1661  */
     {
 		id_val* p=NEW_VAL(id_val);
 		p->kind = KIND_VARIABLE;
@@ -2827,11 +2830,11 @@ yyreduce:
 		else
 			dump_error(result);
 	}
-#line 2831 "parser.tab.c" /* yacc.c:1661  */
+#line 2834 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 95:
-#line 1193 "parser.y" /* yacc.c:1661  */
+#line 1200 "parser.y" /* yacc.c:1661  */
     {
 		id_val* p=NEW_VAL(id_val);
 		p->kind = KIND_VARIABLE;
@@ -2873,11 +2876,11 @@ yyreduce:
 		else
 			dump_error(result);
 	}
-#line 2877 "parser.tab.c" /* yacc.c:1661  */
+#line 2880 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 96:
-#line 1235 "parser.y" /* yacc.c:1661  */
+#line 1242 "parser.y" /* yacc.c:1661  */
     {
 		id_val* p=NEW_VAL(id_val);
 		p->kind = KIND_VARIABLE;
@@ -2891,11 +2894,11 @@ yyreduce:
 		else
 			dump_error(result);
 	}
-#line 2895 "parser.tab.c" /* yacc.c:1661  */
+#line 2898 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 97:
-#line 1249 "parser.y" /* yacc.c:1661  */
+#line 1256 "parser.y" /* yacc.c:1661  */
     {
 		id_val *p=NEW_VAL(id_val);
 		p->kind = KIND_CONSTANT;
@@ -2911,11 +2914,11 @@ yyreduce:
 		else
 			dump_error(result);
 	}
-#line 2915 "parser.tab.c" /* yacc.c:1661  */
+#line 2918 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 98:
-#line 1265 "parser.y" /* yacc.c:1661  */
+#line 1272 "parser.y" /* yacc.c:1661  */
     {
 		id_val *p=NEW_VAL(id_val);
 		p->kind = KIND_CONSTANT;
@@ -2932,11 +2935,11 @@ yyreduce:
 		else
 			dump_error(result);
 	}
-#line 2936 "parser.tab.c" /* yacc.c:1661  */
+#line 2939 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 99:
-#line 1285 "parser.y" /* yacc.c:1661  */
+#line 1292 "parser.y" /* yacc.c:1661  */
     {
 		arr_val *p = (arr_val*)(yyvsp[-3].v);
 
@@ -2947,11 +2950,11 @@ yyreduce:
 		(yyval.v) = (void*)p;
 
 	}
-#line 2951 "parser.tab.c" /* yacc.c:1661  */
+#line 2954 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 100:
-#line 1296 "parser.y" /* yacc.c:1661  */
+#line 1303 "parser.y" /* yacc.c:1661  */
     {
 
 		arr_val *p = NEW_VAL(arr_val);
@@ -2961,11 +2964,11 @@ yyreduce:
 
 		(yyval.v) = (void*)p;
 	}
-#line 2965 "parser.tab.c" /* yacc.c:1661  */
+#line 2968 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 101:
-#line 1309 "parser.y" /* yacc.c:1661  */
+#line 1316 "parser.y" /* yacc.c:1661  */
     {
 		invo_val *p=(invo_val*)(yyvsp[-2].v);
 		const_val *co=(const_val*)(yyvsp[-1].v);
@@ -2980,11 +2983,11 @@ yyreduce:
 
 		(yyval.v) = (void*)p;
 	}
-#line 2984 "parser.tab.c" /* yacc.c:1661  */
+#line 2987 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 102:
-#line 1324 "parser.y" /* yacc.c:1661  */
+#line 1331 "parser.y" /* yacc.c:1661  */
     {
 		invo_val *p=NEW_VAL(invo_val);
 		const_val *co=(const_val*)(yyvsp[-1].v);
@@ -2996,22 +2999,22 @@ yyreduce:
 
 		(yyval.v) =(void*)p;
 	}
-#line 3000 "parser.tab.c" /* yacc.c:1661  */
+#line 3003 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 103:
-#line 1336 "parser.y" /* yacc.c:1661  */
+#line 1343 "parser.y" /* yacc.c:1661  */
     {
 		invo_val *p =NEW_VAL(invo_val);
 		p->listc=0;
 
 		(yyval.v) = (void*)p;
 	}
-#line 3011 "parser.tab.c" /* yacc.c:1661  */
+#line 3014 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 104:
-#line 1346 "parser.y" /* yacc.c:1661  */
+#line 1353 "parser.y" /* yacc.c:1661  */
     {
 		invo_val *p=(invo_val*)(yyvsp[-2].v);
 		const_val *co=(const_val*)(yyvsp[-1].v);
@@ -3027,11 +3030,11 @@ yyreduce:
 		(yyval.v) = (void*)p;
 
 	}
-#line 3031 "parser.tab.c" /* yacc.c:1661  */
+#line 3034 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 105:
-#line 1362 "parser.y" /* yacc.c:1661  */
+#line 1369 "parser.y" /* yacc.c:1661  */
     {
 		invo_val *p=NEW_VAL(invo_val);
 		const_val *co=(const_val*)(yyvsp[-1].v);
@@ -3043,779 +3046,435 @@ yyreduce:
 
 		(yyval.v) =(void*)p;
 	}
-#line 3047 "parser.tab.c" /* yacc.c:1661  */
+#line 3050 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 106:
-#line 1377 "parser.y" /* yacc.c:1661  */
+#line 1384 "parser.y" /* yacc.c:1661  */
     {
 		const_val *v1=(const_val*)(yyvsp[-2].v);
 		const_val *v2=(const_val*)(yyvsp[0].v);
-
-		const_val *p=NEW_VAL(const_val);
-
-		p->type = (v1->type>v2->type)?(v1->type):(v2->type);
-
-		if(v1->type==TYPE_BOOL || v1->type==TYPE_STRING || v1->type==TYPE_VOID ||
-			v2->type==TYPE_BOOL || v2->type==TYPE_STRING || v2->type==TYPE_VOID)
+		const_val *output;
+		check_and_set_scalar(v1);
+		check_and_set_scalar(v2);
+		if(!check_type_three(v1,v2))
 		{
-			p->type = TYPE_INT;
 			dump_error(ERROR_TYPE_ERROR);
 		}
-
-		if( v1->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v1->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-		if( v2->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v2->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-
-
-		if(v1->kind==KIND_RVAL)
-		{
-			p->kind=KIND_RVAL;
-			p->value=v1->value;
-		}
-		else if(v2->kind==KIND_RVAL)
-		{
-			p->kind=KIND_RVAL;
-			p->value=v2->value;
-		}
-		else
-		{
-			p->kind=KIND_CONST_VAL;
-			p->value=v1->value;
-		}
-
-		(yyval.v) = (void*)p;
+		output=geneValConst(v1,v2);
+		(yyval.v)=(void*)output;
 	}
-#line 3099 "parser.tab.c" /* yacc.c:1661  */
+#line 3068 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 107:
-#line 1425 "parser.y" /* yacc.c:1661  */
+#line 1398 "parser.y" /* yacc.c:1661  */
     {
 		const_val *v1=(const_val*)(yyvsp[-2].v);
 		const_val *v2=(const_val*)(yyvsp[0].v);
-
-		const_val *p=NEW_VAL(const_val);
-
-		p->type = (v1->type>v2->type)?(v1->type):(v2->type);
-
-		if(v1->type==TYPE_BOOL || v1->type==TYPE_STRING || v1->type==TYPE_VOID ||
-			v2->type==TYPE_BOOL || v2->type==TYPE_STRING || v2->type==TYPE_VOID)
+		const_val *output;
+		check_and_set_scalar(v1);
+		check_and_set_scalar(v2);
+		if(!check_type_three(v1,v2))
 		{
-			p->type = TYPE_INT;
 			dump_error(ERROR_TYPE_ERROR);
 		}
-
-		
-		if( v1->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v1->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-		if( v2->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v2->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-
-		if(v1->kind==KIND_RVAL)
-		{
-			p->kind=KIND_RVAL;
-			p->value=v1->value;
-		}
-		else if(v2->kind==KIND_RVAL)
-		{
-			p->kind=KIND_RVAL;
-			p->value=v2->value;
-		}
-		else
-		{
-			p->kind=KIND_CONST_VAL;
-			p->value=v1->value;
-		}
-
-		(yyval.v) = (void*)p;
+		output=geneValConst(v1,v2);
+		(yyval.v)=(void*)output;
 	}
-#line 3151 "parser.tab.c" /* yacc.c:1661  */
+#line 3086 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 108:
-#line 1473 "parser.y" /* yacc.c:1661  */
+#line 1412 "parser.y" /* yacc.c:1661  */
     {
 		const_val *v1=(const_val*)(yyvsp[-2].v);
 		const_val *v2=(const_val*)(yyvsp[0].v);
-
-		const_val *p=NEW_VAL(const_val);
-
-		p->type = (v1->type>v2->type)?(v1->type):(v2->type);
-
-		if(v1->type==TYPE_BOOL || v1->type==TYPE_STRING || v1->type==TYPE_VOID ||
-			v2->type==TYPE_BOOL || v2->type==TYPE_STRING || v2->type==TYPE_VOID)
+		const_val *output;
+		check_and_set_scalar(v1);
+		check_and_set_scalar(v2);
+		if(!check_type_three(v1,v2))
 		{
-			p->type = TYPE_INT;
 			dump_error(ERROR_TYPE_ERROR);
 		}
-
-
-		if( v1->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v1->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-		if( v2->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v2->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-
-		if(v1->kind==KIND_RVAL)
-		{
-			p->kind=KIND_RVAL;
-			p->value=v1->value;
-		}
-		else if(v2->kind==KIND_RVAL)
-		{
-			p->kind=KIND_RVAL;
-			p->value=v2->value;
-		}
-		else
-		{
-			p->kind=KIND_CONST_VAL;
-			p->value=v1->value;
-		}
-
-		(yyval.v) = (void*)p;
+		output=geneValConst(v1,v2);
+		(yyval.v)=(void*)output;
 	}
-#line 3203 "parser.tab.c" /* yacc.c:1661  */
+#line 3104 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 109:
-#line 1521 "parser.y" /* yacc.c:1661  */
+#line 1426 "parser.y" /* yacc.c:1661  */
     {
 		const_val *v1=(const_val*)(yyvsp[-2].v);
 		const_val *v2=(const_val*)(yyvsp[0].v);
-
-		const_val *p=NEW_VAL(const_val);
-
-		p->type = (v1->type>v2->type)?(v1->type):(v2->type);
-
-		if(v1->type==TYPE_BOOL || v1->type==TYPE_STRING || v1->type==TYPE_VOID ||
-			v2->type==TYPE_BOOL || v2->type==TYPE_STRING || v2->type==TYPE_VOID)
+		const_val *output;
+		check_and_set_scalar(v1);
+		check_and_set_scalar(v2);
+		if(!check_type_three(v1,v2))
 		{
-			p->type = TYPE_INT;
 			dump_error(ERROR_TYPE_ERROR);
 		}
-
-
-		if( v1->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v1->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-		if( v2->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v2->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-
-		if(v1->kind==KIND_RVAL)
-		{
-			p->kind=KIND_RVAL;
-			p->value=v1->value;
-		}
-		else if(v2->kind==KIND_RVAL)
-		{
-			p->kind=KIND_RVAL;
-			p->value=v2->value;
-		}
-		else
-		{
-			p->kind=KIND_CONST_VAL;
-			p->value=v1->value;
-		}
-
-		(yyval.v) = (void*)p;
+		output=geneValConst(v1,v2);
+		(yyval.v)=(void*)output;
 	}
-#line 3255 "parser.tab.c" /* yacc.c:1661  */
+#line 3122 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 110:
-#line 1569 "parser.y" /* yacc.c:1661  */
+#line 1440 "parser.y" /* yacc.c:1661  */
     {
 		const_val *v1=(const_val*)(yyvsp[-2].v);
 		const_val *v2=(const_val*)(yyvsp[0].v);
-
-		if(v1->type!=TYPE_INT || v2->type!=TYPE_INT)
+		const_val *output;
+		check_and_set_scalar(v1);
+		check_and_set_scalar(v2);
+		if(!check_type_one(v1,v2,TYPE_INT))
 		{
 			dump_error(ERROR_TYPE_ERROR);
 		}
-
-		const_val *p=NEW_VAL(const_val);
-		p->type=TYPE_INT;
-
-
-		if( v1->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v1->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-		if( v2->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v2->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-
-		if(v1->kind==KIND_RVAL)
-		{
-			p->kind=KIND_RVAL;
-			p->value=v1->value;
-		}
-		else if(v2->kind==KIND_RVAL)
-		{
-			p->kind=KIND_RVAL;
-			p->value=v2->value;
-		}
-		else
-		{
-			p->kind=KIND_CONST_VAL;
-			p->value=v1->value;
-		}
-
-		(yyval.v) = (void*)p;
-
+		output=geneValConstOne(v1,v2,TYPE_INT);
+		(yyval.v)=(void*)output;
 	}
-#line 3305 "parser.tab.c" /* yacc.c:1661  */
+#line 3140 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 111:
-#line 1615 "parser.y" /* yacc.c:1661  */
+#line 1454 "parser.y" /* yacc.c:1661  */
     {
 		const_val *v1=(const_val*)(yyvsp[-2].v);
 		const_val *v2=(const_val*)(yyvsp[0].v);
-
-		const_val *p=NEW_VAL(const_val);
-
-		p->type = TYPE_BOOL;
-
-		if(v1->type==TYPE_BOOL || v1->type==TYPE_STRING || v1->type==TYPE_VOID ||
-			v2->type==TYPE_BOOL || v2->type==TYPE_STRING || v2->type==TYPE_VOID)
+		const_val *output;
+		check_and_set_scalar(v1);
+		check_and_set_scalar(v2);
+		if(!check_type_three(v1,v2))
 		{
 			dump_error(ERROR_TYPE_ERROR);
 		}
-
-
-		if( v1->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v1->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-		if( v2->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v2->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-
-		p->kind=KIND_CONST_VAL;
-		p->value=(void*)strdup("true");
-
-		(yyval.v) = (void*)p;
+		output=geneValConstOne(v1,v2,TYPE_BOOL);
+		(yyval.v)=(void*)output;
 	}
-#line 3343 "parser.tab.c" /* yacc.c:1661  */
+#line 3158 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 112:
-#line 1649 "parser.y" /* yacc.c:1661  */
+#line 1468 "parser.y" /* yacc.c:1661  */
     {
 		const_val *v1=(const_val*)(yyvsp[-2].v);
 		const_val *v2=(const_val*)(yyvsp[0].v);
-
-		const_val *p=NEW_VAL(const_val);
-
-		p->type = TYPE_BOOL;
-
-		if(v1->type==TYPE_BOOL || v1->type==TYPE_STRING || v1->type==TYPE_VOID ||
-			v2->type==TYPE_BOOL || v2->type==TYPE_STRING || v2->type==TYPE_VOID)
+		const_val *output;
+		check_and_set_scalar(v1);
+		check_and_set_scalar(v2);
+		if(!check_type_three(v1,v2))
 		{
 			dump_error(ERROR_TYPE_ERROR);
 		}
-
-		
-		if( v1->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v1->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-		if( v2->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v2->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-
-		p->kind=KIND_CONST_VAL;
-		p->value=(void*)strdup("true");
-
-		(yyval.v) = (void*)p;
+		output=geneValConstOne(v1,v2,TYPE_BOOL);
+		(yyval.v)=(void*)output;
 	}
-#line 3381 "parser.tab.c" /* yacc.c:1661  */
+#line 3176 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 113:
-#line 1683 "parser.y" /* yacc.c:1661  */
+#line 1482 "parser.y" /* yacc.c:1661  */
     {
 		const_val *v1=(const_val*)(yyvsp[-2].v);
 		const_val *v2=(const_val*)(yyvsp[0].v);
-
-		const_val *p=NEW_VAL(const_val);
-
-		p->type = TYPE_BOOL;
-
-		if(v1->type==TYPE_BOOL || v1->type==TYPE_STRING || v1->type==TYPE_VOID ||
-			v2->type==TYPE_BOOL || v2->type==TYPE_STRING || v2->type==TYPE_VOID)
+		const_val *output;
+		check_and_set_scalar(v1);
+		check_and_set_scalar(v2);
+		if(!check_type_three(v1,v2))
 		{
 			dump_error(ERROR_TYPE_ERROR);
 		}
-
-		
-		if( v1->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v1->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-		if( v2->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v2->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-		
-
-		p->kind=KIND_CONST_VAL;
-		p->value=(void*)strdup("true");
-
-		(yyval.v) = (void*)p;
+		output=geneValConstOne(v1,v2,TYPE_BOOL);
+		(yyval.v)=(void*)output;
 	}
-#line 3420 "parser.tab.c" /* yacc.c:1661  */
+#line 3194 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 114:
-#line 1718 "parser.y" /* yacc.c:1661  */
+#line 1496 "parser.y" /* yacc.c:1661  */
     {
 		const_val *v1=(const_val*)(yyvsp[-2].v);
 		const_val *v2=(const_val*)(yyvsp[0].v);
-
-		const_val *p=NEW_VAL(const_val);
-
-		p->type = TYPE_BOOL;
-
-		if(v1->type==TYPE_BOOL || v1->type==TYPE_STRING || v1->type==TYPE_VOID ||
-			v2->type==TYPE_BOOL || v2->type==TYPE_STRING || v2->type==TYPE_VOID)
+		const_val *output;
+		check_and_set_scalar(v1);
+		check_and_set_scalar(v2);
+		if(!check_type_three(v1,v2))
 		{
 			dump_error(ERROR_TYPE_ERROR);
 		}
-
-
-		if( v1->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v1->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-		if( v2->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v2->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-
-		p->kind=KIND_CONST_VAL;
-		p->value=(void*)strdup("true");
-
-		(yyval.v) = (void*)p;
+		output=geneValConstOne(v1,v2,TYPE_BOOL);
+		(yyval.v)=(void*)output;
 	}
-#line 3458 "parser.tab.c" /* yacc.c:1661  */
+#line 3212 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 115:
-#line 1752 "parser.y" /* yacc.c:1661  */
+#line 1510 "parser.y" /* yacc.c:1661  */
     {
 		const_val *v1=(const_val*)(yyvsp[-2].v);
 		const_val *v2=(const_val*)(yyvsp[0].v);
-
-		const_val *p=NEW_VAL(const_val);
-
-		p->type = TYPE_BOOL;
-
-		if(v1->type==TYPE_BOOL || v1->type==TYPE_STRING || v1->type==TYPE_VOID ||
-			v2->type==TYPE_BOOL || v2->type==TYPE_STRING || v2->type==TYPE_VOID)
+		const_val *output;
+		check_and_set_scalar(v1);
+		check_and_set_scalar(v2);
+		if(!check_type_three(v1,v2))
 		{
-			if(v1->type!=TYPE_BOOL || v2->type!=TYPE_BOOL);
+			if(!check_type_one(v1,v2,TYPE_BOOL))
 				dump_error(ERROR_TYPE_ERROR);
 		}
-
-		if( v1->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v1->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-		if( v2->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v2->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-
-		p->kind=KIND_CONST_VAL;
-		p->value=(void*)strdup("true");
-
-		(yyval.v) = (void*)p;
+		output=geneValConstOne(v1,v2,TYPE_BOOL);
+		(yyval.v)=(void*)output;
 	}
-#line 3496 "parser.tab.c" /* yacc.c:1661  */
+#line 3231 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 116:
-#line 1786 "parser.y" /* yacc.c:1661  */
+#line 1525 "parser.y" /* yacc.c:1661  */
     {
 		const_val *v1=(const_val*)(yyvsp[-2].v);
 		const_val *v2=(const_val*)(yyvsp[0].v);
-
-		const_val *p=NEW_VAL(const_val);
-
-		p->type = TYPE_BOOL;
-
-		if(v1->type==TYPE_BOOL || v1->type==TYPE_STRING || v1->type==TYPE_VOID ||
-			v2->type==TYPE_BOOL || v2->type==TYPE_STRING || v2->type==TYPE_VOID)
+		const_val *output;
+		check_and_set_scalar(v1);
+		check_and_set_scalar(v2);
+		if(!check_type_three(v1,v2))
 		{
-			if(v1->type!=TYPE_BOOL || v2->type!=TYPE_BOOL);
+			if(!check_type_one(v1,v2,TYPE_BOOL))
 				dump_error(ERROR_TYPE_ERROR);
 		}
-
-		if( v1->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v1->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-		if( v2->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v2->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-
-		p->kind=KIND_CONST_VAL;
-		p->value=(void*)strdup("true");
-
-		(yyval.v) = (void*)p;
+		output=geneValConstOne(v1,v2,TYPE_BOOL);
+		(yyval.v)=(void*)output;
 	}
-#line 3534 "parser.tab.c" /* yacc.c:1661  */
+#line 3250 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 117:
-#line 1820 "parser.y" /* yacc.c:1661  */
+#line 1540 "parser.y" /* yacc.c:1661  */
     {
+		const_val *v1=(const_val*)(yyvsp[-1].v);
+		check_and_set_scalar(v1);
 		(yyval.v) = (yyvsp[-1].v);
 	}
-#line 3542 "parser.tab.c" /* yacc.c:1661  */
+#line 3260 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 118:
-#line 1824 "parser.y" /* yacc.c:1661  */
+#line 1546 "parser.y" /* yacc.c:1661  */
     {
 		const_val *v1=(const_val*)(yyvsp[0].v);
-
-		const_val *p=NEW_VAL(const_val);
-
-		p->type = v1->type;
-
-		if(v1->type==TYPE_BOOL || v1->type==TYPE_STRING || v1->type==TYPE_VOID)
-		{
-			p->type = TYPE_INT;
+		const_val *output;
+		check_and_set_scalar(v1);
+		if(v1->type!=TYPE_INT && v1->type!=TYPE_DOUBLE && v1->type!=TYPE_FLOAT)
+		{	
 			dump_error(ERROR_TYPE_ERROR);
 		}
+		output=geneOneVal(v1,v1->type);
+		(yyval.v)=(void*)v1;
 
-
-		if( v1->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v1->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-
-		p->kind=v1->kind;
-		p->value=v1->value;
-
-		(yyval.v) = (void*)p;
 	}
-#line 3573 "parser.tab.c" /* yacc.c:1661  */
+#line 3277 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 119:
-#line 1851 "parser.y" /* yacc.c:1661  */
+#line 1559 "parser.y" /* yacc.c:1661  */
     {
 		const_val *v1=(const_val*)(yyvsp[-2].v);
 		const_val *v2=(const_val*)(yyvsp[0].v);
-
-		if(v1->type!=TYPE_BOOL || v2->type!=TYPE_BOOL)
+		const_val *output;
+		check_and_set_scalar(v1);
+		check_and_set_scalar(v2);
+		if(!check_type_one(v1,v2,TYPE_BOOL))
 		{
 			dump_error(ERROR_TYPE_ERROR);
 		}
-
-		const_val *p=NEW_VAL(const_val);
-		p->type=TYPE_BOOL;
-
-		
-		if( v1->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v1->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-		if( v2->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v2->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-
-		if(v1->kind==KIND_RVAL)
-		{
-			p->kind=KIND_RVAL;
-			p->value=v1->value;
-		}
-		else if(v2->kind==KIND_RVAL)
-		{
-			p->kind=KIND_RVAL;
-			p->value=v2->value;
-		}
-		else
-		{
-			p->kind=KIND_CONST_VAL;
-			p->value=v1->value;
-		}
-
-		(yyval.v) = (void*)p;
-
+		output=geneValConstOne(v1,v2,TYPE_BOOL);
+		(yyval.v)=(void*)output;
 	}
-#line 3623 "parser.tab.c" /* yacc.c:1661  */
+#line 3295 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 120:
-#line 1897 "parser.y" /* yacc.c:1661  */
+#line 1573 "parser.y" /* yacc.c:1661  */
     {
 		const_val *v1=(const_val*)(yyvsp[-2].v);
 		const_val *v2=(const_val*)(yyvsp[0].v);
-
-		if(v1->type!=TYPE_BOOL || v2->type!=TYPE_BOOL)
+		const_val *output;
+		check_and_set_scalar(v1);
+		check_and_set_scalar(v2);
+		if(!check_type_one(v1,v2,TYPE_BOOL))
 		{
 			dump_error(ERROR_TYPE_ERROR);
 		}
-
-		const_val *p=NEW_VAL(const_val);
-		p->type=TYPE_BOOL;
-
-
-		if( v1->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v1->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-		if( v2->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v2->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
-
-		if(v1->kind==KIND_RVAL)
-		{
-			p->kind=KIND_RVAL;
-			p->value=v1->value;
-		}
-		else if(v2->kind==KIND_RVAL)
-		{
-			p->kind=KIND_RVAL;
-			p->value=v2->value;
-		}
-		else
-		{
-			p->kind=KIND_CONST_VAL;
-			p->value=v1->value;
-		}
-
-		(yyval.v) = (void*)p;
+		output=geneValConstOne(v1,v2,TYPE_BOOL);
+		(yyval.v)=(void*)output;
 	}
-#line 3672 "parser.tab.c" /* yacc.c:1661  */
+#line 3313 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 121:
-#line 1942 "parser.y" /* yacc.c:1661  */
+#line 1587 "parser.y" /* yacc.c:1661  */
     {
 		const_val *v1=(const_val*)(yyvsp[0].v);
-
+		const_val *output;
+		check_and_set_scalar(v1);
 		if(v1->type!=TYPE_BOOL)
-		{
+		{	
 			dump_error(ERROR_TYPE_ERROR);
 		}
-		
-		if( v1->kind==KIND_RVAL )
-		{
-			invo_val *invo = (invo_val*)v1->value;
-			if(invo->listc !=0) dump_error(ERROR_ARR_STEP);
-			invo->listc=0;
-		}
+		output=geneOneVal(v1,TYPE_BOOL);
+		(yyval.v)=(void*)v1;
 
-		const_val *p=NEW_VAL(const_val);
-		p->type=TYPE_BOOL;
-		p->kind=v1->kind;
-		p->value=v1->value;
-
-		(yyval.v) =(void*)p;
 	}
-#line 3699 "parser.tab.c" /* yacc.c:1661  */
+#line 3330 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 122:
-#line 1965 "parser.y" /* yacc.c:1661  */
+#line 1600 "parser.y" /* yacc.c:1661  */
     {
-		// const_val
 		(yyval.v) = (yyvsp[0].v);
 	}
-#line 3708 "parser.tab.c" /* yacc.c:1661  */
+#line 3338 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 123:
-#line 1970 "parser.y" /* yacc.c:1661  */
+#line 1604 "parser.y" /* yacc.c:1661  */
     {
 		// same with array but step is 0
 		invo_val *p=NEW_VAL(invo_val);
 		p->name = strdup((yyvsp[0].str));
 		p->listc = 0;
 
-		int *re_type=NEW_VAL(int);
-		*re_type=0;
+		symbol_list* sym=find_symbol(p->name);
 
-		arr_val* orig_arr = count_arr_ref(p->name);
-		
-		int result = find_arr_in_table(p,re_type);
+		const_val *q=NEW_VAL(const_val);
+		q->kind=KIND_RVAL;
+		q->type=TYPE_INT;
+		q->value= (void*)p;
 
-		if(result!=NO_ERROR) dump_error(result);
 
-		const_val *q= NEW_VAL(const_val);
-		q->kind= KIND_RVAL;
-		q->type= *re_type;
-		q->value = (void*)p;
+		if(sym!=NULL)
+		{
+			id_val *sym_id=(id_val*)sym->val;
+			if(sym_id->kind==KIND_FUNCTION)
+				dump_error(ERROR_ID_KIND);
+			q->type=sym_id->type;
+			if(sym_id->kind==KIND_CONSTANT)
+			{
+				q->kind=KIND_CONST_VAL;
+				q->value=sym_id->list;
+			}
+			else
+			{
+				q->kind=KIND_RVAL;
+				q->value= (void*)p;
+			}
+		}
 
 		(yyval.v) = (void*)q;
 	}
-#line 3735 "parser.tab.c" /* yacc.c:1661  */
+#line 3377 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 124:
-#line 1993 "parser.y" /* yacc.c:1661  */
+#line 1639 "parser.y" /* yacc.c:1661  */
     {
 		// check func id exist and argu form correct;
 		invo_val *p=(invo_val*)(yyvsp[0].v);
+		symbol_list* sym=find_symbol(p->name);
 
-		int *re_type=NEW_VAL(int);
-		*re_type=0;
-		int result= find_func_in_table(p,re_type);
-		if(result!=NO_ERROR) dump_error(result);
-
-		const_val *q = NEW_VAL(const_val);
-		q->kind = KIND_RVAL;
-		q->type = *re_type;
+		const_val *q=NEW_VAL(const_val);
+		q->kind=KIND_RVAL;
+		q->type=TYPE_INT;
 		q->value = (void*)p;
+
+
+		if(sym!=NULL)
+		{
+			id_val *sym_id=(id_val*)sym->val;
+
+			if(sym_id->kind!=KIND_FUNCTION)
+				dump_error(ERROR_ID_KIND);
+			else
+			{
+				if(!check_parameter(sym,p))
+					dump_error(ERROR_FUNC_ARGU_NOT_MATCH);
+			}
+			const_val *q=NEW_VAL(const_val);
+			q->kind=KIND_RVAL;
+			q->type=sym_id->type;
+			q->value = (void*)p;
+		}
 
 		(yyval.v) = (void*)q;
 	}
-#line 3756 "parser.tab.c" /* yacc.c:1661  */
+#line 3412 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 125:
-#line 2010 "parser.y" /* yacc.c:1661  */
+#line 1670 "parser.y" /* yacc.c:1661  */
     {
 		// check arr id exist and dimention correct;
 		invo_val *p=(invo_val*)(yyvsp[0].v);
-
-		int *re_type=NEW_VAL(int);
-		*re_type=0;
-
-		arr_val* orig_arr = count_arr_ref(p->name);
-
-		int result = find_arr_in_table(p,re_type);
-
-
-		if(result!=NO_ERROR) dump_error(result);
+		symbol_list* sym=find_symbol(p->name);
 
 		const_val *q= NEW_VAL(const_val);
 		q->kind= KIND_RVAL;
-		q->type= *re_type;
+		q->type= TYPE_INT;
 		q->value = (void*)p;
+
+		if(sym!=NULL)
+		{
+			id_val* sym_id=(id_val*)sym->val;
+			if(sym_id->kind==KIND_FUNCTION || sym_id->kind==KIND_CONSTANT)
+				dump_error(ERROR_ID_KIND);
+			else
+			{
+				if(!check_step(sym,p))
+					dump_error(ERROR_ARR_STEP);
+			}
+			q->type=sym_id->type;
+		}
 
 		(yyval.v) = (void*)q;
 	}
-#line 3782 "parser.tab.c" /* yacc.c:1661  */
+#line 3442 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 126:
-#line 2035 "parser.y" /* yacc.c:1661  */
+#line 1699 "parser.y" /* yacc.c:1661  */
     {
 		invo_val *p = (invo_val*)(yyvsp[0].v);
 		p->name = strdup((yyvsp[-1].str));
 		
-
 		(yyval.v) = (void*)p;
 	}
-#line 3794 "parser.tab.c" /* yacc.c:1661  */
+#line 3453 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 127:
-#line 2046 "parser.y" /* yacc.c:1661  */
+#line 1709 "parser.y" /* yacc.c:1661  */
     {
 		invo_val *p=(invo_val*)(yyvsp[-3].v);
 		p->listc += 1;
 		(yyval.v) =(void*)p;
 	}
-#line 3804 "parser.tab.c" /* yacc.c:1661  */
+#line 3463 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 128:
-#line 2052 "parser.y" /* yacc.c:1661  */
+#line 1715 "parser.y" /* yacc.c:1661  */
     {
 		invo_val *p =NEW_VAL(invo_val);
 		p->listc = 1;
 
 		(yyval.v) = (void*)p;
 	}
-#line 3815 "parser.tab.c" /* yacc.c:1661  */
+#line 3474 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 129:
-#line 2062 "parser.y" /* yacc.c:1661  */
+#line 1725 "parser.y" /* yacc.c:1661  */
     {
 		invo_val *p = (invo_val*)(yyvsp[-2].v);
 		p->name=strdup((yyvsp[-4].str));
@@ -3831,11 +3490,11 @@ yyreduce:
 		(yyval.v) = (void*)p;
 
 	}
-#line 3835 "parser.tab.c" /* yacc.c:1661  */
+#line 3494 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 130:
-#line 2078 "parser.y" /* yacc.c:1661  */
+#line 1741 "parser.y" /* yacc.c:1661  */
     {
 		invo_val *p = NEW_VAL(invo_val);
 		p->name = strdup((yyvsp[-3].str));
@@ -3846,11 +3505,11 @@ yyreduce:
 		(yyval.v) = (void*)p;
 
 	}
-#line 3850 "parser.tab.c" /* yacc.c:1661  */
+#line 3509 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 131:
-#line 2089 "parser.y" /* yacc.c:1661  */
+#line 1752 "parser.y" /* yacc.c:1661  */
     {
 		invo_val *p = NEW_VAL(invo_val);
 		p->name = strdup((yyvsp[-2].str));
@@ -3858,11 +3517,11 @@ yyreduce:
 
 		(yyval.v) = (void*)p;
 	}
-#line 3862 "parser.tab.c" /* yacc.c:1661  */
+#line 3521 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 132:
-#line 2100 "parser.y" /* yacc.c:1661  */
+#line 1763 "parser.y" /* yacc.c:1661  */
     {
 		invo_val *p = (invo_val*)(yyvsp[-2].v);
 		p->listc+=1;
@@ -3875,11 +3534,11 @@ yyreduce:
 
 		(yyval.v) = (void*)p;
 	}
-#line 3879 "parser.tab.c" /* yacc.c:1661  */
+#line 3538 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 133:
-#line 2113 "parser.y" /* yacc.c:1661  */
+#line 1776 "parser.y" /* yacc.c:1661  */
     {
 		invo_val *p = NEW_VAL(invo_val);
 		p->listc = 1;
@@ -3891,171 +3550,469 @@ yyreduce:
 
 		(yyval.v) = (void*)p;
 	}
-#line 3895 "parser.tab.c" /* yacc.c:1661  */
+#line 3554 "parser.tab.c" /* yacc.c:1661  */
+    break;
+
+  case 140:
+#line 1797 "parser.y" /* yacc.c:1661  */
+    {
+		const_val* con=(const_val*)(yyvsp[-1].v);
+		check_and_set_scalar((yyvsp[-1].v));
+	}
+#line 3563 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 141:
-#line 2140 "parser.y" /* yacc.c:1661  */
+#line 1807 "parser.y" /* yacc.c:1661  */
     {
-		const_val *exp = (const_val*)(yyvsp[-1].v);
-		const_val *ref = (const_val*)(yyvsp[-3].v);
+		const_val* con=(const_val*)(yyvsp[-3].v);
+		const_val* exp=(const_val*)(yyvsp[-1].v);
 
-		invo_val *ref_invo = (invo_val*)ref->value;
-		if(is_const_var(ref_invo->name))
+		if(con->kind==KIND_CONST_VAL)
 			dump_error(ERROR_ASSIGN_CONST);
 		else
 		{
-			if(ref_invo -> listc !=0)
-				dump_error(ERROR_ARR_STEP);
+			if(con->type!=exp->type)
+				dump_error(ERROR_IDTYPE_NOT_MATCH);
+			check_and_set_scalar(con);
+			check_and_set_scalar(exp);
 		}
-
-		if(exp->kind==KIND_RVAL)
-		{
-			invo_val* exp_invo = (invo_val*)exp->value;
-			if(exp_invo->listc!=0)
-				dump_error(ERROR_ARR_STEP);
-		}
-
-		if(exp->type != ref->type)
-			dump_error(ERROR_TYPE_ERROR);
 	}
-#line 3923 "parser.tab.c" /* yacc.c:1661  */
+#line 3582 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 142:
-#line 2164 "parser.y" /* yacc.c:1661  */
+#line 1822 "parser.y" /* yacc.c:1661  */
     {
-		const_val *exp = (const_val*)(yyvsp[-1].v);
-		if(exp->kind==KIND_RVAL)
-		{
-			invo_val *exp_invo = (invo_val*)exp->value;
-			if(!is_const_var(exp_invo->name))
-			{
-				if(exp_invo->listc!=0)
-					dump_error(ERROR_ARR_STEP);
-			}
-		}
+		const_val* con=(const_val*)(yyvsp[-1].v);
+		check_and_set_scalar(con);
+		
 	}
-#line 3940 "parser.tab.c" /* yacc.c:1661  */
+#line 3592 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 143:
-#line 2177 "parser.y" /* yacc.c:1661  */
+#line 1828 "parser.y" /* yacc.c:1661  */
     {
-		const_val *ref =(const_val*)(yyvsp[-1].v);
-		invo_val *ref_invo = (invo_val*)ref->value;
-		if(!is_const_var(ref_invo->name))
-		{
-			if(ref_invo->listc!=0)
-				dump_error(ERROR_ARR_STEP);
-		}
+		const_val* con=(const_val*)(yyvsp[-1].v);
+		check_and_set_scalar(con);
 	}
-#line 3954 "parser.tab.c" /* yacc.c:1661  */
+#line 3601 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 144:
-#line 2190 "parser.y" /* yacc.c:1661  */
+#line 1836 "parser.y" /* yacc.c:1661  */
     {
 		// same with array but step is 0
+
 		invo_val *p=NEW_VAL(invo_val);
 		p->name = strdup((yyvsp[0].str));
 		p->listc = 0;
 
-		int *re_type=NEW_VAL(int);
-		*re_type=0;
+		symbol_list* sym=find_symbol(p->name);
 
-		arr_val* orig_arr = count_arr_ref(p->name);
-		
-		int result = find_arr_in_table(p,re_type);
+		const_val *q=NEW_VAL(const_val);
+		q->kind=KIND_RVAL;
+		q->type=TYPE_INT;
+		q->value= (void*)p;
 
-		if(result!=NO_ERROR) dump_error(result);
 
-		const_val *q= NEW_VAL(const_val);
-		q->kind= KIND_RVAL;
-		q->type= *re_type;
-		q->value = (void*)p;
+		if(sym!=NULL)
+		{
+			id_val *sym_id=(id_val*)sym->val;
+			if(sym_id->kind==KIND_FUNCTION)
+				dump_error(ERROR_ID_KIND);
+			q->type=sym_id->type;
+			if(sym_id->kind==KIND_CONSTANT)
+			{
+				q->kind=KIND_CONST_VAL;
+				q->value=sym_id->list;
+			}
+			else
+			{
+				q->kind=KIND_LVAL;
+				q->value= (void*)p;
+			}
+		}
 
 		(yyval.v) = (void*)q;
 	}
-#line 3981 "parser.tab.c" /* yacc.c:1661  */
+#line 3641 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 145:
-#line 2213 "parser.y" /* yacc.c:1661  */
+#line 1872 "parser.y" /* yacc.c:1661  */
     {
-		// check arr id exist and dimention correct;
 		invo_val *p=(invo_val*)(yyvsp[0].v);
-
-		int *re_type=NEW_VAL(int);
-		*re_type=0;
-
-		arr_val* orig_arr = count_arr_ref(p->name);
-
-		int result = find_arr_in_table(p,re_type);
-
-
-		if(result!=NO_ERROR) dump_error(result);
+		symbol_list* sym=find_symbol(p->name);
 
 		const_val *q= NEW_VAL(const_val);
-		q->kind= KIND_RVAL;
-		q->type= *re_type;
+		q->kind= KIND_LVAL;
+		q->type= TYPE_INT;
 		q->value = (void*)p;
+
+		if(sym!=NULL)
+		{
+			id_val* sym_id=(id_val*)sym->val;
+			if(sym_id->kind==KIND_FUNCTION || sym_id->kind==KIND_CONSTANT)
+				dump_error(ERROR_ID_KIND);
+			else
+			{
+				if(!check_step(sym,p))
+					dump_error(ERROR_ARR_STEP);
+			}
+			q->type=sym_id->type;
+		}
 
 		(yyval.v) = (void*)q;
 	}
-#line 4007 "parser.tab.c" /* yacc.c:1661  */
+#line 3670 "parser.tab.c" /* yacc.c:1661  */
+    break;
+
+  case 148:
+#line 1906 "parser.y" /* yacc.c:1661  */
+    {
+		const_val *con =(const_val*)(yyvsp[0].v);
+		if(con->type!=TYPE_BOOL)
+			dump_error(ERROR_NO_BOOL);
+		else
+		{
+			check_and_set_scalar(con);
+		}
+	}
+#line 3684 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 149:
-#line 2247 "parser.y" /* yacc.c:1661  */
+#line 1918 "parser.y" /* yacc.c:1661  */
     { isInLoop+=1;}
-#line 4013 "parser.tab.c" /* yacc.c:1661  */
+#line 3690 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 150:
-#line 2247 "parser.y" /* yacc.c:1661  */
+#line 1918 "parser.y" /* yacc.c:1661  */
     {isInLoop-=1;}
-#line 4019 "parser.tab.c" /* yacc.c:1661  */
+#line 3696 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 151:
-#line 2248 "parser.y" /* yacc.c:1661  */
+#line 1919 "parser.y" /* yacc.c:1661  */
     {isInLoop+=1;}
-#line 4025 "parser.tab.c" /* yacc.c:1661  */
+#line 3702 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 152:
-#line 2248 "parser.y" /* yacc.c:1661  */
+#line 1919 "parser.y" /* yacc.c:1661  */
     {isInLoop-=1;}
-#line 4031 "parser.tab.c" /* yacc.c:1661  */
+#line 3708 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 154:
-#line 2252 "parser.y" /* yacc.c:1661  */
+#line 1923 "parser.y" /* yacc.c:1661  */
     {isInLoop+=1;}
-#line 4037 "parser.tab.c" /* yacc.c:1661  */
+#line 3714 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 155:
-#line 2252 "parser.y" /* yacc.c:1661  */
+#line 1923 "parser.y" /* yacc.c:1661  */
     {isInLoop-=1;}
-#line 4043 "parser.tab.c" /* yacc.c:1661  */
+#line 3720 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 156:
-#line 2253 "parser.y" /* yacc.c:1661  */
+#line 1924 "parser.y" /* yacc.c:1661  */
     {isInLoop+=1;}
-#line 4049 "parser.tab.c" /* yacc.c:1661  */
+#line 3726 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 157:
-#line 2253 "parser.y" /* yacc.c:1661  */
+#line 1924 "parser.y" /* yacc.c:1661  */
     {isInLoop-=1;}
-#line 4055 "parser.tab.c" /* yacc.c:1661  */
+#line 3732 "parser.tab.c" /* yacc.c:1661  */
+    break;
+
+  case 158:
+#line 1929 "parser.y" /* yacc.c:1661  */
+    {
+		const_val* con=(const_val*)(yyvsp[-2].v);
+		const_val* exp=(const_val*)(yyvsp[0].v);
+
+		if(con->kind==KIND_CONST_VAL)
+			dump_error(ERROR_ASSIGN_CONST);
+		else
+		{
+			if(con->type!=exp->type)
+				dump_error(ERROR_IDTYPE_NOT_MATCH);
+			check_and_set_scalar(con);
+			check_and_set_scalar(exp);
+		}
+	}
+#line 3751 "parser.tab.c" /* yacc.c:1661  */
+    break;
+
+  case 159:
+#line 1944 "parser.y" /* yacc.c:1661  */
+    {
+		invo_val *p=(invo_val*)(yyvsp[0].v);
+		symbol_list* sym=find_symbol(p->name);
+
+		const_val *q=NEW_VAL(const_val);
+		q->kind=KIND_RVAL;
+		q->type=TYPE_INT;
+		q->value = (void*)p;
+
+
+		if(sym!=NULL)
+		{
+			id_val *sym_id=(id_val*)sym->val;
+
+			if(sym_id->kind!=KIND_FUNCTION)
+				dump_error(ERROR_ID_KIND);
+			else
+			{
+				if(!check_parameter(sym,p))
+					dump_error(ERROR_FUNC_ARGU_NOT_MATCH);
+			}
+			const_val *q=NEW_VAL(const_val);
+			q->kind=KIND_RVAL;
+			q->type=sym_id->type;
+			q->value = (void*)p;
+		}
+	}
+#line 3783 "parser.tab.c" /* yacc.c:1661  */
+    break;
+
+  case 160:
+#line 1972 "parser.y" /* yacc.c:1661  */
+    {
+		invo_val *p=(invo_val*)(yyvsp[0].v);
+		symbol_list* sym=find_symbol(p->name);
+
+		const_val *q=NEW_VAL(const_val);
+		q->kind=KIND_RVAL;
+		q->type=TYPE_INT;
+		q->value = (void*)p;
+
+
+		if(sym!=NULL)
+		{
+			id_val *sym_id=(id_val*)sym->val;
+
+			if(sym_id->kind!=KIND_FUNCTION)
+				dump_error(ERROR_ID_KIND);
+			else
+			{
+				if(!check_parameter(sym,p))
+					dump_error(ERROR_FUNC_ARGU_NOT_MATCH);
+			}
+			const_val *q=NEW_VAL(const_val);
+			q->kind=KIND_RVAL;
+			q->type=sym_id->type;
+			q->value = (void*)p;
+		}
+	}
+#line 3815 "parser.tab.c" /* yacc.c:1661  */
+    break;
+
+  case 161:
+#line 2000 "parser.y" /* yacc.c:1661  */
+    {
+		const_val* con=(const_val*)(yyvsp[-2].v);
+		const_val* exp=(const_val*)(yyvsp[0].v);
+
+		if(con->kind==KIND_CONST_VAL)
+			dump_error(ERROR_ASSIGN_CONST);
+		else
+		{
+			if(con->type!=exp->type)
+				dump_error(ERROR_IDTYPE_NOT_MATCH);
+			check_and_set_scalar(con);
+			check_and_set_scalar(exp);
+		}
+	}
+#line 3834 "parser.tab.c" /* yacc.c:1661  */
+    break;
+
+  case 163:
+#line 2019 "parser.y" /* yacc.c:1661  */
+    {
+		const_val* con=(const_val*)(yyvsp[-3].v);
+		const_val* exp=(const_val*)(yyvsp[-1].v);
+
+		if(con->kind==KIND_CONST_VAL)
+			dump_error(ERROR_ASSIGN_CONST);
+		else
+		{
+			if(con->type!=exp->type)
+				dump_error(ERROR_IDTYPE_NOT_MATCH);
+			check_and_set_scalar(con);
+			check_and_set_scalar(exp);
+		}
+	}
+#line 3853 "parser.tab.c" /* yacc.c:1661  */
+    break;
+
+  case 164:
+#line 2034 "parser.y" /* yacc.c:1661  */
+    {
+		invo_val *p=(invo_val*)(yyvsp[-1].v);
+		symbol_list* sym=find_symbol(p->name);
+
+		const_val *q=NEW_VAL(const_val);
+		q->kind=KIND_RVAL;
+		q->type=TYPE_INT;
+		q->value = (void*)p;
+
+
+		if(sym!=NULL)
+		{
+			id_val *sym_id=(id_val*)sym->val;
+
+			if(sym_id->kind!=KIND_FUNCTION)
+				dump_error(ERROR_ID_KIND);
+			else
+			{
+				if(!check_parameter(sym,p))
+					dump_error(ERROR_FUNC_ARGU_NOT_MATCH);
+			}
+			const_val *q=NEW_VAL(const_val);
+			q->kind=KIND_RVAL;
+			q->type=sym_id->type;
+			q->value = (void*)p;
+		}
+	}
+#line 3885 "parser.tab.c" /* yacc.c:1661  */
+    break;
+
+  case 165:
+#line 2062 "parser.y" /* yacc.c:1661  */
+    {
+		invo_val *p=(invo_val*)(yyvsp[-1].v);
+		symbol_list* sym=find_symbol(p->name);
+
+		const_val *q=NEW_VAL(const_val);
+		q->kind=KIND_RVAL;
+		q->type=TYPE_INT;
+		q->value = (void*)p;
+
+
+		if(sym!=NULL)
+		{
+			id_val *sym_id=(id_val*)sym->val;
+
+			if(sym_id->kind!=KIND_FUNCTION)
+				dump_error(ERROR_ID_KIND);
+			else
+			{
+				if(!check_parameter(sym,p))
+					dump_error(ERROR_FUNC_ARGU_NOT_MATCH);
+			}
+			const_val *q=NEW_VAL(const_val);
+			q->kind=KIND_RVAL;
+			q->type=sym_id->type;
+			q->value = (void*)p;
+		}
+	}
+#line 3917 "parser.tab.c" /* yacc.c:1661  */
+    break;
+
+  case 166:
+#line 2090 "parser.y" /* yacc.c:1661  */
+    {
+		const_val* con=(const_val*)(yyvsp[-3].v);
+		const_val* exp=(const_val*)(yyvsp[-1].v);
+
+		if(con->kind==KIND_CONST_VAL)
+			dump_error(ERROR_ASSIGN_CONST);
+		else
+		{
+			if(con->type!=exp->type)
+				dump_error(ERROR_IDTYPE_NOT_MATCH);
+			check_and_set_scalar(con);
+			check_and_set_scalar(exp);
+		}
+	}
+#line 3936 "parser.tab.c" /* yacc.c:1661  */
+    break;
+
+  case 167:
+#line 2110 "parser.y" /* yacc.c:1661  */
+    {
+		const_val* con=(const_val*)(yyvsp[-3].v);
+		const_val* exp=(const_val*)(yyvsp[-1].v);
+
+		if(con->kind==KIND_CONST_VAL)
+			dump_error(ERROR_ASSIGN_CONST);
+		else
+		{
+			if(con->type!=exp->type)
+				dump_error(ERROR_IDTYPE_NOT_MATCH);
+			check_and_set_scalar(con);
+			check_and_set_scalar(exp);
+		}
+	}
+#line 3955 "parser.tab.c" /* yacc.c:1661  */
+    break;
+
+  case 168:
+#line 2125 "parser.y" /* yacc.c:1661  */
+    {
+		const_val* con=(const_val*)(yyvsp[-2].v);
+		const_val* exp=(const_val*)(yyvsp[0].v);
+
+		if(con->kind==KIND_CONST_VAL)
+			dump_error(ERROR_ASSIGN_CONST);
+		else
+		{
+			if(con->type!=exp->type)
+				dump_error(ERROR_IDTYPE_NOT_MATCH);
+			check_and_set_scalar(con);
+			check_and_set_scalar(exp);
+		}
+	}
+#line 3974 "parser.tab.c" /* yacc.c:1661  */
+    break;
+
+  case 170:
+#line 2144 "parser.y" /* yacc.c:1661  */
+    {
+		const_val* con=(const_val*)(yyvsp[-3].v);
+		const_val* exp=(const_val*)(yyvsp[-1].v);
+
+		if(con->kind==KIND_CONST_VAL)
+			dump_error(ERROR_ASSIGN_CONST);
+		else
+		{
+			if(con->type!=exp->type)
+				dump_error(ERROR_IDTYPE_NOT_MATCH);
+			check_and_set_scalar(con);
+			check_and_set_scalar(exp);
+		}
+	}
+#line 3993 "parser.tab.c" /* yacc.c:1661  */
+    break;
+
+  case 171:
+#line 2159 "parser.y" /* yacc.c:1661  */
+    {
+		const_val* con=(const_val*)(yyvsp[-3].v);
+		const_val* exp=(const_val*)(yyvsp[-1].v);
+
+		if(con->kind==KIND_CONST_VAL)
+			dump_error(ERROR_ASSIGN_CONST);
+		else
+		{
+			if(con->type!=exp->type)
+				dump_error(ERROR_IDTYPE_NOT_MATCH);
+			check_and_set_scalar(con);
+			check_and_set_scalar(exp);
+		}
+	}
+#line 4012 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 172:
-#line 2285 "parser.y" /* yacc.c:1661  */
+#line 2176 "parser.y" /* yacc.c:1661  */
     {
 		const_val *exp=(const_val*)(yyvsp[-1].v);
 		if(exp->kind==KIND_RVAL)
@@ -4065,29 +4022,29 @@ yyreduce:
 				dump_error(ERROR_ARR_STEP);
 		}
 	}
-#line 4069 "parser.tab.c" /* yacc.c:1661  */
+#line 4026 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 173:
-#line 2295 "parser.y" /* yacc.c:1661  */
+#line 2186 "parser.y" /* yacc.c:1661  */
     {
 		if(isInLoop<=0)
 			dump_error(ERROR_JUMP_STATMENT);
 	}
-#line 4078 "parser.tab.c" /* yacc.c:1661  */
+#line 4035 "parser.tab.c" /* yacc.c:1661  */
     break;
 
   case 174:
-#line 2300 "parser.y" /* yacc.c:1661  */
+#line 2191 "parser.y" /* yacc.c:1661  */
     {
 		if(isInLoop<=0)
 			dump_error(ERROR_JUMP_STATMENT);
 	}
-#line 4087 "parser.tab.c" /* yacc.c:1661  */
+#line 4044 "parser.tab.c" /* yacc.c:1661  */
     break;
 
 
-#line 4091 "parser.tab.c" /* yacc.c:1661  */
+#line 4048 "parser.tab.c" /* yacc.c:1661  */
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
@@ -4315,9 +4272,26 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 2308 "parser.y" /* yacc.c:1906  */
+#line 2199 "parser.y" /* yacc.c:1906  */
 
 
+symbol_list* find_symbol(char* name)
+{
+	symbol_table *table= cur_table;
+	while(table!=NULL)
+	{
+		symbol_list *list=table->s_list;
+		while(list!=NULL)
+		{
+			if(strcmp(list->name,name)==0)
+				return list;
+			list=list->next;
+		}
+		table=table->next;
+	}
+	dump_error(ERROR_ID_NO_FOUND);
+	return NULL;
+}
 
 int find_redclair(char* name)
 {
@@ -4334,123 +4308,171 @@ int find_redclair(char* name)
 
 }
 
-int find_id_in_table(char* in,int *re_type)
+
+const_val *geneOneVal(const_val *a, int m_type)
 {
-	symbol_table *p = cur_table;
+	const_val *output = NEW_VAL(const_val);
 
-	while(p!=NULL)
+	if(a->type==m_type)
 	{
-		symbol_list* list = p->s_list;
-		while(list!=NULL)
-		{
-			if(strcmp(list->name,in)==0)
-			{
-				id_val* pr = (id_val*)list->val;
-				*re_type = pr->type;
-				if(pr->kind!=KIND_VARIABLE && pr->kind!=KIND_PARAMETER )
-				{
-					return ERROR_ID_KIND;
-				}
-				else
-				{
-					return NO_ERROR;
-				}
-			}
-			list=list->next;
-		}
-		p=p->next;
+		output->type=m_type;
+		output->kind=a->kind;
+		output->value=a->value;
 	}
-	*re_type = TYPE_INT;
-	return ERROR_ID_NO_FOUND;
-}
-int find_func_in_table(invo_val *in,int *re_type)
-{
-	symbol_table *p =cur_table;
-
-	while(p!=NULL)
+	else
 	{
-		symbol_list* list = p->s_list;
-		while(list!=NULL)
-		{
-			if(strcmp(list->name,in->name)==0)
-			{
-				id_val* pr = (id_val*)list->val;
-				*re_type = pr->type;
-				if(pr->kind!=KIND_FUNCTION)
-					return ERROR_ID_KIND;
-				else
-				{
-					// check argu;
-					func_val* funcp= (func_val*)pr->list;
-
-					if(funcp->argc != in->listc )
-						return ERROR_FUNC_ARGU_NOT_MATCH;
-					else
-					{
-						for(int t=0;t<funcp->argc;t++)
-						{
-							const_val *constp = ((const_val*)in->listv)+t;
-							argu_val *argup = ((argu_val*)funcp->argv)+t;
-
-							invo_val* source=(invo_val*)constp->value;
-							arr_val* arr_source= count_arr_ref(source->name);
-							arr_val* arr_func =  ((arr_val*)((id_val*)argup->val)->list);
-							
-							if(arr_func->stepc == source->listc)
-							{
-								for(int i1=0,i2=arr_source->stepc-source->listc;i1<arr_func->stepc;i1++,i2++)
-								{
-									if( arr_func->stepv[i1] != *(((int*)arr_source->stepv)+i2) )
-										return ERROR_FUNC_ARGU_NOT_MATCH;
-								}
-							}
-							else
-								return ERROR_FUNC_ARGU_NOT_MATCH;
-						}
-						return NO_ERROR;
-					}
-				}
-			}
-			list=list->next;
-		}
-		p=p->next;
+		output->type=m_type;
+		output->kind=KIND_CONST_VAL;
+		output->value=a->value;
 	}
-	*re_type=TYPE_INT;
-	return ERROR_ID_NO_FOUND;
+	return output;
 }
 
-int find_arr_in_table(invo_val *in, int *re_type)
+const_val *geneValConstOne(const_val *a, const_val *b, int m_type)
 {
-	symbol_table *table = cur_table;
-	while(table!=NULL)
+	const_val *output = NEW_VAL(const_val);
+
+	int ch;
+	if(a->type==m_type)
+		ch+=1;
+	if(b->type==m_type)
+		ch+=2;
+
+	output->type=m_type;
+	if(a->kind==KIND_RVAL && ch&1)
 	{
-		symbol_list *list= table->s_list;
-		while(list!=NULL)
-		{
-			if(strcmp(in->name,list->name)==0)
-			{
-				id_val *pr=(id_val*)list->val;
-				*re_type = pr->type;
-
-
-				if(pr->kind != KIND_VARIABLE && pr->kind != KIND_PARAMETER && pr->kind!=KIND_CONSTANT)
-					return ERROR_ID_KIND;
-				else
-				{
-					arr_val* arr_step=(arr_val*)pr->list;
-					if(in->listc > arr_step->stepc)
-						return ERROR_ARR_STEP;
-					else
-						in->listc = arr_step->stepc - in->listc;
-				}
-				return NO_ERROR;
-			}
-			list= list->next;
-		}
-		table=table->next;
+		output->kind=KIND_RVAL;
+		output->value = a->value;
 	}
-	*re_type=TYPE_INT;
-	return ERROR_ID_NO_FOUND;
+	else if(b->kind==KIND_RVAL && ch==2)
+	{
+		output->kind=KIND_RVAL;
+		output->value=b->value;
+	}
+	else
+	{
+		//combine a b
+		output->kind=KIND_RVAL;
+		output->value= a->value;
+	}
+	return output;
+
+}
+
+const_val *geneValConst(const_val *a, const_val *b)
+{
+	const_val *output =NEW_VAL(const_val);
+
+	int type=TYPE_DOUBLE+1;
+	int ch=0;
+	if(a->type<=TYPE_DOUBLE && a->type > type)
+		type=a->type , ch+=1;
+	if(b->type<=TYPE_DOUBLE && b->type > type)
+		type=a->type , ch+=2;
+
+	output->type=type;
+	if(a->kind==KIND_RVAL && ch&1)
+	{
+		output->kind=KIND_RVAL;
+		output->value = a->value;
+	}
+	else if(b->kind==KIND_RVAL && ch==2)
+	{
+		output->kind=KIND_RVAL;
+		output->value = b->value;
+	}
+	else
+	{
+		//combine(a,b);
+		output->kind=KIND_CONST_VAL;
+		output->value = a->value;
+	}
+	return output;
+}
+
+
+int check_and_set_scalar(const_val *a)
+{
+	if(a->kind==KIND_CONST_VAL)
+		return 1;
+	else
+	{
+		symbol_list *list=find_symbol( ((invo_val*)a->value)->name );
+		id_val *id=(id_val*)list->val;
+		if(id->kind==KIND_FUNCTION) return 1;
+		else
+		{
+			if( ((invo_val*)a->value)->listc==0 ) return 1;
+		}
+		((invo_val*)a->value)->listc=0;
+		dump_error(ERROR_ARR_STEP);
+		return 0;
+	}
+	
+	return  0;
+}
+
+int check_type_three(const_val *a,const_val *b)
+{
+	if(a->type==TYPE_BOOL || a->type==TYPE_STRING || a->type==TYPE_VOID)
+		return 0;
+	if(b->type==TYPE_BOOL || b->type==TYPE_STRING || b->type==TYPE_VOID)
+		return 0;
+
+	return 1;
+}
+
+int check_type_one(const_val *a, const_val *b,int m_type)
+{
+	if(a->type!=m_type || b->type!=m_type) return 0;
+	return 1;
+}
+
+int check_parameter(symbol_list* list, invo_val* invo)
+{
+	id_val *id=(id_val*)list->val;
+	func_val *func=(func_val*)id->list;
+
+	if(func->argc != invo->listc)
+		return 0;
+	else
+	{
+		for(int t=0;t<func->argc;t++) //check para
+		{
+
+
+			argu_val *argu = ((argu_val*)func->argv)+t;
+			const_val *constp = ((const_val*)invo->listv)+t;
+			invo_val *source=(invo_val*)constp->value;
+
+			arr_val *arr_source = count_arr_ref(source->name);
+			arr_val *arr_func = ((arr_val*)((id_val*)argu->val)->list);
+
+			if(arr_func->stepc == source->listc)
+			{
+				for(int i1=0,i2=arr_source->stepc-source->listc;i1<arr_func->stepc;i1++,i2++)
+				{
+					if( arr_func->stepv[i1] != *(((int*)arr_source->stepv)+i2) )
+						return 0;
+				}
+			}
+			else return 0;
+
+		}
+		return 1;
+	}
+}
+
+int check_step(symbol_list *list,invo_val *invo)
+{
+	id_val *id=(id_val*)list->val;
+	arr_val *arr = (arr_val*)id->list;
+
+	if(invo->listc > arr->stepc)
+		return 0;
+	else
+		invo->listc = arr->stepc - invo->listc;
+	return 1;
 }
 
 arr_val* count_arr_ref(char* name)
@@ -4466,7 +4488,12 @@ arr_val* count_arr_ref(char* name)
 			if(strcmp(list->name,name)==0)
 			{
 				id_val* pr=(id_val*)list->val;
-				if(pr->kind==KIND_PARAMETER || pr->kind==KIND_VARIABLE || pr->kind==KIND_CONSTANT)
+				if(pr->kind==KIND_CONSTANT)
+				{
+					ans->stepc=0;
+					return ans;
+				}
+				if(pr->kind==KIND_PARAMETER || pr->kind==KIND_VARIABLE)
 				{
 					ans= (arr_val*)pr->list;
 					return ans;
