@@ -4,7 +4,7 @@ parser:
 	bison -d -v  parser.y
 	lex lex.l
 	gcc -o parser parser.tab.c lex.yy.c -ll -ly
-
+#test
 
 
 
