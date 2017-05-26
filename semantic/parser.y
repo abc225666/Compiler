@@ -2120,7 +2120,35 @@ incr_expr
 			check_and_set_scalar(con);
 			check_and_set_scalar(exp);
 		}
-	}	
+	}
+| incr_expr_list func_invo
+	{
+		invo_val *p=(invo_val*)$2;
+		symbol_list* sym=find_symbol(p->name);
+
+		const_val *q=NEW_VAL(const_val);
+		q->kind=KIND_RVAL;
+		q->type=TYPE_INT;
+		q->value = (void*)p;
+
+
+		if(sym!=NULL)
+		{
+			id_val *sym_id=(id_val*)sym->val;
+
+			if(sym_id->kind!=KIND_FUNCTION)
+				dump_error(ERROR_ID_KIND);
+			else
+			{
+				if(!check_parameter(sym,p))
+					dump_error(ERROR_FUNC_ARGU_NOT_MATCH);
+			}
+			const_val *q=NEW_VAL(const_val);
+			q->kind=KIND_RVAL;
+			q->type=sym_id->type;
+			q->value = (void*)p;
+		}
+	}
 | var_ref '=' expr
 	{
 		const_val* con=(const_val*)$1;
@@ -2134,6 +2162,34 @@ incr_expr
 				dump_error(ERROR_IDTYPE_NOT_MATCH);
 			check_and_set_scalar(con);
 			check_and_set_scalar(exp);
+		}
+	}
+| func_invo
+	{
+		invo_val *p=(invo_val*)$1;
+		symbol_list* sym=find_symbol(p->name);
+
+		const_val *q=NEW_VAL(const_val);
+		q->kind=KIND_RVAL;
+		q->type=TYPE_INT;
+		q->value = (void*)p;
+
+
+		if(sym!=NULL)
+		{
+			id_val *sym_id=(id_val*)sym->val;
+
+			if(sym_id->kind!=KIND_FUNCTION)
+				dump_error(ERROR_ID_KIND);
+			else
+			{
+				if(!check_parameter(sym,p))
+					dump_error(ERROR_FUNC_ARGU_NOT_MATCH);
+			}
+			const_val *q=NEW_VAL(const_val);
+			q->kind=KIND_RVAL;
+			q->type=sym_id->type;
+			q->value = (void*)p;
 		}
 	}
 | %empty
@@ -2155,6 +2211,34 @@ incr_expr_list
 			check_and_set_scalar(exp);
 		}
 	}
+| incr_expr_list func_invo ','
+	{
+		invo_val *p=(invo_val*)$2;
+		symbol_list* sym=find_symbol(p->name);
+
+		const_val *q=NEW_VAL(const_val);
+		q->kind=KIND_RVAL;
+		q->type=TYPE_INT;
+		q->value = (void*)p;
+
+
+		if(sym!=NULL)
+		{
+			id_val *sym_id=(id_val*)sym->val;
+
+			if(sym_id->kind!=KIND_FUNCTION)
+				dump_error(ERROR_ID_KIND);
+			else
+			{
+				if(!check_parameter(sym,p))
+					dump_error(ERROR_FUNC_ARGU_NOT_MATCH);
+			}
+			const_val *q=NEW_VAL(const_val);
+			q->kind=KIND_RVAL;
+			q->type=sym_id->type;
+			q->value = (void*)p;
+		}
+	}
 | var_ref '=' expr ','
 	{
 		const_val* con=(const_val*)$1;
@@ -2170,6 +2254,35 @@ incr_expr_list
 			check_and_set_scalar(exp);
 		}
 	}
+| func_invo
+	{
+		invo_val *p=(invo_val*)$1;
+		symbol_list* sym=find_symbol(p->name);
+
+		const_val *q=NEW_VAL(const_val);
+		q->kind=KIND_RVAL;
+		q->type=TYPE_INT;
+		q->value = (void*)p;
+
+
+		if(sym!=NULL)
+		{
+			id_val *sym_id=(id_val*)sym->val;
+
+			if(sym_id->kind!=KIND_FUNCTION)
+				dump_error(ERROR_ID_KIND);
+			else
+			{
+				if(!check_parameter(sym,p))
+					dump_error(ERROR_FUNC_ARGU_NOT_MATCH);
+			}
+			const_val *q=NEW_VAL(const_val);
+			q->kind=KIND_RVAL;
+			q->type=sym_id->type;
+			q->value = (void*)p;
+		}
+	}
+;
 
 jump_stat
 : RETURN expr ';'
