@@ -117,6 +117,13 @@ typedef struct symbol_tables{
 
 } symbol_table;
 
+typedef struct S_decl_check
+{
+	symbol_list *tar;
+	int line;
+	struct S_decl_check *next;
+} decl_check;
+
 int cur_level=0;
 
 symbol_table* cur_table=NULL;
@@ -124,8 +131,13 @@ symbol_list* argu_table=NULL;
 symbol_list* argu_table_index=NULL;
 symbol_list* cur_argu_ptr=NULL;
 
-int isInLoop=0;
+decl_check *decl_stack=NULL;
 
+int decl_build(char* name, void* my_val);
+int def_build(char* name, void* my_val);
+int isIndef=0;
+
+int isInLoop=0;
 
 char* mergestring(char* a, char* b);
 
@@ -140,7 +152,7 @@ int find_redclair(char* name);
 int check_parameter(symbol_list* sym,invo_val *invo);
 int check_step(symbol_list*sym,invo_val *invo);
 arr_val* count_arr_ref(char* name);
-symbol_list* find_symbol(char* name);
+symbol_list* find_symbol(char* name,int dump);
 const_val *geneOneVal(const_val *a,int m_type);
 const_val *geneValConstOne(const_val *a, const_val *b, int m_type);
 const_val *geneValConst(const_val *a, const_val *b);
@@ -251,6 +263,7 @@ func_def
 		p->list = (void*)p_f;
 
 		int result= find_redclair($2);
+
 
 		if(result==NO_ERROR)
 			add_id($2,(void*)p);
@@ -1607,13 +1620,12 @@ expr
 		p->name = strdup($1);
 		p->listc = 0;
 
-		symbol_list* sym=find_symbol(p->name);
+		symbol_list* sym=find_symbol(p->name,1);
 
 		const_val *q=NEW_VAL(const_val);
 		q->kind=KIND_RVAL;
 		q->type=TYPE_INT;
 		q->value= (void*)p;
-
 
 		if(sym!=NULL)
 		{
@@ -1639,7 +1651,7 @@ expr
 	{
 		// check func id exist and argu form correct;
 		invo_val *p=(invo_val*)$1;
-		symbol_list* sym=find_symbol(p->name);
+		symbol_list* sym=find_symbol(p->name,1);
 
 		const_val *q=NEW_VAL(const_val);
 		q->kind=KIND_RVAL;
@@ -1670,7 +1682,7 @@ expr
 	{
 		// check arr id exist and dimention correct;
 		invo_val *p=(invo_val*)$1;
-		symbol_list* sym=find_symbol(p->name);
+		symbol_list* sym=find_symbol(p->name,1);
 
 		const_val *q= NEW_VAL(const_val);
 		q->kind= KIND_RVAL;
@@ -1840,7 +1852,7 @@ var_ref
 		p->name = strdup($1);
 		p->listc = 0;
 
-		symbol_list* sym=find_symbol(p->name);
+		symbol_list* sym=find_symbol(p->name,1);
 
 		const_val *q=NEW_VAL(const_val);
 		q->kind=KIND_RVAL;
@@ -1871,7 +1883,7 @@ var_ref
 | arr_ref
 	{
 		invo_val *p=(invo_val*)$1;
-		symbol_list* sym=find_symbol(p->name);
+		symbol_list* sym=find_symbol(p->name,1);
 
 		const_val *q= NEW_VAL(const_val);
 		q->kind= KIND_LVAL;
@@ -1943,7 +1955,7 @@ init_expr
 | init_expr_list func_invo
 	{
 		invo_val *p=(invo_val*)$2;
-		symbol_list* sym=find_symbol(p->name);
+		symbol_list* sym=find_symbol(p->name,1);
 
 		const_val *q=NEW_VAL(const_val);
 		q->kind=KIND_RVAL;
@@ -1971,7 +1983,7 @@ init_expr
 | func_invo
 	{
 		invo_val *p=(invo_val*)$1;
-		symbol_list* sym=find_symbol(p->name);
+		symbol_list* sym=find_symbol(p->name,1);
 
 		const_val *q=NEW_VAL(const_val);
 		q->kind=KIND_RVAL;
@@ -2033,7 +2045,7 @@ init_expr_list
 | init_expr_list func_invo ','
 	{
 		invo_val *p=(invo_val*)$2;
-		symbol_list* sym=find_symbol(p->name);
+		symbol_list* sym=find_symbol(p->name,1);
 
 		const_val *q=NEW_VAL(const_val);
 		q->kind=KIND_RVAL;
@@ -2061,7 +2073,7 @@ init_expr_list
 | func_invo ','
 	{
 		invo_val *p=(invo_val*)$1;
-		symbol_list* sym=find_symbol(p->name);
+		symbol_list* sym=find_symbol(p->name,1);
 
 		const_val *q=NEW_VAL(const_val);
 		q->kind=KIND_RVAL;
@@ -2124,7 +2136,7 @@ incr_expr
 | incr_expr_list func_invo
 	{
 		invo_val *p=(invo_val*)$2;
-		symbol_list* sym=find_symbol(p->name);
+		symbol_list* sym=find_symbol(p->name,1);
 
 		const_val *q=NEW_VAL(const_val);
 		q->kind=KIND_RVAL;
@@ -2167,7 +2179,7 @@ incr_expr
 | func_invo
 	{
 		invo_val *p=(invo_val*)$1;
-		symbol_list* sym=find_symbol(p->name);
+		symbol_list* sym=find_symbol(p->name,1);
 
 		const_val *q=NEW_VAL(const_val);
 		q->kind=KIND_RVAL;
@@ -2214,7 +2226,7 @@ incr_expr_list
 | incr_expr_list func_invo ','
 	{
 		invo_val *p=(invo_val*)$2;
-		symbol_list* sym=find_symbol(p->name);
+		symbol_list* sym=find_symbol(p->name,1);
 
 		const_val *q=NEW_VAL(const_val);
 		q->kind=KIND_RVAL;
@@ -2257,7 +2269,7 @@ incr_expr_list
 | func_invo
 	{
 		invo_val *p=(invo_val*)$1;
-		symbol_list* sym=find_symbol(p->name);
+		symbol_list* sym=find_symbol(p->name,1);
 
 		const_val *q=NEW_VAL(const_val);
 		q->kind=KIND_RVAL;
@@ -2311,7 +2323,7 @@ jump_stat
 
 %%
 
-symbol_list* find_symbol(char* name)
+symbol_list* find_symbol(char* name,int dump)
 {
 	symbol_table *table= cur_table;
 	while(table!=NULL)
@@ -2325,7 +2337,8 @@ symbol_list* find_symbol(char* name)
 		}
 		table=table->next;
 	}
-	dump_error(ERROR_ID_NO_FOUND);
+	if(dump)
+		dump_error(ERROR_ID_NO_FOUND);
 	return NULL;
 }
 
@@ -2433,15 +2446,18 @@ int check_and_set_scalar(const_val *a)
 		return 1;
 	else
 	{
-		symbol_list *list=find_symbol( ((invo_val*)a->value)->name );
-		id_val *id=(id_val*)list->val;
-		if(id->kind==KIND_FUNCTION) return 1;
-		else
+		symbol_list *list=find_symbol( ((invo_val*)a->value)->name,0);
+		if(list!=NULL)
 		{
-			if( ((invo_val*)a->value)->listc==0 ) return 1;
+			id_val *id=(id_val*)list->val;
+			if(id->kind==KIND_FUNCTION) return 1;
+			else
+			{
+				if( ((invo_val*)a->value)->listc==0 ) return 1;
+			}
+			((invo_val*)a->value)->listc=0;
+			dump_error(ERROR_ARR_STEP);
 		}
-		((invo_val*)a->value)->listc=0;
-		dump_error(ERROR_ARR_STEP);
 		return 0;
 	}
 	

@@ -2,13 +2,7 @@
 #pragma token off
 #pragma statistic off
 #pragma symbol on
-int ff(int z[4])
-{
-}
-
 int main()
 {
-	int b;
-	float ff;
-	double b;
-	}
+	b;
+}
