@@ -1,0 +1,21 @@
+#pragma source off
+#pragma token off
+#pragma statistic off
+
+int f(int a);
+
+int main(int zz[5])
+{
+	int a;
+	int b;
+	string aaa;
+	float c,f,ddd;
+
+	int arr[5][5];
+}
+
+int f(int a)
+{
+	a=0;
+}
+

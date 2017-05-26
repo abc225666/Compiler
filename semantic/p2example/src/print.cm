@@ -1,0 +1,15 @@
+#pragma source off
+#pragma token off
+#pragma statistic off
+
+int main()
+
+{
+	int a;
+	for(;;)
+	{
+
+	}
+
+	a= -5-5;
+}

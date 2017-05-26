@@ -1,0 +1,4887 @@
+Grammar
+
+    0 $accept: program $end
+
+    1 program: gvar_all_def func_def prog_content
+    2        | gvar_all_def func_def
+    3        | func_def prog_content
+    4        | func_def
+
+    5 prog_content: prog_content var_def
+    6             | prog_content func_def
+    7             | prog_content func_decl
+    8             | var_def
+    9             | func_def
+   10             | func_decl
+
+   11 gvar_all_def: gvar_all_def var_def
+   12             | gvar_all_def func_decl
+   13             | var_def
+   14             | func_decl
+
+   15 var_all_def: var_def
+
+   16 $@1: %empty
+
+   17 $@2: %empty
+
+   18 func_def: basic ID '(' argu_list argu ')' $@1 '{' $@2 compound_in_argu_func '}'
+
+   19 $@3: %empty
+
+   20 $@4: %empty
+
+   21 func_def: basic ID '(' argu ')' $@3 '{' $@4 compound_in_argu_func '}'
+
+   22 $@5: %empty
+
+   23 $@6: %empty
+
+   24 func_def: basic ID '(' ')' $@5 '{' $@6 compound_in_argu_func '}'
+
+   25 $@7: %empty
+
+   26 $@8: %empty
+
+   27 func_def: void_reduce ID '(' argu_list argu ')' $@7 '{' $@8 compound_in_argu_func '}'
+
+   28 $@9: %empty
+
+   29 $@10: %empty
+
+   30 func_def: void_reduce ID '(' argu ')' $@9 '{' $@10 compound_in_argu_func '}'
+
+   31 $@11: %empty
+
+   32 $@12: %empty
+
+   33 func_def: void_reduce ID '(' ')' $@11 '{' $@12 compound_in_argu_func '}'
+
+   34 $@13: %empty
+
+   35 compound: '{' $@13 compound_list '}'
+
+   36 $@14: %empty
+
+   37 compound: '{' $@14 '}'
+
+   38 compound_in_argu_func: compound_list
+   39                      | %empty
+
+   40 compound_list: compound_list var_all_def
+   41              | compound_list statement
+   42              | statement
+   43              | var_all_def
+
+   44 $@15: %empty
+
+   45 func_decl: basic ID '(' argu_list argu ')' $@15 ';'
+
+   46 $@16: %empty
+
+   47 func_decl: basic ID '(' argu ')' $@16 ';'
+
+   48 $@17: %empty
+
+   49 func_decl: basic ID '(' ')' $@17 ';'
+
+   50 $@18: %empty
+
+   51 func_decl: void_reduce ID '(' argu_list argu ')' $@18 ';'
+
+   52 $@19: %empty
+
+   53 func_decl: void_reduce ID '(' argu ')' $@19 ';'
+
+   54 $@20: %empty
+
+   55 func_decl: void_reduce ID '(' ')' $@20 ';'
+
+   56 argu_list: argu_list argu ','
+   57          | argu ','
+
+   58 argu: basic ID
+   59     | basic ID array_argu_step
+
+   60 array_argu_step: array_argu_step '[' INT_CONST ']'
+   61                | '[' INT_CONST ']'
+
+   62 basic: BASIC_TYPE
+
+   63 void_reduce: VOID
+
+   64 liter_const: int_value
+   65            | '-' int_value
+   66            | float_value
+   67            | '-' float_value
+   68            | bool_value
+   69            | string_value
+
+   70 value_type: int_value
+   71           | float_value
+   72           | bool_value
+   73           | string_value
+
+   74 int_value: INT_CONST
+
+   75 float_value: FLOAT_CONST
+
+   76 bool_value: BOOL_CONST
+
+   77 string_value: STRING_CONST
+
+   78 var_list: var_list ID ','
+   79         | var_list ID '=' expr ','
+   80         | ID ','
+   81         | ID '=' expr ','
+   82         | var_list ID arr_step '=' arr_init ','
+   83         | var_list ID arr_step ','
+   84         | ID arr_step '=' arr_init ','
+   85         | ID arr_step ','
+
+   86 const_list: const_list ID '=' liter_const ','
+   87           | ID '=' liter_const ','
+
+   88 var_def: basic var_list ID ';'
+   89        | basic var_list ID '=' expr ';'
+   90        | basic ID ';'
+   91        | basic ID '=' expr ';'
+   92        | basic var_list ID arr_step '=' arr_init ';'
+   93        | basic var_list ID arr_step ';'
+   94        | basic ID arr_step '=' arr_init ';'
+   95        | basic ID arr_step ';'
+   96        | CONST basic const_list ID '=' liter_const ';'
+   97        | CONST basic ID '=' liter_const ';'
+
+   98 arr_step: arr_step '[' INT_CONST ']'
+   99         | '[' INT_CONST ']'
+
+  100 arr_init: '{' arr_argu_list expr '}'
+  101         | '{' expr '}'
+  102         | '{' '}'
+
+  103 arr_argu_list: arr_argu_list expr ','
+  104              | expr ','
+
+  105 expr: expr '*' expr
+  106     | expr '/' expr
+  107     | expr '+' expr
+  108     | expr '-' expr
+  109     | expr '%' expr
+  110     | expr '<' expr
+  111     | expr LE expr
+  112     | expr '>' expr
+  113     | expr GE expr
+  114     | expr EQ expr
+  115     | expr NE expr
+  116     | '(' expr ')'
+  117     | '-' expr
+  118     | expr AND expr
+  119     | expr OR expr
+  120     | '!' expr
+  121     | value_type
+  122     | ID
+  123     | func_invo
+  124     | arr_ref
+
+  125 arr_ref: ID arr_ref_step
+
+  126 arr_ref_step: arr_ref_step '[' expr ']'
+  127             | '[' expr ']'
+
+  128 func_invo: ID '(' expr_list expr ')'
+  129          | ID '(' expr ')'
+  130          | ID '(' ')'
+
+  131 expr_list: expr_list expr ','
+  132          | expr ','
+
+  133 statement: compound
+  134          | simple_stat
+  135          | condition
+  136          | while_stat
+  137          | for_stat
+  138          | jump_stat
+  139          | expr ';'
+
+  140 simple_stat: var_ref '=' expr ';'
+  141            | PRINT expr ';'
+  142            | READ var_ref ';'
+
+  143 var_ref: ID
+  144        | arr_ref
+
+  145 condition: IF '(' bool_expr ')' compound
+  146          | IF '(' bool_expr ')' compound ELSE compound
+
+  147 bool_expr: expr
+
+  148 $@21: %empty
+
+  149 while_stat: WHILE '(' bool_expr ')' $@21 compound
+
+  150 $@22: %empty
+
+  151 $@23: %empty
+
+  152 while_stat: DO $@22 compound $@23 WHILE '(' bool_expr ')' ';'
+
+  153 $@24: %empty
+
+  154 for_stat: FOR '(' init_expr ';' expr ';' incr_expr ')' $@24 compound
+
+  155 $@25: %empty
+
+  156 for_stat: FOR '(' init_expr ';' ';' incr_expr ')' $@25 compound
+
+  157 init_expr: init_expr_list var_ref '=' expr
+  158          | init_expr_list func_invo
+  159          | func_invo
+  160          | var_ref '=' expr
+  161          | %empty
+
+  162 init_expr_list: init_expr_list var_ref '=' expr ','
+  163               | init_expr_list func_invo ','
+  164               | func_invo ','
+  165               | var_ref '=' expr ','
+
+  166 incr_expr: incr_expr_list var_ref '=' expr ','
+  167          | var_ref '=' expr
+  168          | %empty
+
+  169 incr_expr_list: incr_expr_list var_ref '=' expr ','
+  170               | var_ref '=' expr ','
+
+  171 jump_stat: RETURN expr ';'
+  172          | BREAK ';'
+  173          | CONTINUE ';'
+
+
+Terminals, with rules where they appear
+
+$end (0) 0
+'!' (33) 120
+'%' (37) 109
+'(' (40) 18 21 24 27 30 33 45 47 49 51 53 55 116 128 129 130 145 146
+    149 152 154 156
+')' (41) 18 21 24 27 30 33 45 47 49 51 53 55 116 128 129 130 145 146
+    149 152 154 156
+'*' (42) 105
+'+' (43) 107
+',' (44) 56 57 78 79 80 81 82 83 84 85 86 87 103 104 131 132 162 163
+    164 165 166 169 170
+'-' (45) 65 67 108 117
+'/' (47) 106
+';' (59) 45 47 49 51 53 55 88 89 90 91 92 93 94 95 96 97 139 140 141
+    142 152 154 156 171 172 173
+'<' (60) 110
+'=' (61) 79 81 82 84 86 87 89 91 92 94 96 97 140 157 160 162 165 166
+    167 169 170
+'>' (62) 112
+'[' (91) 60 61 98 99 126 127
+']' (93) 60 61 98 99 126 127
+'{' (123) 18 21 24 27 30 33 35 37 100 101 102
+'}' (125) 18 21 24 27 30 33 35 37 100 101 102
+error (256)
+VOID (258) 63
+BASIC_TYPE (259) 62
+ID (260) 18 21 24 27 30 33 45 47 49 51 53 55 58 59 78 79 80 81 82 83
+    84 85 86 87 88 89 90 91 92 93 94 95 96 97 122 125 128 129 130 143
+INT_CONST (261) 60 61 74 98 99
+FLOAT_CONST (262) 75
+BOOL_CONST (263) 76
+STRING_CONST (264) 77
+READ (265) 142
+PRINT (266) 141
+IF (267) 145 146
+ELSE (268) 146
+DO (269) 152
+WHILE (270) 149 152
+FOR (271) 154 156
+CONTINUE (272) 173
+BREAK (273) 172
+RETURN (274) 171
+CONST (275) 96 97
+OR (276) 119
+AND (277) 118
+LE (278) 111
+EQ (279) 114
+GE (280) 113
+NE (281) 115
+UNOT (282)
+UMINUS (283)
+
+
+Nonterminals, with rules where they appear
+
+$accept (46)
+    on left: 0
+program (47)
+    on left: 1 2 3 4, on right: 0
+prog_content (48)
+    on left: 5 6 7 8 9 10, on right: 1 3 5 6 7
+gvar_all_def (49)
+    on left: 11 12 13 14, on right: 1 2 11 12
+var_all_def (50)
+    on left: 15, on right: 40 43
+func_def (51)
+    on left: 18 21 24 27 30 33, on right: 1 2 3 4 6 9
+$@1 (52)
+    on left: 16, on right: 18
+$@2 (53)
+    on left: 17, on right: 18
+$@3 (54)
+    on left: 19, on right: 21
+$@4 (55)
+    on left: 20, on right: 21
+$@5 (56)
+    on left: 22, on right: 24
+$@6 (57)
+    on left: 23, on right: 24
+$@7 (58)
+    on left: 25, on right: 27
+$@8 (59)
+    on left: 26, on right: 27
+$@9 (60)
+    on left: 28, on right: 30
+$@10 (61)
+    on left: 29, on right: 30
+$@11 (62)
+    on left: 31, on right: 33
+$@12 (63)
+    on left: 32, on right: 33
+compound (64)
+    on left: 35 37, on right: 133 145 146 149 152 154 156
+$@13 (65)
+    on left: 34, on right: 35
+$@14 (66)
+    on left: 36, on right: 37
+compound_in_argu_func (67)
+    on left: 38 39, on right: 18 21 24 27 30 33
+compound_list (68)
+    on left: 40 41 42 43, on right: 35 38 40 41
+func_decl (69)
+    on left: 45 47 49 51 53 55, on right: 7 10 12 14
+$@15 (70)
+    on left: 44, on right: 45
+$@16 (71)
+    on left: 46, on right: 47
+$@17 (72)
+    on left: 48, on right: 49
+$@18 (73)
+    on left: 50, on right: 51
+$@19 (74)
+    on left: 52, on right: 53
+$@20 (75)
+    on left: 54, on right: 55
+argu_list (76)
+    on left: 56 57, on right: 18 27 45 51 56
+argu (77)
+    on left: 58 59, on right: 18 21 27 30 45 47 51 53 56 57
+array_argu_step (78)
+    on left: 60 61, on right: 59 60
+basic (79)
+    on left: 62, on right: 18 21 24 45 47 49 58 59 88 89 90 91 92 93
+    94 95 96 97
+void_reduce (80)
+    on left: 63, on right: 27 30 33 51 53 55
+liter_const (81)
+    on left: 64 65 66 67 68 69, on right: 86 87 96 97
+value_type (82)
+    on left: 70 71 72 73, on right: 121
+int_value (83)
+    on left: 74, on right: 64 65 70
+float_value (84)
+    on left: 75, on right: 66 67 71
+bool_value (85)
+    on left: 76, on right: 68 72
+string_value (86)
+    on left: 77, on right: 69 73
+var_list (87)
+    on left: 78 79 80 81 82 83 84 85, on right: 78 79 82 83 88 89 92
+    93
+const_list (88)
+    on left: 86 87, on right: 86 96
+var_def (89)
+    on left: 88 89 90 91 92 93 94 95 96 97, on right: 5 8 11 13 15
+arr_step (90)
+    on left: 98 99, on right: 82 83 84 85 92 93 94 95 98
+arr_init (91)
+    on left: 100 101 102, on right: 82 84 92 94
+arr_argu_list (92)
+    on left: 103 104, on right: 100 103
+expr (93)
+    on left: 105 106 107 108 109 110 111 112 113 114 115 116 117 118
+    119 120 121 122 123 124, on right: 79 81 89 91 100 101 103 104
+    105 106 107 108 109 110 111 112 113 114 115 116 117 118 119 120
+    126 127 128 129 131 132 139 140 141 147 154 157 160 162 165 166
+    167 169 170 171
+arr_ref (94)
+    on left: 125, on right: 124 144
+arr_ref_step (95)
+    on left: 126 127, on right: 125 126
+func_invo (96)
+    on left: 128 129 130, on right: 123 158 159 163 164
+expr_list (97)
+    on left: 131 132, on right: 128 131
+statement (98)
+    on left: 133 134 135 136 137 138 139, on right: 41 42
+simple_stat (99)
+    on left: 140 141 142, on right: 134
+var_ref (100)
+    on left: 143 144, on right: 140 142 157 160 162 165 166 167 169
+    170
+condition (101)
+    on left: 145 146, on right: 135
+bool_expr (102)
+    on left: 147, on right: 145 146 149 152
+while_stat (103)
+    on left: 149 152, on right: 136
+$@21 (104)
+    on left: 148, on right: 149
+$@22 (105)
+    on left: 150, on right: 152
+$@23 (106)
+    on left: 151, on right: 152
+for_stat (107)
+    on left: 154 156, on right: 137
+$@24 (108)
+    on left: 153, on right: 154
+$@25 (109)
+    on left: 155, on right: 156
+init_expr (110)
+    on left: 157 158 159 160 161, on right: 154 156
+init_expr_list (111)
+    on left: 162 163 164 165, on right: 157 158 162 163
+incr_expr (112)
+    on left: 166 167 168, on right: 154 156
+incr_expr_list (113)
+    on left: 169 170, on right: 166 169
+jump_stat (114)
+    on left: 171 172 173, on right: 138
+
+
+State 0
+
+    0 $accept: . program $end
+
+    VOID        shift, and go to state 1
+    BASIC_TYPE  shift, and go to state 2
+    CONST       shift, and go to state 3
+
+    program       go to state 4
+    gvar_all_def  go to state 5
+    func_def      go to state 6
+    func_decl     go to state 7
+    basic         go to state 8
+    void_reduce   go to state 9
+    var_def       go to state 10
+
+
+State 1
+
+   63 void_reduce: VOID .
+
+    $default  reduce using rule 63 (void_reduce)
+
+
+State 2
+
+   62 basic: BASIC_TYPE .
+
+    $default  reduce using rule 62 (basic)
+
+
+State 3
+
+   96 var_def: CONST . basic const_list ID '=' liter_const ';'
+   97        | CONST . basic ID '=' liter_const ';'
+
+    BASIC_TYPE  shift, and go to state 2
+
+    basic  go to state 11
+
+
+State 4
+
+    0 $accept: program . $end
+
+    $end  shift, and go to state 12
+
+
+State 5
+
+    1 program: gvar_all_def . func_def prog_content
+    2        | gvar_all_def . func_def
+   11 gvar_all_def: gvar_all_def . var_def
+   12             | gvar_all_def . func_decl
+
+    VOID        shift, and go to state 1
+    BASIC_TYPE  shift, and go to state 2
+    CONST       shift, and go to state 3
+
+    func_def     go to state 13
+    func_decl    go to state 14
+    basic        go to state 8
+    void_reduce  go to state 9
+    var_def      go to state 15
+
+
+State 6
+
+    3 program: func_def . prog_content
+    4        | func_def .
+
+    VOID        shift, and go to state 1
+    BASIC_TYPE  shift, and go to state 2
+    CONST       shift, and go to state 3
+
+    $default  reduce using rule 4 (program)
+
+    prog_content  go to state 16
+    func_def      go to state 17
+    func_decl     go to state 18
+    basic         go to state 8
+    void_reduce   go to state 9
+    var_def       go to state 19
+
+
+State 7
+
+   14 gvar_all_def: func_decl .
+
+    $default  reduce using rule 14 (gvar_all_def)
+
+
+State 8
+
+   18 func_def: basic . ID '(' argu_list argu ')' $@1 '{' $@2 compound_in_argu_func '}'
+   21         | basic . ID '(' argu ')' $@3 '{' $@4 compound_in_argu_func '}'
+   24         | basic . ID '(' ')' $@5 '{' $@6 compound_in_argu_func '}'
+   45 func_decl: basic . ID '(' argu_list argu ')' $@15 ';'
+   47          | basic . ID '(' argu ')' $@16 ';'
+   49          | basic . ID '(' ')' $@17 ';'
+   88 var_def: basic . var_list ID ';'
+   89        | basic . var_list ID '=' expr ';'
+   90        | basic . ID ';'
+   91        | basic . ID '=' expr ';'
+   92        | basic . var_list ID arr_step '=' arr_init ';'
+   93        | basic . var_list ID arr_step ';'
+   94        | basic . ID arr_step '=' arr_init ';'
+   95        | basic . ID arr_step ';'
+
+    ID  shift, and go to state 20
+
+    var_list  go to state 21
+
+
+State 9
+
+   27 func_def: void_reduce . ID '(' argu_list argu ')' $@7 '{' $@8 compound_in_argu_func '}'
+   30         | void_reduce . ID '(' argu ')' $@9 '{' $@10 compound_in_argu_func '}'
+   33         | void_reduce . ID '(' ')' $@11 '{' $@12 compound_in_argu_func '}'
+   51 func_decl: void_reduce . ID '(' argu_list argu ')' $@18 ';'
+   53          | void_reduce . ID '(' argu ')' $@19 ';'
+   55          | void_reduce . ID '(' ')' $@20 ';'
+
+    ID  shift, and go to state 22
+
+
+State 10
+
+   13 gvar_all_def: var_def .
+
+    $default  reduce using rule 13 (gvar_all_def)
+
+
+State 11
+
+   96 var_def: CONST basic . const_list ID '=' liter_const ';'
+   97        | CONST basic . ID '=' liter_const ';'
+
+    ID  shift, and go to state 23
+
+    const_list  go to state 24
+
+
+State 12
+
+    0 $accept: program $end .
+
+    $default  accept
+
+
+State 13
+
+    1 program: gvar_all_def func_def . prog_content
+    2        | gvar_all_def func_def .
+
+    VOID        shift, and go to state 1
+    BASIC_TYPE  shift, and go to state 2
+    CONST       shift, and go to state 3
+
+    $default  reduce using rule 2 (program)
+
+    prog_content  go to state 25
+    func_def      go to state 17
+    func_decl     go to state 18
+    basic         go to state 8
+    void_reduce   go to state 9
+    var_def       go to state 19
+
+
+State 14
+
+   12 gvar_all_def: gvar_all_def func_decl .
+
+    $default  reduce using rule 12 (gvar_all_def)
+
+
+State 15
+
+   11 gvar_all_def: gvar_all_def var_def .
+
+    $default  reduce using rule 11 (gvar_all_def)
+
+
+State 16
+
+    3 program: func_def prog_content .
+    5 prog_content: prog_content . var_def
+    6             | prog_content . func_def
+    7             | prog_content . func_decl
+
+    VOID        shift, and go to state 1
+    BASIC_TYPE  shift, and go to state 2
+    CONST       shift, and go to state 3
+
+    $default  reduce using rule 3 (program)
+
+    func_def     go to state 26
+    func_decl    go to state 27
+    basic        go to state 8
+    void_reduce  go to state 9
+    var_def      go to state 28
+
+
+State 17
+
+    9 prog_content: func_def .
+
+    $default  reduce using rule 9 (prog_content)
+
+
+State 18
+
+   10 prog_content: func_decl .
+
+    $default  reduce using rule 10 (prog_content)
+
+
+State 19
+
+    8 prog_content: var_def .
+
+    $default  reduce using rule 8 (prog_content)
+
+
+State 20
+
+   18 func_def: basic ID . '(' argu_list argu ')' $@1 '{' $@2 compound_in_argu_func '}'
+   21         | basic ID . '(' argu ')' $@3 '{' $@4 compound_in_argu_func '}'
+   24         | basic ID . '(' ')' $@5 '{' $@6 compound_in_argu_func '}'
+   45 func_decl: basic ID . '(' argu_list argu ')' $@15 ';'
+   47          | basic ID . '(' argu ')' $@16 ';'
+   49          | basic ID . '(' ')' $@17 ';'
+   80 var_list: ID . ','
+   81         | ID . '=' expr ','
+   84         | ID . arr_step '=' arr_init ','
+   85         | ID . arr_step ','
+   90 var_def: basic ID . ';'
+   91        | basic ID . '=' expr ';'
+   94        | basic ID . arr_step '=' arr_init ';'
+   95        | basic ID . arr_step ';'
+
+    '('  shift, and go to state 29
+    ';'  shift, and go to state 30
+    ','  shift, and go to state 31
+    '['  shift, and go to state 32
+    '='  shift, and go to state 33
+
+    arr_step  go to state 34
+
+
+State 21
+
+   78 var_list: var_list . ID ','
+   79         | var_list . ID '=' expr ','
+   82         | var_list . ID arr_step '=' arr_init ','
+   83         | var_list . ID arr_step ','
+   88 var_def: basic var_list . ID ';'
+   89        | basic var_list . ID '=' expr ';'
+   92        | basic var_list . ID arr_step '=' arr_init ';'
+   93        | basic var_list . ID arr_step ';'
+
+    ID  shift, and go to state 35
+
+
+State 22
+
+   27 func_def: void_reduce ID . '(' argu_list argu ')' $@7 '{' $@8 compound_in_argu_func '}'
+   30         | void_reduce ID . '(' argu ')' $@9 '{' $@10 compound_in_argu_func '}'
+   33         | void_reduce ID . '(' ')' $@11 '{' $@12 compound_in_argu_func '}'
+   51 func_decl: void_reduce ID . '(' argu_list argu ')' $@18 ';'
+   53          | void_reduce ID . '(' argu ')' $@19 ';'
+   55          | void_reduce ID . '(' ')' $@20 ';'
+
+    '('  shift, and go to state 36
+
+
+State 23
+
+   87 const_list: ID . '=' liter_const ','
+   97 var_def: CONST basic ID . '=' liter_const ';'
+
+    '='  shift, and go to state 37
+
+
+State 24
+
+   86 const_list: const_list . ID '=' liter_const ','
+   96 var_def: CONST basic const_list . ID '=' liter_const ';'
+
+    ID  shift, and go to state 38
+
+
+State 25
+
+    1 program: gvar_all_def func_def prog_content .
+    5 prog_content: prog_content . var_def
+    6             | prog_content . func_def
+    7             | prog_content . func_decl
+
+    VOID        shift, and go to state 1
+    BASIC_TYPE  shift, and go to state 2
+    CONST       shift, and go to state 3
+
+    $default  reduce using rule 1 (program)
+
+    func_def     go to state 26
+    func_decl    go to state 27
+    basic        go to state 8
+    void_reduce  go to state 9
+    var_def      go to state 28
+
+
+State 26
+
+    6 prog_content: prog_content func_def .
+
+    $default  reduce using rule 6 (prog_content)
+
+
+State 27
+
+    7 prog_content: prog_content func_decl .
+
+    $default  reduce using rule 7 (prog_content)
+
+
+State 28
+
+    5 prog_content: prog_content var_def .
+
+    $default  reduce using rule 5 (prog_content)
+
+
+State 29
+
+   18 func_def: basic ID '(' . argu_list argu ')' $@1 '{' $@2 compound_in_argu_func '}'
+   21         | basic ID '(' . argu ')' $@3 '{' $@4 compound_in_argu_func '}'
+   24         | basic ID '(' . ')' $@5 '{' $@6 compound_in_argu_func '}'
+   45 func_decl: basic ID '(' . argu_list argu ')' $@15 ';'
+   47          | basic ID '(' . argu ')' $@16 ';'
+   49          | basic ID '(' . ')' $@17 ';'
+
+    BASIC_TYPE  shift, and go to state 2
+    ')'         shift, and go to state 39
+
+    argu_list  go to state 40
+    argu       go to state 41
+    basic      go to state 42
+
+
+State 30
+
+   90 var_def: basic ID ';' .
+
+    $default  reduce using rule 90 (var_def)
+
+
+State 31
+
+   80 var_list: ID ',' .
+
+    $default  reduce using rule 80 (var_list)
+
+
+State 32
+
+   99 arr_step: '[' . INT_CONST ']'
+
+    INT_CONST  shift, and go to state 43
+
+
+State 33
+
+   81 var_list: ID '=' . expr ','
+   91 var_def: basic ID '=' . expr ';'
+
+    ID            shift, and go to state 44
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '!'           shift, and go to state 51
+
+    value_type    go to state 52
+    int_value     go to state 53
+    float_value   go to state 54
+    bool_value    go to state 55
+    string_value  go to state 56
+    expr          go to state 57
+    arr_ref       go to state 58
+    func_invo     go to state 59
+
+
+State 34
+
+   84 var_list: ID arr_step . '=' arr_init ','
+   85         | ID arr_step . ','
+   94 var_def: basic ID arr_step . '=' arr_init ';'
+   95        | basic ID arr_step . ';'
+   98 arr_step: arr_step . '[' INT_CONST ']'
+
+    ';'  shift, and go to state 60
+    ','  shift, and go to state 61
+    '['  shift, and go to state 62
+    '='  shift, and go to state 63
+
+
+State 35
+
+   78 var_list: var_list ID . ','
+   79         | var_list ID . '=' expr ','
+   82         | var_list ID . arr_step '=' arr_init ','
+   83         | var_list ID . arr_step ','
+   88 var_def: basic var_list ID . ';'
+   89        | basic var_list ID . '=' expr ';'
+   92        | basic var_list ID . arr_step '=' arr_init ';'
+   93        | basic var_list ID . arr_step ';'
+
+    ';'  shift, and go to state 64
+    ','  shift, and go to state 65
+    '['  shift, and go to state 32
+    '='  shift, and go to state 66
+
+    arr_step  go to state 67
+
+
+State 36
+
+   27 func_def: void_reduce ID '(' . argu_list argu ')' $@7 '{' $@8 compound_in_argu_func '}'
+   30         | void_reduce ID '(' . argu ')' $@9 '{' $@10 compound_in_argu_func '}'
+   33         | void_reduce ID '(' . ')' $@11 '{' $@12 compound_in_argu_func '}'
+   51 func_decl: void_reduce ID '(' . argu_list argu ')' $@18 ';'
+   53          | void_reduce ID '(' . argu ')' $@19 ';'
+   55          | void_reduce ID '(' . ')' $@20 ';'
+
+    BASIC_TYPE  shift, and go to state 2
+    ')'         shift, and go to state 68
+
+    argu_list  go to state 69
+    argu       go to state 70
+    basic      go to state 42
+
+
+State 37
+
+   87 const_list: ID '=' . liter_const ','
+   97 var_def: CONST basic ID '=' . liter_const ';'
+
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    '-'           shift, and go to state 71
+
+    liter_const   go to state 72
+    int_value     go to state 73
+    float_value   go to state 74
+    bool_value    go to state 75
+    string_value  go to state 76
+
+
+State 38
+
+   86 const_list: const_list ID . '=' liter_const ','
+   96 var_def: CONST basic const_list ID . '=' liter_const ';'
+
+    '='  shift, and go to state 77
+
+
+State 39
+
+   24 func_def: basic ID '(' ')' . $@5 '{' $@6 compound_in_argu_func '}'
+   49 func_decl: basic ID '(' ')' . $@17 ';'
+
+    ';'       reduce using rule 48 ($@17)
+    $default  reduce using rule 22 ($@5)
+
+    $@5   go to state 78
+    $@17  go to state 79
+
+
+State 40
+
+   18 func_def: basic ID '(' argu_list . argu ')' $@1 '{' $@2 compound_in_argu_func '}'
+   45 func_decl: basic ID '(' argu_list . argu ')' $@15 ';'
+   56 argu_list: argu_list . argu ','
+
+    BASIC_TYPE  shift, and go to state 2
+
+    argu   go to state 80
+    basic  go to state 42
+
+
+State 41
+
+   21 func_def: basic ID '(' argu . ')' $@3 '{' $@4 compound_in_argu_func '}'
+   47 func_decl: basic ID '(' argu . ')' $@16 ';'
+   57 argu_list: argu . ','
+
+    ')'  shift, and go to state 81
+    ','  shift, and go to state 82
+
+
+State 42
+
+   58 argu: basic . ID
+   59     | basic . ID array_argu_step
+
+    ID  shift, and go to state 83
+
+
+State 43
+
+   99 arr_step: '[' INT_CONST . ']'
+
+    ']'  shift, and go to state 84
+
+
+State 44
+
+  122 expr: ID .
+  125 arr_ref: ID . arr_ref_step
+  128 func_invo: ID . '(' expr_list expr ')'
+  129          | ID . '(' expr ')'
+  130          | ID . '(' ')'
+
+    '('  shift, and go to state 85
+    '['  shift, and go to state 86
+
+    $default  reduce using rule 122 (expr)
+
+    arr_ref_step  go to state 87
+
+
+State 45
+
+   74 int_value: INT_CONST .
+
+    $default  reduce using rule 74 (int_value)
+
+
+State 46
+
+   75 float_value: FLOAT_CONST .
+
+    $default  reduce using rule 75 (float_value)
+
+
+State 47
+
+   76 bool_value: BOOL_CONST .
+
+    $default  reduce using rule 76 (bool_value)
+
+
+State 48
+
+   77 string_value: STRING_CONST .
+
+    $default  reduce using rule 77 (string_value)
+
+
+State 49
+
+  117 expr: '-' . expr
+
+    ID            shift, and go to state 44
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '!'           shift, and go to state 51
+
+    value_type    go to state 52
+    int_value     go to state 53
+    float_value   go to state 54
+    bool_value    go to state 55
+    string_value  go to state 56
+    expr          go to state 88
+    arr_ref       go to state 58
+    func_invo     go to state 59
+
+
+State 50
+
+  116 expr: '(' . expr ')'
+
+    ID            shift, and go to state 44
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '!'           shift, and go to state 51
+
+    value_type    go to state 52
+    int_value     go to state 53
+    float_value   go to state 54
+    bool_value    go to state 55
+    string_value  go to state 56
+    expr          go to state 89
+    arr_ref       go to state 58
+    func_invo     go to state 59
+
+
+State 51
+
+  120 expr: '!' . expr
+
+    ID            shift, and go to state 44
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '!'           shift, and go to state 51
+
+    value_type    go to state 52
+    int_value     go to state 53
+    float_value   go to state 54
+    bool_value    go to state 55
+    string_value  go to state 56
+    expr          go to state 90
+    arr_ref       go to state 58
+    func_invo     go to state 59
+
+
+State 52
+
+  121 expr: value_type .
+
+    $default  reduce using rule 121 (expr)
+
+
+State 53
+
+   70 value_type: int_value .
+
+    $default  reduce using rule 70 (value_type)
+
+
+State 54
+
+   71 value_type: float_value .
+
+    $default  reduce using rule 71 (value_type)
+
+
+State 55
+
+   72 value_type: bool_value .
+
+    $default  reduce using rule 72 (value_type)
+
+
+State 56
+
+   73 value_type: string_value .
+
+    $default  reduce using rule 73 (value_type)
+
+
+State 57
+
+   81 var_list: ID '=' expr . ','
+   91 var_def: basic ID '=' expr . ';'
+  105 expr: expr . '*' expr
+  106     | expr . '/' expr
+  107     | expr . '+' expr
+  108     | expr . '-' expr
+  109     | expr . '%' expr
+  110     | expr . '<' expr
+  111     | expr . LE expr
+  112     | expr . '>' expr
+  113     | expr . GE expr
+  114     | expr . EQ expr
+  115     | expr . NE expr
+  118     | expr . AND expr
+  119     | expr . OR expr
+
+    OR   shift, and go to state 91
+    AND  shift, and go to state 92
+    LE   shift, and go to state 93
+    EQ   shift, and go to state 94
+    GE   shift, and go to state 95
+    NE   shift, and go to state 96
+    '<'  shift, and go to state 97
+    '>'  shift, and go to state 98
+    '+'  shift, and go to state 99
+    '-'  shift, and go to state 100
+    '*'  shift, and go to state 101
+    '/'  shift, and go to state 102
+    '%'  shift, and go to state 103
+    ';'  shift, and go to state 104
+    ','  shift, and go to state 105
+
+
+State 58
+
+  124 expr: arr_ref .
+
+    $default  reduce using rule 124 (expr)
+
+
+State 59
+
+  123 expr: func_invo .
+
+    $default  reduce using rule 123 (expr)
+
+
+State 60
+
+   95 var_def: basic ID arr_step ';' .
+
+    $default  reduce using rule 95 (var_def)
+
+
+State 61
+
+   85 var_list: ID arr_step ',' .
+
+    $default  reduce using rule 85 (var_list)
+
+
+State 62
+
+   98 arr_step: arr_step '[' . INT_CONST ']'
+
+    INT_CONST  shift, and go to state 106
+
+
+State 63
+
+   84 var_list: ID arr_step '=' . arr_init ','
+   94 var_def: basic ID arr_step '=' . arr_init ';'
+
+    '{'  shift, and go to state 107
+
+    arr_init  go to state 108
+
+
+State 64
+
+   88 var_def: basic var_list ID ';' .
+
+    $default  reduce using rule 88 (var_def)
+
+
+State 65
+
+   78 var_list: var_list ID ',' .
+
+    $default  reduce using rule 78 (var_list)
+
+
+State 66
+
+   79 var_list: var_list ID '=' . expr ','
+   89 var_def: basic var_list ID '=' . expr ';'
+
+    ID            shift, and go to state 44
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '!'           shift, and go to state 51
+
+    value_type    go to state 52
+    int_value     go to state 53
+    float_value   go to state 54
+    bool_value    go to state 55
+    string_value  go to state 56
+    expr          go to state 109
+    arr_ref       go to state 58
+    func_invo     go to state 59
+
+
+State 67
+
+   82 var_list: var_list ID arr_step . '=' arr_init ','
+   83         | var_list ID arr_step . ','
+   92 var_def: basic var_list ID arr_step . '=' arr_init ';'
+   93        | basic var_list ID arr_step . ';'
+   98 arr_step: arr_step . '[' INT_CONST ']'
+
+    ';'  shift, and go to state 110
+    ','  shift, and go to state 111
+    '['  shift, and go to state 62
+    '='  shift, and go to state 112
+
+
+State 68
+
+   33 func_def: void_reduce ID '(' ')' . $@11 '{' $@12 compound_in_argu_func '}'
+   55 func_decl: void_reduce ID '(' ')' . $@20 ';'
+
+    ';'       reduce using rule 54 ($@20)
+    $default  reduce using rule 31 ($@11)
+
+    $@11  go to state 113
+    $@20  go to state 114
+
+
+State 69
+
+   27 func_def: void_reduce ID '(' argu_list . argu ')' $@7 '{' $@8 compound_in_argu_func '}'
+   51 func_decl: void_reduce ID '(' argu_list . argu ')' $@18 ';'
+   56 argu_list: argu_list . argu ','
+
+    BASIC_TYPE  shift, and go to state 2
+
+    argu   go to state 115
+    basic  go to state 42
+
+
+State 70
+
+   30 func_def: void_reduce ID '(' argu . ')' $@9 '{' $@10 compound_in_argu_func '}'
+   53 func_decl: void_reduce ID '(' argu . ')' $@19 ';'
+   57 argu_list: argu . ','
+
+    ')'  shift, and go to state 116
+    ','  shift, and go to state 82
+
+
+State 71
+
+   65 liter_const: '-' . int_value
+   67            | '-' . float_value
+
+    INT_CONST    shift, and go to state 45
+    FLOAT_CONST  shift, and go to state 46
+
+    int_value    go to state 117
+    float_value  go to state 118
+
+
+State 72
+
+   87 const_list: ID '=' liter_const . ','
+   97 var_def: CONST basic ID '=' liter_const . ';'
+
+    ';'  shift, and go to state 119
+    ','  shift, and go to state 120
+
+
+State 73
+
+   64 liter_const: int_value .
+
+    $default  reduce using rule 64 (liter_const)
+
+
+State 74
+
+   66 liter_const: float_value .
+
+    $default  reduce using rule 66 (liter_const)
+
+
+State 75
+
+   68 liter_const: bool_value .
+
+    $default  reduce using rule 68 (liter_const)
+
+
+State 76
+
+   69 liter_const: string_value .
+
+    $default  reduce using rule 69 (liter_const)
+
+
+State 77
+
+   86 const_list: const_list ID '=' . liter_const ','
+   96 var_def: CONST basic const_list ID '=' . liter_const ';'
+
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    '-'           shift, and go to state 71
+
+    liter_const   go to state 121
+    int_value     go to state 73
+    float_value   go to state 74
+    bool_value    go to state 75
+    string_value  go to state 76
+
+
+State 78
+
+   24 func_def: basic ID '(' ')' $@5 . '{' $@6 compound_in_argu_func '}'
+
+    '{'  shift, and go to state 122
+
+
+State 79
+
+   49 func_decl: basic ID '(' ')' $@17 . ';'
+
+    ';'  shift, and go to state 123
+
+
+State 80
+
+   18 func_def: basic ID '(' argu_list argu . ')' $@1 '{' $@2 compound_in_argu_func '}'
+   45 func_decl: basic ID '(' argu_list argu . ')' $@15 ';'
+   56 argu_list: argu_list argu . ','
+
+    ')'  shift, and go to state 124
+    ','  shift, and go to state 125
+
+
+State 81
+
+   21 func_def: basic ID '(' argu ')' . $@3 '{' $@4 compound_in_argu_func '}'
+   47 func_decl: basic ID '(' argu ')' . $@16 ';'
+
+    ';'       reduce using rule 46 ($@16)
+    $default  reduce using rule 19 ($@3)
+
+    $@3   go to state 126
+    $@16  go to state 127
+
+
+State 82
+
+   57 argu_list: argu ',' .
+
+    $default  reduce using rule 57 (argu_list)
+
+
+State 83
+
+   58 argu: basic ID .
+   59     | basic ID . array_argu_step
+
+    '['  shift, and go to state 128
+
+    $default  reduce using rule 58 (argu)
+
+    array_argu_step  go to state 129
+
+
+State 84
+
+   99 arr_step: '[' INT_CONST ']' .
+
+    $default  reduce using rule 99 (arr_step)
+
+
+State 85
+
+  128 func_invo: ID '(' . expr_list expr ')'
+  129          | ID '(' . expr ')'
+  130          | ID '(' . ')'
+
+    ID            shift, and go to state 44
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    ')'           shift, and go to state 130
+    '!'           shift, and go to state 51
+
+    value_type    go to state 52
+    int_value     go to state 53
+    float_value   go to state 54
+    bool_value    go to state 55
+    string_value  go to state 56
+    expr          go to state 131
+    arr_ref       go to state 58
+    func_invo     go to state 59
+    expr_list     go to state 132
+
+
+State 86
+
+  127 arr_ref_step: '[' . expr ']'
+
+    ID            shift, and go to state 44
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '!'           shift, and go to state 51
+
+    value_type    go to state 52
+    int_value     go to state 53
+    float_value   go to state 54
+    bool_value    go to state 55
+    string_value  go to state 56
+    expr          go to state 133
+    arr_ref       go to state 58
+    func_invo     go to state 59
+
+
+State 87
+
+  125 arr_ref: ID arr_ref_step .
+  126 arr_ref_step: arr_ref_step . '[' expr ']'
+
+    '['  shift, and go to state 134
+
+    $default  reduce using rule 125 (arr_ref)
+
+
+State 88
+
+  105 expr: expr . '*' expr
+  106     | expr . '/' expr
+  107     | expr . '+' expr
+  108     | expr . '-' expr
+  109     | expr . '%' expr
+  110     | expr . '<' expr
+  111     | expr . LE expr
+  112     | expr . '>' expr
+  113     | expr . GE expr
+  114     | expr . EQ expr
+  115     | expr . NE expr
+  117     | '-' expr .
+  118     | expr . AND expr
+  119     | expr . OR expr
+
+    $default  reduce using rule 117 (expr)
+
+
+State 89
+
+  105 expr: expr . '*' expr
+  106     | expr . '/' expr
+  107     | expr . '+' expr
+  108     | expr . '-' expr
+  109     | expr . '%' expr
+  110     | expr . '<' expr
+  111     | expr . LE expr
+  112     | expr . '>' expr
+  113     | expr . GE expr
+  114     | expr . EQ expr
+  115     | expr . NE expr
+  116     | '(' expr . ')'
+  118     | expr . AND expr
+  119     | expr . OR expr
+
+    OR   shift, and go to state 91
+    AND  shift, and go to state 92
+    LE   shift, and go to state 93
+    EQ   shift, and go to state 94
+    GE   shift, and go to state 95
+    NE   shift, and go to state 96
+    '<'  shift, and go to state 97
+    '>'  shift, and go to state 98
+    '+'  shift, and go to state 99
+    '-'  shift, and go to state 100
+    '*'  shift, and go to state 101
+    '/'  shift, and go to state 102
+    '%'  shift, and go to state 103
+    ')'  shift, and go to state 135
+
+
+State 90
+
+  105 expr: expr . '*' expr
+  106     | expr . '/' expr
+  107     | expr . '+' expr
+  108     | expr . '-' expr
+  109     | expr . '%' expr
+  110     | expr . '<' expr
+  111     | expr . LE expr
+  112     | expr . '>' expr
+  113     | expr . GE expr
+  114     | expr . EQ expr
+  115     | expr . NE expr
+  118     | expr . AND expr
+  119     | expr . OR expr
+  120     | '!' expr .
+
+    LE   shift, and go to state 93
+    EQ   shift, and go to state 94
+    GE   shift, and go to state 95
+    NE   shift, and go to state 96
+    '<'  shift, and go to state 97
+    '>'  shift, and go to state 98
+    '+'  shift, and go to state 99
+    '-'  shift, and go to state 100
+    '*'  shift, and go to state 101
+    '/'  shift, and go to state 102
+    '%'  shift, and go to state 103
+
+    $default  reduce using rule 120 (expr)
+
+
+State 91
+
+  119 expr: expr OR . expr
+
+    ID            shift, and go to state 44
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '!'           shift, and go to state 51
+
+    value_type    go to state 52
+    int_value     go to state 53
+    float_value   go to state 54
+    bool_value    go to state 55
+    string_value  go to state 56
+    expr          go to state 136
+    arr_ref       go to state 58
+    func_invo     go to state 59
+
+
+State 92
+
+  118 expr: expr AND . expr
+
+    ID            shift, and go to state 44
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '!'           shift, and go to state 51
+
+    value_type    go to state 52
+    int_value     go to state 53
+    float_value   go to state 54
+    bool_value    go to state 55
+    string_value  go to state 56
+    expr          go to state 137
+    arr_ref       go to state 58
+    func_invo     go to state 59
+
+
+State 93
+
+  111 expr: expr LE . expr
+
+    ID            shift, and go to state 44
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '!'           shift, and go to state 51
+
+    value_type    go to state 52
+    int_value     go to state 53
+    float_value   go to state 54
+    bool_value    go to state 55
+    string_value  go to state 56
+    expr          go to state 138
+    arr_ref       go to state 58
+    func_invo     go to state 59
+
+
+State 94
+
+  114 expr: expr EQ . expr
+
+    ID            shift, and go to state 44
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '!'           shift, and go to state 51
+
+    value_type    go to state 52
+    int_value     go to state 53
+    float_value   go to state 54
+    bool_value    go to state 55
+    string_value  go to state 56
+    expr          go to state 139
+    arr_ref       go to state 58
+    func_invo     go to state 59
+
+
+State 95
+
+  113 expr: expr GE . expr
+
+    ID            shift, and go to state 44
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '!'           shift, and go to state 51
+
+    value_type    go to state 52
+    int_value     go to state 53
+    float_value   go to state 54
+    bool_value    go to state 55
+    string_value  go to state 56
+    expr          go to state 140
+    arr_ref       go to state 58
+    func_invo     go to state 59
+
+
+State 96
+
+  115 expr: expr NE . expr
+
+    ID            shift, and go to state 44
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '!'           shift, and go to state 51
+
+    value_type    go to state 52
+    int_value     go to state 53
+    float_value   go to state 54
+    bool_value    go to state 55
+    string_value  go to state 56
+    expr          go to state 141
+    arr_ref       go to state 58
+    func_invo     go to state 59
+
+
+State 97
+
+  110 expr: expr '<' . expr
+
+    ID            shift, and go to state 44
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '!'           shift, and go to state 51
+
+    value_type    go to state 52
+    int_value     go to state 53
+    float_value   go to state 54
+    bool_value    go to state 55
+    string_value  go to state 56
+    expr          go to state 142
+    arr_ref       go to state 58
+    func_invo     go to state 59
+
+
+State 98
+
+  112 expr: expr '>' . expr
+
+    ID            shift, and go to state 44
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '!'           shift, and go to state 51
+
+    value_type    go to state 52
+    int_value     go to state 53
+    float_value   go to state 54
+    bool_value    go to state 55
+    string_value  go to state 56
+    expr          go to state 143
+    arr_ref       go to state 58
+    func_invo     go to state 59
+
+
+State 99
+
+  107 expr: expr '+' . expr
+
+    ID            shift, and go to state 44
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '!'           shift, and go to state 51
+
+    value_type    go to state 52
+    int_value     go to state 53
+    float_value   go to state 54
+    bool_value    go to state 55
+    string_value  go to state 56
+    expr          go to state 144
+    arr_ref       go to state 58
+    func_invo     go to state 59
+
+
+State 100
+
+  108 expr: expr '-' . expr
+
+    ID            shift, and go to state 44
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '!'           shift, and go to state 51
+
+    value_type    go to state 52
+    int_value     go to state 53
+    float_value   go to state 54
+    bool_value    go to state 55
+    string_value  go to state 56
+    expr          go to state 145
+    arr_ref       go to state 58
+    func_invo     go to state 59
+
+
+State 101
+
+  105 expr: expr '*' . expr
+
+    ID            shift, and go to state 44
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '!'           shift, and go to state 51
+
+    value_type    go to state 52
+    int_value     go to state 53
+    float_value   go to state 54
+    bool_value    go to state 55
+    string_value  go to state 56
+    expr          go to state 146
+    arr_ref       go to state 58
+    func_invo     go to state 59
+
+
+State 102
+
+  106 expr: expr '/' . expr
+
+    ID            shift, and go to state 44
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '!'           shift, and go to state 51
+
+    value_type    go to state 52
+    int_value     go to state 53
+    float_value   go to state 54
+    bool_value    go to state 55
+    string_value  go to state 56
+    expr          go to state 147
+    arr_ref       go to state 58
+    func_invo     go to state 59
+
+
+State 103
+
+  109 expr: expr '%' . expr
+
+    ID            shift, and go to state 44
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '!'           shift, and go to state 51
+
+    value_type    go to state 52
+    int_value     go to state 53
+    float_value   go to state 54
+    bool_value    go to state 55
+    string_value  go to state 56
+    expr          go to state 148
+    arr_ref       go to state 58
+    func_invo     go to state 59
+
+
+State 104
+
+   91 var_def: basic ID '=' expr ';' .
+
+    $default  reduce using rule 91 (var_def)
+
+
+State 105
+
+   81 var_list: ID '=' expr ',' .
+
+    $default  reduce using rule 81 (var_list)
+
+
+State 106
+
+   98 arr_step: arr_step '[' INT_CONST . ']'
+
+    ']'  shift, and go to state 149
+
+
+State 107
+
+  100 arr_init: '{' . arr_argu_list expr '}'
+  101         | '{' . expr '}'
+  102         | '{' . '}'
+
+    ID            shift, and go to state 44
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '}'           shift, and go to state 150
+    '!'           shift, and go to state 51
+
+    value_type     go to state 52
+    int_value      go to state 53
+    float_value    go to state 54
+    bool_value     go to state 55
+    string_value   go to state 56
+    arr_argu_list  go to state 151
+    expr           go to state 152
+    arr_ref        go to state 58
+    func_invo      go to state 59
+
+
+State 108
+
+   84 var_list: ID arr_step '=' arr_init . ','
+   94 var_def: basic ID arr_step '=' arr_init . ';'
+
+    ';'  shift, and go to state 153
+    ','  shift, and go to state 154
+
+
+State 109
+
+   79 var_list: var_list ID '=' expr . ','
+   89 var_def: basic var_list ID '=' expr . ';'
+  105 expr: expr . '*' expr
+  106     | expr . '/' expr
+  107     | expr . '+' expr
+  108     | expr . '-' expr
+  109     | expr . '%' expr
+  110     | expr . '<' expr
+  111     | expr . LE expr
+  112     | expr . '>' expr
+  113     | expr . GE expr
+  114     | expr . EQ expr
+  115     | expr . NE expr
+  118     | expr . AND expr
+  119     | expr . OR expr
+
+    OR   shift, and go to state 91
+    AND  shift, and go to state 92
+    LE   shift, and go to state 93
+    EQ   shift, and go to state 94
+    GE   shift, and go to state 95
+    NE   shift, and go to state 96
+    '<'  shift, and go to state 97
+    '>'  shift, and go to state 98
+    '+'  shift, and go to state 99
+    '-'  shift, and go to state 100
+    '*'  shift, and go to state 101
+    '/'  shift, and go to state 102
+    '%'  shift, and go to state 103
+    ';'  shift, and go to state 155
+    ','  shift, and go to state 156
+
+
+State 110
+
+   93 var_def: basic var_list ID arr_step ';' .
+
+    $default  reduce using rule 93 (var_def)
+
+
+State 111
+
+   83 var_list: var_list ID arr_step ',' .
+
+    $default  reduce using rule 83 (var_list)
+
+
+State 112
+
+   82 var_list: var_list ID arr_step '=' . arr_init ','
+   92 var_def: basic var_list ID arr_step '=' . arr_init ';'
+
+    '{'  shift, and go to state 107
+
+    arr_init  go to state 157
+
+
+State 113
+
+   33 func_def: void_reduce ID '(' ')' $@11 . '{' $@12 compound_in_argu_func '}'
+
+    '{'  shift, and go to state 158
+
+
+State 114
+
+   55 func_decl: void_reduce ID '(' ')' $@20 . ';'
+
+    ';'  shift, and go to state 159
+
+
+State 115
+
+   27 func_def: void_reduce ID '(' argu_list argu . ')' $@7 '{' $@8 compound_in_argu_func '}'
+   51 func_decl: void_reduce ID '(' argu_list argu . ')' $@18 ';'
+   56 argu_list: argu_list argu . ','
+
+    ')'  shift, and go to state 160
+    ','  shift, and go to state 125
+
+
+State 116
+
+   30 func_def: void_reduce ID '(' argu ')' . $@9 '{' $@10 compound_in_argu_func '}'
+   53 func_decl: void_reduce ID '(' argu ')' . $@19 ';'
+
+    ';'       reduce using rule 52 ($@19)
+    $default  reduce using rule 28 ($@9)
+
+    $@9   go to state 161
+    $@19  go to state 162
+
+
+State 117
+
+   65 liter_const: '-' int_value .
+
+    $default  reduce using rule 65 (liter_const)
+
+
+State 118
+
+   67 liter_const: '-' float_value .
+
+    $default  reduce using rule 67 (liter_const)
+
+
+State 119
+
+   97 var_def: CONST basic ID '=' liter_const ';' .
+
+    $default  reduce using rule 97 (var_def)
+
+
+State 120
+
+   87 const_list: ID '=' liter_const ',' .
+
+    $default  reduce using rule 87 (const_list)
+
+
+State 121
+
+   86 const_list: const_list ID '=' liter_const . ','
+   96 var_def: CONST basic const_list ID '=' liter_const . ';'
+
+    ';'  shift, and go to state 163
+    ','  shift, and go to state 164
+
+
+State 122
+
+   24 func_def: basic ID '(' ')' $@5 '{' . $@6 compound_in_argu_func '}'
+
+    $default  reduce using rule 23 ($@6)
+
+    $@6  go to state 165
+
+
+State 123
+
+   49 func_decl: basic ID '(' ')' $@17 ';' .
+
+    $default  reduce using rule 49 (func_decl)
+
+
+State 124
+
+   18 func_def: basic ID '(' argu_list argu ')' . $@1 '{' $@2 compound_in_argu_func '}'
+   45 func_decl: basic ID '(' argu_list argu ')' . $@15 ';'
+
+    ';'       reduce using rule 44 ($@15)
+    $default  reduce using rule 16 ($@1)
+
+    $@1   go to state 166
+    $@15  go to state 167
+
+
+State 125
+
+   56 argu_list: argu_list argu ',' .
+
+    $default  reduce using rule 56 (argu_list)
+
+
+State 126
+
+   21 func_def: basic ID '(' argu ')' $@3 . '{' $@4 compound_in_argu_func '}'
+
+    '{'  shift, and go to state 168
+
+
+State 127
+
+   47 func_decl: basic ID '(' argu ')' $@16 . ';'
+
+    ';'  shift, and go to state 169
+
+
+State 128
+
+   61 array_argu_step: '[' . INT_CONST ']'
+
+    INT_CONST  shift, and go to state 170
+
+
+State 129
+
+   59 argu: basic ID array_argu_step .
+   60 array_argu_step: array_argu_step . '[' INT_CONST ']'
+
+    '['  shift, and go to state 171
+
+    $default  reduce using rule 59 (argu)
+
+
+State 130
+
+  130 func_invo: ID '(' ')' .
+
+    $default  reduce using rule 130 (func_invo)
+
+
+State 131
+
+  105 expr: expr . '*' expr
+  106     | expr . '/' expr
+  107     | expr . '+' expr
+  108     | expr . '-' expr
+  109     | expr . '%' expr
+  110     | expr . '<' expr
+  111     | expr . LE expr
+  112     | expr . '>' expr
+  113     | expr . GE expr
+  114     | expr . EQ expr
+  115     | expr . NE expr
+  118     | expr . AND expr
+  119     | expr . OR expr
+  129 func_invo: ID '(' expr . ')'
+  132 expr_list: expr . ','
+
+    OR   shift, and go to state 91
+    AND  shift, and go to state 92
+    LE   shift, and go to state 93
+    EQ   shift, and go to state 94
+    GE   shift, and go to state 95
+    NE   shift, and go to state 96
+    '<'  shift, and go to state 97
+    '>'  shift, and go to state 98
+    '+'  shift, and go to state 99
+    '-'  shift, and go to state 100
+    '*'  shift, and go to state 101
+    '/'  shift, and go to state 102
+    '%'  shift, and go to state 103
+    ')'  shift, and go to state 172
+    ','  shift, and go to state 173
+
+
+State 132
+
+  128 func_invo: ID '(' expr_list . expr ')'
+  131 expr_list: expr_list . expr ','
+
+    ID            shift, and go to state 44
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '!'           shift, and go to state 51
+
+    value_type    go to state 52
+    int_value     go to state 53
+    float_value   go to state 54
+    bool_value    go to state 55
+    string_value  go to state 56
+    expr          go to state 174
+    arr_ref       go to state 58
+    func_invo     go to state 59
+
+
+State 133
+
+  105 expr: expr . '*' expr
+  106     | expr . '/' expr
+  107     | expr . '+' expr
+  108     | expr . '-' expr
+  109     | expr . '%' expr
+  110     | expr . '<' expr
+  111     | expr . LE expr
+  112     | expr . '>' expr
+  113     | expr . GE expr
+  114     | expr . EQ expr
+  115     | expr . NE expr
+  118     | expr . AND expr
+  119     | expr . OR expr
+  127 arr_ref_step: '[' expr . ']'
+
+    OR   shift, and go to state 91
+    AND  shift, and go to state 92
+    LE   shift, and go to state 93
+    EQ   shift, and go to state 94
+    GE   shift, and go to state 95
+    NE   shift, and go to state 96
+    '<'  shift, and go to state 97
+    '>'  shift, and go to state 98
+    '+'  shift, and go to state 99
+    '-'  shift, and go to state 100
+    '*'  shift, and go to state 101
+    '/'  shift, and go to state 102
+    '%'  shift, and go to state 103
+    ']'  shift, and go to state 175
+
+
+State 134
+
+  126 arr_ref_step: arr_ref_step '[' . expr ']'
+
+    ID            shift, and go to state 44
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '!'           shift, and go to state 51
+
+    value_type    go to state 52
+    int_value     go to state 53
+    float_value   go to state 54
+    bool_value    go to state 55
+    string_value  go to state 56
+    expr          go to state 176
+    arr_ref       go to state 58
+    func_invo     go to state 59
+
+
+State 135
+
+  116 expr: '(' expr ')' .
+
+    $default  reduce using rule 116 (expr)
+
+
+State 136
+
+  105 expr: expr . '*' expr
+  106     | expr . '/' expr
+  107     | expr . '+' expr
+  108     | expr . '-' expr
+  109     | expr . '%' expr
+  110     | expr . '<' expr
+  111     | expr . LE expr
+  112     | expr . '>' expr
+  113     | expr . GE expr
+  114     | expr . EQ expr
+  115     | expr . NE expr
+  118     | expr . AND expr
+  119     | expr . OR expr
+  119     | expr OR expr .
+
+    AND  shift, and go to state 92
+    LE   shift, and go to state 93
+    EQ   shift, and go to state 94
+    GE   shift, and go to state 95
+    NE   shift, and go to state 96
+    '<'  shift, and go to state 97
+    '>'  shift, and go to state 98
+    '+'  shift, and go to state 99
+    '-'  shift, and go to state 100
+    '*'  shift, and go to state 101
+    '/'  shift, and go to state 102
+    '%'  shift, and go to state 103
+
+    $default  reduce using rule 119 (expr)
+
+
+State 137
+
+  105 expr: expr . '*' expr
+  106     | expr . '/' expr
+  107     | expr . '+' expr
+  108     | expr . '-' expr
+  109     | expr . '%' expr
+  110     | expr . '<' expr
+  111     | expr . LE expr
+  112     | expr . '>' expr
+  113     | expr . GE expr
+  114     | expr . EQ expr
+  115     | expr . NE expr
+  118     | expr . AND expr
+  118     | expr AND expr .
+  119     | expr . OR expr
+
+    LE   shift, and go to state 93
+    EQ   shift, and go to state 94
+    GE   shift, and go to state 95
+    NE   shift, and go to state 96
+    '<'  shift, and go to state 97
+    '>'  shift, and go to state 98
+    '+'  shift, and go to state 99
+    '-'  shift, and go to state 100
+    '*'  shift, and go to state 101
+    '/'  shift, and go to state 102
+    '%'  shift, and go to state 103
+
+    $default  reduce using rule 118 (expr)
+
+
+State 138
+
+  105 expr: expr . '*' expr
+  106     | expr . '/' expr
+  107     | expr . '+' expr
+  108     | expr . '-' expr
+  109     | expr . '%' expr
+  110     | expr . '<' expr
+  111     | expr . LE expr
+  111     | expr LE expr .
+  112     | expr . '>' expr
+  113     | expr . GE expr
+  114     | expr . EQ expr
+  115     | expr . NE expr
+  118     | expr . AND expr
+  119     | expr . OR expr
+
+    '+'  shift, and go to state 99
+    '-'  shift, and go to state 100
+    '*'  shift, and go to state 101
+    '/'  shift, and go to state 102
+    '%'  shift, and go to state 103
+
+    $default  reduce using rule 111 (expr)
+
+
+State 139
+
+  105 expr: expr . '*' expr
+  106     | expr . '/' expr
+  107     | expr . '+' expr
+  108     | expr . '-' expr
+  109     | expr . '%' expr
+  110     | expr . '<' expr
+  111     | expr . LE expr
+  112     | expr . '>' expr
+  113     | expr . GE expr
+  114     | expr . EQ expr
+  114     | expr EQ expr .
+  115     | expr . NE expr
+  118     | expr . AND expr
+  119     | expr . OR expr
+
+    '+'  shift, and go to state 99
+    '-'  shift, and go to state 100
+    '*'  shift, and go to state 101
+    '/'  shift, and go to state 102
+    '%'  shift, and go to state 103
+
+    $default  reduce using rule 114 (expr)
+
+
+State 140
+
+  105 expr: expr . '*' expr
+  106     | expr . '/' expr
+  107     | expr . '+' expr
+  108     | expr . '-' expr
+  109     | expr . '%' expr
+  110     | expr . '<' expr
+  111     | expr . LE expr
+  112     | expr . '>' expr
+  113     | expr . GE expr
+  113     | expr GE expr .
+  114     | expr . EQ expr
+  115     | expr . NE expr
+  118     | expr . AND expr
+  119     | expr . OR expr
+
+    '+'  shift, and go to state 99
+    '-'  shift, and go to state 100
+    '*'  shift, and go to state 101
+    '/'  shift, and go to state 102
+    '%'  shift, and go to state 103
+
+    $default  reduce using rule 113 (expr)
+
+
+State 141
+
+  105 expr: expr . '*' expr
+  106     | expr . '/' expr
+  107     | expr . '+' expr
+  108     | expr . '-' expr
+  109     | expr . '%' expr
+  110     | expr . '<' expr
+  111     | expr . LE expr
+  112     | expr . '>' expr
+  113     | expr . GE expr
+  114     | expr . EQ expr
+  115     | expr . NE expr
+  115     | expr NE expr .
+  118     | expr . AND expr
+  119     | expr . OR expr
+
+    '+'  shift, and go to state 99
+    '-'  shift, and go to state 100
+    '*'  shift, and go to state 101
+    '/'  shift, and go to state 102
+    '%'  shift, and go to state 103
+
+    $default  reduce using rule 115 (expr)
+
+
+State 142
+
+  105 expr: expr . '*' expr
+  106     | expr . '/' expr
+  107     | expr . '+' expr
+  108     | expr . '-' expr
+  109     | expr . '%' expr
+  110     | expr . '<' expr
+  110     | expr '<' expr .
+  111     | expr . LE expr
+  112     | expr . '>' expr
+  113     | expr . GE expr
+  114     | expr . EQ expr
+  115     | expr . NE expr
+  118     | expr . AND expr
+  119     | expr . OR expr
+
+    '+'  shift, and go to state 99
+    '-'  shift, and go to state 100
+    '*'  shift, and go to state 101
+    '/'  shift, and go to state 102
+    '%'  shift, and go to state 103
+
+    $default  reduce using rule 110 (expr)
+
+
+State 143
+
+  105 expr: expr . '*' expr
+  106     | expr . '/' expr
+  107     | expr . '+' expr
+  108     | expr . '-' expr
+  109     | expr . '%' expr
+  110     | expr . '<' expr
+  111     | expr . LE expr
+  112     | expr . '>' expr
+  112     | expr '>' expr .
+  113     | expr . GE expr
+  114     | expr . EQ expr
+  115     | expr . NE expr
+  118     | expr . AND expr
+  119     | expr . OR expr
+
+    '+'  shift, and go to state 99
+    '-'  shift, and go to state 100
+    '*'  shift, and go to state 101
+    '/'  shift, and go to state 102
+    '%'  shift, and go to state 103
+
+    $default  reduce using rule 112 (expr)
+
+
+State 144
+
+  105 expr: expr . '*' expr
+  106     | expr . '/' expr
+  107     | expr . '+' expr
+  107     | expr '+' expr .
+  108     | expr . '-' expr
+  109     | expr . '%' expr
+  110     | expr . '<' expr
+  111     | expr . LE expr
+  112     | expr . '>' expr
+  113     | expr . GE expr
+  114     | expr . EQ expr
+  115     | expr . NE expr
+  118     | expr . AND expr
+  119     | expr . OR expr
+
+    '*'  shift, and go to state 101
+    '/'  shift, and go to state 102
+    '%'  shift, and go to state 103
+
+    $default  reduce using rule 107 (expr)
+
+
+State 145
+
+  105 expr: expr . '*' expr
+  106     | expr . '/' expr
+  107     | expr . '+' expr
+  108     | expr . '-' expr
+  108     | expr '-' expr .
+  109     | expr . '%' expr
+  110     | expr . '<' expr
+  111     | expr . LE expr
+  112     | expr . '>' expr
+  113     | expr . GE expr
+  114     | expr . EQ expr
+  115     | expr . NE expr
+  118     | expr . AND expr
+  119     | expr . OR expr
+
+    '*'  shift, and go to state 101
+    '/'  shift, and go to state 102
+    '%'  shift, and go to state 103
+
+    $default  reduce using rule 108 (expr)
+
+
+State 146
+
+  105 expr: expr . '*' expr
+  105     | expr '*' expr .
+  106     | expr . '/' expr
+  107     | expr . '+' expr
+  108     | expr . '-' expr
+  109     | expr . '%' expr
+  110     | expr . '<' expr
+  111     | expr . LE expr
+  112     | expr . '>' expr
+  113     | expr . GE expr
+  114     | expr . EQ expr
+  115     | expr . NE expr
+  118     | expr . AND expr
+  119     | expr . OR expr
+
+    $default  reduce using rule 105 (expr)
+
+
+State 147
+
+  105 expr: expr . '*' expr
+  106     | expr . '/' expr
+  106     | expr '/' expr .
+  107     | expr . '+' expr
+  108     | expr . '-' expr
+  109     | expr . '%' expr
+  110     | expr . '<' expr
+  111     | expr . LE expr
+  112     | expr . '>' expr
+  113     | expr . GE expr
+  114     | expr . EQ expr
+  115     | expr . NE expr
+  118     | expr . AND expr
+  119     | expr . OR expr
+
+    $default  reduce using rule 106 (expr)
+
+
+State 148
+
+  105 expr: expr . '*' expr
+  106     | expr . '/' expr
+  107     | expr . '+' expr
+  108     | expr . '-' expr
+  109     | expr . '%' expr
+  109     | expr '%' expr .
+  110     | expr . '<' expr
+  111     | expr . LE expr
+  112     | expr . '>' expr
+  113     | expr . GE expr
+  114     | expr . EQ expr
+  115     | expr . NE expr
+  118     | expr . AND expr
+  119     | expr . OR expr
+
+    $default  reduce using rule 109 (expr)
+
+
+State 149
+
+   98 arr_step: arr_step '[' INT_CONST ']' .
+
+    $default  reduce using rule 98 (arr_step)
+
+
+State 150
+
+  102 arr_init: '{' '}' .
+
+    $default  reduce using rule 102 (arr_init)
+
+
+State 151
+
+  100 arr_init: '{' arr_argu_list . expr '}'
+  103 arr_argu_list: arr_argu_list . expr ','
+
+    ID            shift, and go to state 44
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '!'           shift, and go to state 51
+
+    value_type    go to state 52
+    int_value     go to state 53
+    float_value   go to state 54
+    bool_value    go to state 55
+    string_value  go to state 56
+    expr          go to state 177
+    arr_ref       go to state 58
+    func_invo     go to state 59
+
+
+State 152
+
+  101 arr_init: '{' expr . '}'
+  104 arr_argu_list: expr . ','
+  105 expr: expr . '*' expr
+  106     | expr . '/' expr
+  107     | expr . '+' expr
+  108     | expr . '-' expr
+  109     | expr . '%' expr
+  110     | expr . '<' expr
+  111     | expr . LE expr
+  112     | expr . '>' expr
+  113     | expr . GE expr
+  114     | expr . EQ expr
+  115     | expr . NE expr
+  118     | expr . AND expr
+  119     | expr . OR expr
+
+    OR   shift, and go to state 91
+    AND  shift, and go to state 92
+    LE   shift, and go to state 93
+    EQ   shift, and go to state 94
+    GE   shift, and go to state 95
+    NE   shift, and go to state 96
+    '<'  shift, and go to state 97
+    '>'  shift, and go to state 98
+    '+'  shift, and go to state 99
+    '-'  shift, and go to state 100
+    '*'  shift, and go to state 101
+    '/'  shift, and go to state 102
+    '%'  shift, and go to state 103
+    '}'  shift, and go to state 178
+    ','  shift, and go to state 179
+
+
+State 153
+
+   94 var_def: basic ID arr_step '=' arr_init ';' .
+
+    $default  reduce using rule 94 (var_def)
+
+
+State 154
+
+   84 var_list: ID arr_step '=' arr_init ',' .
+
+    $default  reduce using rule 84 (var_list)
+
+
+State 155
+
+   89 var_def: basic var_list ID '=' expr ';' .
+
+    $default  reduce using rule 89 (var_def)
+
+
+State 156
+
+   79 var_list: var_list ID '=' expr ',' .
+
+    $default  reduce using rule 79 (var_list)
+
+
+State 157
+
+   82 var_list: var_list ID arr_step '=' arr_init . ','
+   92 var_def: basic var_list ID arr_step '=' arr_init . ';'
+
+    ';'  shift, and go to state 180
+    ','  shift, and go to state 181
+
+
+State 158
+
+   33 func_def: void_reduce ID '(' ')' $@11 '{' . $@12 compound_in_argu_func '}'
+
+    $default  reduce using rule 32 ($@12)
+
+    $@12  go to state 182
+
+
+State 159
+
+   55 func_decl: void_reduce ID '(' ')' $@20 ';' .
+
+    $default  reduce using rule 55 (func_decl)
+
+
+State 160
+
+   27 func_def: void_reduce ID '(' argu_list argu ')' . $@7 '{' $@8 compound_in_argu_func '}'
+   51 func_decl: void_reduce ID '(' argu_list argu ')' . $@18 ';'
+
+    ';'       reduce using rule 50 ($@18)
+    $default  reduce using rule 25 ($@7)
+
+    $@7   go to state 183
+    $@18  go to state 184
+
+
+State 161
+
+   30 func_def: void_reduce ID '(' argu ')' $@9 . '{' $@10 compound_in_argu_func '}'
+
+    '{'  shift, and go to state 185
+
+
+State 162
+
+   53 func_decl: void_reduce ID '(' argu ')' $@19 . ';'
+
+    ';'  shift, and go to state 186
+
+
+State 163
+
+   96 var_def: CONST basic const_list ID '=' liter_const ';' .
+
+    $default  reduce using rule 96 (var_def)
+
+
+State 164
+
+   86 const_list: const_list ID '=' liter_const ',' .
+
+    $default  reduce using rule 86 (const_list)
+
+
+State 165
+
+   24 func_def: basic ID '(' ')' $@5 '{' $@6 . compound_in_argu_func '}'
+
+    BASIC_TYPE    shift, and go to state 2
+    ID            shift, and go to state 187
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    READ          shift, and go to state 188
+    PRINT         shift, and go to state 189
+    IF            shift, and go to state 190
+    DO            shift, and go to state 191
+    WHILE         shift, and go to state 192
+    FOR           shift, and go to state 193
+    CONTINUE      shift, and go to state 194
+    BREAK         shift, and go to state 195
+    RETURN        shift, and go to state 196
+    CONST         shift, and go to state 3
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '{'           shift, and go to state 197
+    '!'           shift, and go to state 51
+
+    $default  reduce using rule 39 (compound_in_argu_func)
+
+    var_all_def            go to state 198
+    compound               go to state 199
+    compound_in_argu_func  go to state 200
+    compound_list          go to state 201
+    basic                  go to state 202
+    value_type             go to state 52
+    int_value              go to state 53
+    float_value            go to state 54
+    bool_value             go to state 55
+    string_value           go to state 56
+    var_def                go to state 203
+    expr                   go to state 204
+    arr_ref                go to state 205
+    func_invo              go to state 59
+    statement              go to state 206
+    simple_stat            go to state 207
+    var_ref                go to state 208
+    condition              go to state 209
+    while_stat             go to state 210
+    for_stat               go to state 211
+    jump_stat              go to state 212
+
+
+State 166
+
+   18 func_def: basic ID '(' argu_list argu ')' $@1 . '{' $@2 compound_in_argu_func '}'
+
+    '{'  shift, and go to state 213
+
+
+State 167
+
+   45 func_decl: basic ID '(' argu_list argu ')' $@15 . ';'
+
+    ';'  shift, and go to state 214
+
+
+State 168
+
+   21 func_def: basic ID '(' argu ')' $@3 '{' . $@4 compound_in_argu_func '}'
+
+    $default  reduce using rule 20 ($@4)
+
+    $@4  go to state 215
+
+
+State 169
+
+   47 func_decl: basic ID '(' argu ')' $@16 ';' .
+
+    $default  reduce using rule 47 (func_decl)
+
+
+State 170
+
+   61 array_argu_step: '[' INT_CONST . ']'
+
+    ']'  shift, and go to state 216
+
+
+State 171
+
+   60 array_argu_step: array_argu_step '[' . INT_CONST ']'
+
+    INT_CONST  shift, and go to state 217
+
+
+State 172
+
+  129 func_invo: ID '(' expr ')' .
+
+    $default  reduce using rule 129 (func_invo)
+
+
+State 173
+
+  132 expr_list: expr ',' .
+
+    $default  reduce using rule 132 (expr_list)
+
+
+State 174
+
+  105 expr: expr . '*' expr
+  106     | expr . '/' expr
+  107     | expr . '+' expr
+  108     | expr . '-' expr
+  109     | expr . '%' expr
+  110     | expr . '<' expr
+  111     | expr . LE expr
+  112     | expr . '>' expr
+  113     | expr . GE expr
+  114     | expr . EQ expr
+  115     | expr . NE expr
+  118     | expr . AND expr
+  119     | expr . OR expr
+  128 func_invo: ID '(' expr_list expr . ')'
+  131 expr_list: expr_list expr . ','
+
+    OR   shift, and go to state 91
+    AND  shift, and go to state 92
+    LE   shift, and go to state 93
+    EQ   shift, and go to state 94
+    GE   shift, and go to state 95
+    NE   shift, and go to state 96
+    '<'  shift, and go to state 97
+    '>'  shift, and go to state 98
+    '+'  shift, and go to state 99
+    '-'  shift, and go to state 100
+    '*'  shift, and go to state 101
+    '/'  shift, and go to state 102
+    '%'  shift, and go to state 103
+    ')'  shift, and go to state 218
+    ','  shift, and go to state 219
+
+
+State 175
+
+  127 arr_ref_step: '[' expr ']' .
+
+    $default  reduce using rule 127 (arr_ref_step)
+
+
+State 176
+
+  105 expr: expr . '*' expr
+  106     | expr . '/' expr
+  107     | expr . '+' expr
+  108     | expr . '-' expr
+  109     | expr . '%' expr
+  110     | expr . '<' expr
+  111     | expr . LE expr
+  112     | expr . '>' expr
+  113     | expr . GE expr
+  114     | expr . EQ expr
+  115     | expr . NE expr
+  118     | expr . AND expr
+  119     | expr . OR expr
+  126 arr_ref_step: arr_ref_step '[' expr . ']'
+
+    OR   shift, and go to state 91
+    AND  shift, and go to state 92
+    LE   shift, and go to state 93
+    EQ   shift, and go to state 94
+    GE   shift, and go to state 95
+    NE   shift, and go to state 96
+    '<'  shift, and go to state 97
+    '>'  shift, and go to state 98
+    '+'  shift, and go to state 99
+    '-'  shift, and go to state 100
+    '*'  shift, and go to state 101
+    '/'  shift, and go to state 102
+    '%'  shift, and go to state 103
+    ']'  shift, and go to state 220
+
+
+State 177
+
+  100 arr_init: '{' arr_argu_list expr . '}'
+  103 arr_argu_list: arr_argu_list expr . ','
+  105 expr: expr . '*' expr
+  106     | expr . '/' expr
+  107     | expr . '+' expr
+  108     | expr . '-' expr
+  109     | expr . '%' expr
+  110     | expr . '<' expr
+  111     | expr . LE expr
+  112     | expr . '>' expr
+  113     | expr . GE expr
+  114     | expr . EQ expr
+  115     | expr . NE expr
+  118     | expr . AND expr
+  119     | expr . OR expr
+
+    OR   shift, and go to state 91
+    AND  shift, and go to state 92
+    LE   shift, and go to state 93
+    EQ   shift, and go to state 94
+    GE   shift, and go to state 95
+    NE   shift, and go to state 96
+    '<'  shift, and go to state 97
+    '>'  shift, and go to state 98
+    '+'  shift, and go to state 99
+    '-'  shift, and go to state 100
+    '*'  shift, and go to state 101
+    '/'  shift, and go to state 102
+    '%'  shift, and go to state 103
+    '}'  shift, and go to state 221
+    ','  shift, and go to state 222
+
+
+State 178
+
+  101 arr_init: '{' expr '}' .
+
+    $default  reduce using rule 101 (arr_init)
+
+
+State 179
+
+  104 arr_argu_list: expr ',' .
+
+    $default  reduce using rule 104 (arr_argu_list)
+
+
+State 180
+
+   92 var_def: basic var_list ID arr_step '=' arr_init ';' .
+
+    $default  reduce using rule 92 (var_def)
+
+
+State 181
+
+   82 var_list: var_list ID arr_step '=' arr_init ',' .
+
+    $default  reduce using rule 82 (var_list)
+
+
+State 182
+
+   33 func_def: void_reduce ID '(' ')' $@11 '{' $@12 . compound_in_argu_func '}'
+
+    BASIC_TYPE    shift, and go to state 2
+    ID            shift, and go to state 187
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    READ          shift, and go to state 188
+    PRINT         shift, and go to state 189
+    IF            shift, and go to state 190
+    DO            shift, and go to state 191
+    WHILE         shift, and go to state 192
+    FOR           shift, and go to state 193
+    CONTINUE      shift, and go to state 194
+    BREAK         shift, and go to state 195
+    RETURN        shift, and go to state 196
+    CONST         shift, and go to state 3
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '{'           shift, and go to state 197
+    '!'           shift, and go to state 51
+
+    $default  reduce using rule 39 (compound_in_argu_func)
+
+    var_all_def            go to state 198
+    compound               go to state 199
+    compound_in_argu_func  go to state 223
+    compound_list          go to state 201
+    basic                  go to state 202
+    value_type             go to state 52
+    int_value              go to state 53
+    float_value            go to state 54
+    bool_value             go to state 55
+    string_value           go to state 56
+    var_def                go to state 203
+    expr                   go to state 204
+    arr_ref                go to state 205
+    func_invo              go to state 59
+    statement              go to state 206
+    simple_stat            go to state 207
+    var_ref                go to state 208
+    condition              go to state 209
+    while_stat             go to state 210
+    for_stat               go to state 211
+    jump_stat              go to state 212
+
+
+State 183
+
+   27 func_def: void_reduce ID '(' argu_list argu ')' $@7 . '{' $@8 compound_in_argu_func '}'
+
+    '{'  shift, and go to state 224
+
+
+State 184
+
+   51 func_decl: void_reduce ID '(' argu_list argu ')' $@18 . ';'
+
+    ';'  shift, and go to state 225
+
+
+State 185
+
+   30 func_def: void_reduce ID '(' argu ')' $@9 '{' . $@10 compound_in_argu_func '}'
+
+    $default  reduce using rule 29 ($@10)
+
+    $@10  go to state 226
+
+
+State 186
+
+   53 func_decl: void_reduce ID '(' argu ')' $@19 ';' .
+
+    $default  reduce using rule 53 (func_decl)
+
+
+State 187
+
+  122 expr: ID .
+  125 arr_ref: ID . arr_ref_step
+  128 func_invo: ID . '(' expr_list expr ')'
+  129          | ID . '(' expr ')'
+  130          | ID . '(' ')'
+  143 var_ref: ID .
+
+    '('  shift, and go to state 85
+    '['  shift, and go to state 86
+
+    '='       reduce using rule 143 (var_ref)
+    $default  reduce using rule 122 (expr)
+
+    arr_ref_step  go to state 87
+
+
+State 188
+
+  142 simple_stat: READ . var_ref ';'
+
+    ID  shift, and go to state 227
+
+    arr_ref  go to state 228
+    var_ref  go to state 229
+
+
+State 189
+
+  141 simple_stat: PRINT . expr ';'
+
+    ID            shift, and go to state 44
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '!'           shift, and go to state 51
+
+    value_type    go to state 52
+    int_value     go to state 53
+    float_value   go to state 54
+    bool_value    go to state 55
+    string_value  go to state 56
+    expr          go to state 230
+    arr_ref       go to state 58
+    func_invo     go to state 59
+
+
+State 190
+
+  145 condition: IF . '(' bool_expr ')' compound
+  146          | IF . '(' bool_expr ')' compound ELSE compound
+
+    '('  shift, and go to state 231
+
+
+State 191
+
+  152 while_stat: DO . $@22 compound $@23 WHILE '(' bool_expr ')' ';'
+
+    $default  reduce using rule 150 ($@22)
+
+    $@22  go to state 232
+
+
+State 192
+
+  149 while_stat: WHILE . '(' bool_expr ')' $@21 compound
+
+    '('  shift, and go to state 233
+
+
+State 193
+
+  154 for_stat: FOR . '(' init_expr ';' expr ';' incr_expr ')' $@24 compound
+  156         | FOR . '(' init_expr ';' ';' incr_expr ')' $@25 compound
+
+    '('  shift, and go to state 234
+
+
+State 194
+
+  173 jump_stat: CONTINUE . ';'
+
+    ';'  shift, and go to state 235
+
+
+State 195
+
+  172 jump_stat: BREAK . ';'
+
+    ';'  shift, and go to state 236
+
+
+State 196
+
+  171 jump_stat: RETURN . expr ';'
+
+    ID            shift, and go to state 44
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '!'           shift, and go to state 51
+
+    value_type    go to state 52
+    int_value     go to state 53
+    float_value   go to state 54
+    bool_value    go to state 55
+    string_value  go to state 56
+    expr          go to state 237
+    arr_ref       go to state 58
+    func_invo     go to state 59
+
+
+State 197
+
+   35 compound: '{' . $@13 compound_list '}'
+   37         | '{' . $@14 '}'
+
+    '}'       reduce using rule 36 ($@14)
+    $default  reduce using rule 34 ($@13)
+
+    $@13  go to state 238
+    $@14  go to state 239
+
+
+State 198
+
+   43 compound_list: var_all_def .
+
+    $default  reduce using rule 43 (compound_list)
+
+
+State 199
+
+  133 statement: compound .
+
+    $default  reduce using rule 133 (statement)
+
+
+State 200
+
+   24 func_def: basic ID '(' ')' $@5 '{' $@6 compound_in_argu_func . '}'
+
+    '}'  shift, and go to state 240
+
+
+State 201
+
+   38 compound_in_argu_func: compound_list .
+   40 compound_list: compound_list . var_all_def
+   41              | compound_list . statement
+
+    BASIC_TYPE    shift, and go to state 2
+    ID            shift, and go to state 187
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    READ          shift, and go to state 188
+    PRINT         shift, and go to state 189
+    IF            shift, and go to state 190
+    DO            shift, and go to state 191
+    WHILE         shift, and go to state 192
+    FOR           shift, and go to state 193
+    CONTINUE      shift, and go to state 194
+    BREAK         shift, and go to state 195
+    RETURN        shift, and go to state 196
+    CONST         shift, and go to state 3
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '{'           shift, and go to state 197
+    '!'           shift, and go to state 51
+
+    $default  reduce using rule 38 (compound_in_argu_func)
+
+    var_all_def   go to state 241
+    compound      go to state 199
+    basic         go to state 202
+    value_type    go to state 52
+    int_value     go to state 53
+    float_value   go to state 54
+    bool_value    go to state 55
+    string_value  go to state 56
+    var_def       go to state 203
+    expr          go to state 204
+    arr_ref       go to state 205
+    func_invo     go to state 59
+    statement     go to state 242
+    simple_stat   go to state 207
+    var_ref       go to state 208
+    condition     go to state 209
+    while_stat    go to state 210
+    for_stat      go to state 211
+    jump_stat     go to state 212
+
+
+State 202
+
+   88 var_def: basic . var_list ID ';'
+   89        | basic . var_list ID '=' expr ';'
+   90        | basic . ID ';'
+   91        | basic . ID '=' expr ';'
+   92        | basic . var_list ID arr_step '=' arr_init ';'
+   93        | basic . var_list ID arr_step ';'
+   94        | basic . ID arr_step '=' arr_init ';'
+   95        | basic . ID arr_step ';'
+
+    ID  shift, and go to state 243
+
+    var_list  go to state 21
+
+
+State 203
+
+   15 var_all_def: var_def .
+
+    $default  reduce using rule 15 (var_all_def)
+
+
+State 204
+
+  105 expr: expr . '*' expr
+  106     | expr . '/' expr
+  107     | expr . '+' expr
+  108     | expr . '-' expr
+  109     | expr . '%' expr
+  110     | expr . '<' expr
+  111     | expr . LE expr
+  112     | expr . '>' expr
+  113     | expr . GE expr
+  114     | expr . EQ expr
+  115     | expr . NE expr
+  118     | expr . AND expr
+  119     | expr . OR expr
+  139 statement: expr . ';'
+
+    OR   shift, and go to state 91
+    AND  shift, and go to state 92
+    LE   shift, and go to state 93
+    EQ   shift, and go to state 94
+    GE   shift, and go to state 95
+    NE   shift, and go to state 96
+    '<'  shift, and go to state 97
+    '>'  shift, and go to state 98
+    '+'  shift, and go to state 99
+    '-'  shift, and go to state 100
+    '*'  shift, and go to state 101
+    '/'  shift, and go to state 102
+    '%'  shift, and go to state 103
+    ';'  shift, and go to state 244
+
+
+State 205
+
+  124 expr: arr_ref .
+  144 var_ref: arr_ref .
+
+    '='       reduce using rule 144 (var_ref)
+    $default  reduce using rule 124 (expr)
+
+
+State 206
+
+   42 compound_list: statement .
+
+    $default  reduce using rule 42 (compound_list)
+
+
+State 207
+
+  134 statement: simple_stat .
+
+    $default  reduce using rule 134 (statement)
+
+
+State 208
+
+  140 simple_stat: var_ref . '=' expr ';'
+
+    '='  shift, and go to state 245
+
+
+State 209
+
+  135 statement: condition .
+
+    $default  reduce using rule 135 (statement)
+
+
+State 210
+
+  136 statement: while_stat .
+
+    $default  reduce using rule 136 (statement)
+
+
+State 211
+
+  137 statement: for_stat .
+
+    $default  reduce using rule 137 (statement)
+
+
+State 212
+
+  138 statement: jump_stat .
+
+    $default  reduce using rule 138 (statement)
+
+
+State 213
+
+   18 func_def: basic ID '(' argu_list argu ')' $@1 '{' . $@2 compound_in_argu_func '}'
+
+    $default  reduce using rule 17 ($@2)
+
+    $@2  go to state 246
+
+
+State 214
+
+   45 func_decl: basic ID '(' argu_list argu ')' $@15 ';' .
+
+    $default  reduce using rule 45 (func_decl)
+
+
+State 215
+
+   21 func_def: basic ID '(' argu ')' $@3 '{' $@4 . compound_in_argu_func '}'
+
+    BASIC_TYPE    shift, and go to state 2
+    ID            shift, and go to state 187
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    READ          shift, and go to state 188
+    PRINT         shift, and go to state 189
+    IF            shift, and go to state 190
+    DO            shift, and go to state 191
+    WHILE         shift, and go to state 192
+    FOR           shift, and go to state 193
+    CONTINUE      shift, and go to state 194
+    BREAK         shift, and go to state 195
+    RETURN        shift, and go to state 196
+    CONST         shift, and go to state 3
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '{'           shift, and go to state 197
+    '!'           shift, and go to state 51
+
+    $default  reduce using rule 39 (compound_in_argu_func)
+
+    var_all_def            go to state 198
+    compound               go to state 199
+    compound_in_argu_func  go to state 247
+    compound_list          go to state 201
+    basic                  go to state 202
+    value_type             go to state 52
+    int_value              go to state 53
+    float_value            go to state 54
+    bool_value             go to state 55
+    string_value           go to state 56
+    var_def                go to state 203
+    expr                   go to state 204
+    arr_ref                go to state 205
+    func_invo              go to state 59
+    statement              go to state 206
+    simple_stat            go to state 207
+    var_ref                go to state 208
+    condition              go to state 209
+    while_stat             go to state 210
+    for_stat               go to state 211
+    jump_stat              go to state 212
+
+
+State 216
+
+   61 array_argu_step: '[' INT_CONST ']' .
+
+    $default  reduce using rule 61 (array_argu_step)
+
+
+State 217
+
+   60 array_argu_step: array_argu_step '[' INT_CONST . ']'
+
+    ']'  shift, and go to state 248
+
+
+State 218
+
+  128 func_invo: ID '(' expr_list expr ')' .
+
+    $default  reduce using rule 128 (func_invo)
+
+
+State 219
+
+  131 expr_list: expr_list expr ',' .
+
+    $default  reduce using rule 131 (expr_list)
+
+
+State 220
+
+  126 arr_ref_step: arr_ref_step '[' expr ']' .
+
+    $default  reduce using rule 126 (arr_ref_step)
+
+
+State 221
+
+  100 arr_init: '{' arr_argu_list expr '}' .
+
+    $default  reduce using rule 100 (arr_init)
+
+
+State 222
+
+  103 arr_argu_list: arr_argu_list expr ',' .
+
+    $default  reduce using rule 103 (arr_argu_list)
+
+
+State 223
+
+   33 func_def: void_reduce ID '(' ')' $@11 '{' $@12 compound_in_argu_func . '}'
+
+    '}'  shift, and go to state 249
+
+
+State 224
+
+   27 func_def: void_reduce ID '(' argu_list argu ')' $@7 '{' . $@8 compound_in_argu_func '}'
+
+    $default  reduce using rule 26 ($@8)
+
+    $@8  go to state 250
+
+
+State 225
+
+   51 func_decl: void_reduce ID '(' argu_list argu ')' $@18 ';' .
+
+    $default  reduce using rule 51 (func_decl)
+
+
+State 226
+
+   30 func_def: void_reduce ID '(' argu ')' $@9 '{' $@10 . compound_in_argu_func '}'
+
+    BASIC_TYPE    shift, and go to state 2
+    ID            shift, and go to state 187
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    READ          shift, and go to state 188
+    PRINT         shift, and go to state 189
+    IF            shift, and go to state 190
+    DO            shift, and go to state 191
+    WHILE         shift, and go to state 192
+    FOR           shift, and go to state 193
+    CONTINUE      shift, and go to state 194
+    BREAK         shift, and go to state 195
+    RETURN        shift, and go to state 196
+    CONST         shift, and go to state 3
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '{'           shift, and go to state 197
+    '!'           shift, and go to state 51
+
+    $default  reduce using rule 39 (compound_in_argu_func)
+
+    var_all_def            go to state 198
+    compound               go to state 199
+    compound_in_argu_func  go to state 251
+    compound_list          go to state 201
+    basic                  go to state 202
+    value_type             go to state 52
+    int_value              go to state 53
+    float_value            go to state 54
+    bool_value             go to state 55
+    string_value           go to state 56
+    var_def                go to state 203
+    expr                   go to state 204
+    arr_ref                go to state 205
+    func_invo              go to state 59
+    statement              go to state 206
+    simple_stat            go to state 207
+    var_ref                go to state 208
+    condition              go to state 209
+    while_stat             go to state 210
+    for_stat               go to state 211
+    jump_stat              go to state 212
+
+
+State 227
+
+  125 arr_ref: ID . arr_ref_step
+  143 var_ref: ID .
+
+    '['  shift, and go to state 86
+
+    $default  reduce using rule 143 (var_ref)
+
+    arr_ref_step  go to state 87
+
+
+State 228
+
+  144 var_ref: arr_ref .
+
+    $default  reduce using rule 144 (var_ref)
+
+
+State 229
+
+  142 simple_stat: READ var_ref . ';'
+
+    ';'  shift, and go to state 252
+
+
+State 230
+
+  105 expr: expr . '*' expr
+  106     | expr . '/' expr
+  107     | expr . '+' expr
+  108     | expr . '-' expr
+  109     | expr . '%' expr
+  110     | expr . '<' expr
+  111     | expr . LE expr
+  112     | expr . '>' expr
+  113     | expr . GE expr
+  114     | expr . EQ expr
+  115     | expr . NE expr
+  118     | expr . AND expr
+  119     | expr . OR expr
+  141 simple_stat: PRINT expr . ';'
+
+    OR   shift, and go to state 91
+    AND  shift, and go to state 92
+    LE   shift, and go to state 93
+    EQ   shift, and go to state 94
+    GE   shift, and go to state 95
+    NE   shift, and go to state 96
+    '<'  shift, and go to state 97
+    '>'  shift, and go to state 98
+    '+'  shift, and go to state 99
+    '-'  shift, and go to state 100
+    '*'  shift, and go to state 101
+    '/'  shift, and go to state 102
+    '%'  shift, and go to state 103
+    ';'  shift, and go to state 253
+
+
+State 231
+
+  145 condition: IF '(' . bool_expr ')' compound
+  146          | IF '(' . bool_expr ')' compound ELSE compound
+
+    ID            shift, and go to state 44
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '!'           shift, and go to state 51
+
+    value_type    go to state 52
+    int_value     go to state 53
+    float_value   go to state 54
+    bool_value    go to state 55
+    string_value  go to state 56
+    expr          go to state 254
+    arr_ref       go to state 58
+    func_invo     go to state 59
+    bool_expr     go to state 255
+
+
+State 232
+
+  152 while_stat: DO $@22 . compound $@23 WHILE '(' bool_expr ')' ';'
+
+    '{'  shift, and go to state 197
+
+    compound  go to state 256
+
+
+State 233
+
+  149 while_stat: WHILE '(' . bool_expr ')' $@21 compound
+
+    ID            shift, and go to state 44
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '!'           shift, and go to state 51
+
+    value_type    go to state 52
+    int_value     go to state 53
+    float_value   go to state 54
+    bool_value    go to state 55
+    string_value  go to state 56
+    expr          go to state 254
+    arr_ref       go to state 58
+    func_invo     go to state 59
+    bool_expr     go to state 257
+
+
+State 234
+
+  154 for_stat: FOR '(' . init_expr ';' expr ';' incr_expr ')' $@24 compound
+  156         | FOR '(' . init_expr ';' ';' incr_expr ')' $@25 compound
+
+    ID  shift, and go to state 258
+
+    $default  reduce using rule 161 (init_expr)
+
+    arr_ref         go to state 228
+    func_invo       go to state 259
+    var_ref         go to state 260
+    init_expr       go to state 261
+    init_expr_list  go to state 262
+
+
+State 235
+
+  173 jump_stat: CONTINUE ';' .
+
+    $default  reduce using rule 173 (jump_stat)
+
+
+State 236
+
+  172 jump_stat: BREAK ';' .
+
+    $default  reduce using rule 172 (jump_stat)
+
+
+State 237
+
+  105 expr: expr . '*' expr
+  106     | expr . '/' expr
+  107     | expr . '+' expr
+  108     | expr . '-' expr
+  109     | expr . '%' expr
+  110     | expr . '<' expr
+  111     | expr . LE expr
+  112     | expr . '>' expr
+  113     | expr . GE expr
+  114     | expr . EQ expr
+  115     | expr . NE expr
+  118     | expr . AND expr
+  119     | expr . OR expr
+  171 jump_stat: RETURN expr . ';'
+
+    OR   shift, and go to state 91
+    AND  shift, and go to state 92
+    LE   shift, and go to state 93
+    EQ   shift, and go to state 94
+    GE   shift, and go to state 95
+    NE   shift, and go to state 96
+    '<'  shift, and go to state 97
+    '>'  shift, and go to state 98
+    '+'  shift, and go to state 99
+    '-'  shift, and go to state 100
+    '*'  shift, and go to state 101
+    '/'  shift, and go to state 102
+    '%'  shift, and go to state 103
+    ';'  shift, and go to state 263
+
+
+State 238
+
+   35 compound: '{' $@13 . compound_list '}'
+
+    BASIC_TYPE    shift, and go to state 2
+    ID            shift, and go to state 187
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    READ          shift, and go to state 188
+    PRINT         shift, and go to state 189
+    IF            shift, and go to state 190
+    DO            shift, and go to state 191
+    WHILE         shift, and go to state 192
+    FOR           shift, and go to state 193
+    CONTINUE      shift, and go to state 194
+    BREAK         shift, and go to state 195
+    RETURN        shift, and go to state 196
+    CONST         shift, and go to state 3
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '{'           shift, and go to state 197
+    '!'           shift, and go to state 51
+
+    var_all_def    go to state 198
+    compound       go to state 199
+    compound_list  go to state 264
+    basic          go to state 202
+    value_type     go to state 52
+    int_value      go to state 53
+    float_value    go to state 54
+    bool_value     go to state 55
+    string_value   go to state 56
+    var_def        go to state 203
+    expr           go to state 204
+    arr_ref        go to state 205
+    func_invo      go to state 59
+    statement      go to state 206
+    simple_stat    go to state 207
+    var_ref        go to state 208
+    condition      go to state 209
+    while_stat     go to state 210
+    for_stat       go to state 211
+    jump_stat      go to state 212
+
+
+State 239
+
+   37 compound: '{' $@14 . '}'
+
+    '}'  shift, and go to state 265
+
+
+State 240
+
+   24 func_def: basic ID '(' ')' $@5 '{' $@6 compound_in_argu_func '}' .
+
+    $default  reduce using rule 24 (func_def)
+
+
+State 241
+
+   40 compound_list: compound_list var_all_def .
+
+    $default  reduce using rule 40 (compound_list)
+
+
+State 242
+
+   41 compound_list: compound_list statement .
+
+    $default  reduce using rule 41 (compound_list)
+
+
+State 243
+
+   80 var_list: ID . ','
+   81         | ID . '=' expr ','
+   84         | ID . arr_step '=' arr_init ','
+   85         | ID . arr_step ','
+   90 var_def: basic ID . ';'
+   91        | basic ID . '=' expr ';'
+   94        | basic ID . arr_step '=' arr_init ';'
+   95        | basic ID . arr_step ';'
+
+    ';'  shift, and go to state 30
+    ','  shift, and go to state 31
+    '['  shift, and go to state 32
+    '='  shift, and go to state 33
+
+    arr_step  go to state 34
+
+
+State 244
+
+  139 statement: expr ';' .
+
+    $default  reduce using rule 139 (statement)
+
+
+State 245
+
+  140 simple_stat: var_ref '=' . expr ';'
+
+    ID            shift, and go to state 44
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '!'           shift, and go to state 51
+
+    value_type    go to state 52
+    int_value     go to state 53
+    float_value   go to state 54
+    bool_value    go to state 55
+    string_value  go to state 56
+    expr          go to state 266
+    arr_ref       go to state 58
+    func_invo     go to state 59
+
+
+State 246
+
+   18 func_def: basic ID '(' argu_list argu ')' $@1 '{' $@2 . compound_in_argu_func '}'
+
+    BASIC_TYPE    shift, and go to state 2
+    ID            shift, and go to state 187
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    READ          shift, and go to state 188
+    PRINT         shift, and go to state 189
+    IF            shift, and go to state 190
+    DO            shift, and go to state 191
+    WHILE         shift, and go to state 192
+    FOR           shift, and go to state 193
+    CONTINUE      shift, and go to state 194
+    BREAK         shift, and go to state 195
+    RETURN        shift, and go to state 196
+    CONST         shift, and go to state 3
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '{'           shift, and go to state 197
+    '!'           shift, and go to state 51
+
+    $default  reduce using rule 39 (compound_in_argu_func)
+
+    var_all_def            go to state 198
+    compound               go to state 199
+    compound_in_argu_func  go to state 267
+    compound_list          go to state 201
+    basic                  go to state 202
+    value_type             go to state 52
+    int_value              go to state 53
+    float_value            go to state 54
+    bool_value             go to state 55
+    string_value           go to state 56
+    var_def                go to state 203
+    expr                   go to state 204
+    arr_ref                go to state 205
+    func_invo              go to state 59
+    statement              go to state 206
+    simple_stat            go to state 207
+    var_ref                go to state 208
+    condition              go to state 209
+    while_stat             go to state 210
+    for_stat               go to state 211
+    jump_stat              go to state 212
+
+
+State 247
+
+   21 func_def: basic ID '(' argu ')' $@3 '{' $@4 compound_in_argu_func . '}'
+
+    '}'  shift, and go to state 268
+
+
+State 248
+
+   60 array_argu_step: array_argu_step '[' INT_CONST ']' .
+
+    $default  reduce using rule 60 (array_argu_step)
+
+
+State 249
+
+   33 func_def: void_reduce ID '(' ')' $@11 '{' $@12 compound_in_argu_func '}' .
+
+    $default  reduce using rule 33 (func_def)
+
+
+State 250
+
+   27 func_def: void_reduce ID '(' argu_list argu ')' $@7 '{' $@8 . compound_in_argu_func '}'
+
+    BASIC_TYPE    shift, and go to state 2
+    ID            shift, and go to state 187
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    READ          shift, and go to state 188
+    PRINT         shift, and go to state 189
+    IF            shift, and go to state 190
+    DO            shift, and go to state 191
+    WHILE         shift, and go to state 192
+    FOR           shift, and go to state 193
+    CONTINUE      shift, and go to state 194
+    BREAK         shift, and go to state 195
+    RETURN        shift, and go to state 196
+    CONST         shift, and go to state 3
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '{'           shift, and go to state 197
+    '!'           shift, and go to state 51
+
+    $default  reduce using rule 39 (compound_in_argu_func)
+
+    var_all_def            go to state 198
+    compound               go to state 199
+    compound_in_argu_func  go to state 269
+    compound_list          go to state 201
+    basic                  go to state 202
+    value_type             go to state 52
+    int_value              go to state 53
+    float_value            go to state 54
+    bool_value             go to state 55
+    string_value           go to state 56
+    var_def                go to state 203
+    expr                   go to state 204
+    arr_ref                go to state 205
+    func_invo              go to state 59
+    statement              go to state 206
+    simple_stat            go to state 207
+    var_ref                go to state 208
+    condition              go to state 209
+    while_stat             go to state 210
+    for_stat               go to state 211
+    jump_stat              go to state 212
+
+
+State 251
+
+   30 func_def: void_reduce ID '(' argu ')' $@9 '{' $@10 compound_in_argu_func . '}'
+
+    '}'  shift, and go to state 270
+
+
+State 252
+
+  142 simple_stat: READ var_ref ';' .
+
+    $default  reduce using rule 142 (simple_stat)
+
+
+State 253
+
+  141 simple_stat: PRINT expr ';' .
+
+    $default  reduce using rule 141 (simple_stat)
+
+
+State 254
+
+  105 expr: expr . '*' expr
+  106     | expr . '/' expr
+  107     | expr . '+' expr
+  108     | expr . '-' expr
+  109     | expr . '%' expr
+  110     | expr . '<' expr
+  111     | expr . LE expr
+  112     | expr . '>' expr
+  113     | expr . GE expr
+  114     | expr . EQ expr
+  115     | expr . NE expr
+  118     | expr . AND expr
+  119     | expr . OR expr
+  147 bool_expr: expr .
+
+    OR   shift, and go to state 91
+    AND  shift, and go to state 92
+    LE   shift, and go to state 93
+    EQ   shift, and go to state 94
+    GE   shift, and go to state 95
+    NE   shift, and go to state 96
+    '<'  shift, and go to state 97
+    '>'  shift, and go to state 98
+    '+'  shift, and go to state 99
+    '-'  shift, and go to state 100
+    '*'  shift, and go to state 101
+    '/'  shift, and go to state 102
+    '%'  shift, and go to state 103
+
+    $default  reduce using rule 147 (bool_expr)
+
+
+State 255
+
+  145 condition: IF '(' bool_expr . ')' compound
+  146          | IF '(' bool_expr . ')' compound ELSE compound
+
+    ')'  shift, and go to state 271
+
+
+State 256
+
+  152 while_stat: DO $@22 compound . $@23 WHILE '(' bool_expr ')' ';'
+
+    $default  reduce using rule 151 ($@23)
+
+    $@23  go to state 272
+
+
+State 257
+
+  149 while_stat: WHILE '(' bool_expr . ')' $@21 compound
+
+    ')'  shift, and go to state 273
+
+
+State 258
+
+  125 arr_ref: ID . arr_ref_step
+  128 func_invo: ID . '(' expr_list expr ')'
+  129          | ID . '(' expr ')'
+  130          | ID . '(' ')'
+  143 var_ref: ID .
+
+    '('  shift, and go to state 85
+    '['  shift, and go to state 86
+
+    $default  reduce using rule 143 (var_ref)
+
+    arr_ref_step  go to state 87
+
+
+State 259
+
+  159 init_expr: func_invo .
+  164 init_expr_list: func_invo . ','
+
+    ','  shift, and go to state 274
+
+    $default  reduce using rule 159 (init_expr)
+
+
+State 260
+
+  160 init_expr: var_ref . '=' expr
+  165 init_expr_list: var_ref . '=' expr ','
+
+    '='  shift, and go to state 275
+
+
+State 261
+
+  154 for_stat: FOR '(' init_expr . ';' expr ';' incr_expr ')' $@24 compound
+  156         | FOR '(' init_expr . ';' ';' incr_expr ')' $@25 compound
+
+    ';'  shift, and go to state 276
+
+
+State 262
+
+  157 init_expr: init_expr_list . var_ref '=' expr
+  158          | init_expr_list . func_invo
+  162 init_expr_list: init_expr_list . var_ref '=' expr ','
+  163               | init_expr_list . func_invo ','
+
+    ID  shift, and go to state 258
+
+    arr_ref    go to state 228
+    func_invo  go to state 277
+    var_ref    go to state 278
+
+
+State 263
+
+  171 jump_stat: RETURN expr ';' .
+
+    $default  reduce using rule 171 (jump_stat)
+
+
+State 264
+
+   35 compound: '{' $@13 compound_list . '}'
+   40 compound_list: compound_list . var_all_def
+   41              | compound_list . statement
+
+    BASIC_TYPE    shift, and go to state 2
+    ID            shift, and go to state 187
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    READ          shift, and go to state 188
+    PRINT         shift, and go to state 189
+    IF            shift, and go to state 190
+    DO            shift, and go to state 191
+    WHILE         shift, and go to state 192
+    FOR           shift, and go to state 193
+    CONTINUE      shift, and go to state 194
+    BREAK         shift, and go to state 195
+    RETURN        shift, and go to state 196
+    CONST         shift, and go to state 3
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '{'           shift, and go to state 197
+    '}'           shift, and go to state 279
+    '!'           shift, and go to state 51
+
+    var_all_def   go to state 241
+    compound      go to state 199
+    basic         go to state 202
+    value_type    go to state 52
+    int_value     go to state 53
+    float_value   go to state 54
+    bool_value    go to state 55
+    string_value  go to state 56
+    var_def       go to state 203
+    expr          go to state 204
+    arr_ref       go to state 205
+    func_invo     go to state 59
+    statement     go to state 242
+    simple_stat   go to state 207
+    var_ref       go to state 208
+    condition     go to state 209
+    while_stat    go to state 210
+    for_stat      go to state 211
+    jump_stat     go to state 212
+
+
+State 265
+
+   37 compound: '{' $@14 '}' .
+
+    $default  reduce using rule 37 (compound)
+
+
+State 266
+
+  105 expr: expr . '*' expr
+  106     | expr . '/' expr
+  107     | expr . '+' expr
+  108     | expr . '-' expr
+  109     | expr . '%' expr
+  110     | expr . '<' expr
+  111     | expr . LE expr
+  112     | expr . '>' expr
+  113     | expr . GE expr
+  114     | expr . EQ expr
+  115     | expr . NE expr
+  118     | expr . AND expr
+  119     | expr . OR expr
+  140 simple_stat: var_ref '=' expr . ';'
+
+    OR   shift, and go to state 91
+    AND  shift, and go to state 92
+    LE   shift, and go to state 93
+    EQ   shift, and go to state 94
+    GE   shift, and go to state 95
+    NE   shift, and go to state 96
+    '<'  shift, and go to state 97
+    '>'  shift, and go to state 98
+    '+'  shift, and go to state 99
+    '-'  shift, and go to state 100
+    '*'  shift, and go to state 101
+    '/'  shift, and go to state 102
+    '%'  shift, and go to state 103
+    ';'  shift, and go to state 280
+
+
+State 267
+
+   18 func_def: basic ID '(' argu_list argu ')' $@1 '{' $@2 compound_in_argu_func . '}'
+
+    '}'  shift, and go to state 281
+
+
+State 268
+
+   21 func_def: basic ID '(' argu ')' $@3 '{' $@4 compound_in_argu_func '}' .
+
+    $default  reduce using rule 21 (func_def)
+
+
+State 269
+
+   27 func_def: void_reduce ID '(' argu_list argu ')' $@7 '{' $@8 compound_in_argu_func . '}'
+
+    '}'  shift, and go to state 282
+
+
+State 270
+
+   30 func_def: void_reduce ID '(' argu ')' $@9 '{' $@10 compound_in_argu_func '}' .
+
+    $default  reduce using rule 30 (func_def)
+
+
+State 271
+
+  145 condition: IF '(' bool_expr ')' . compound
+  146          | IF '(' bool_expr ')' . compound ELSE compound
+
+    '{'  shift, and go to state 197
+
+    compound  go to state 283
+
+
+State 272
+
+  152 while_stat: DO $@22 compound $@23 . WHILE '(' bool_expr ')' ';'
+
+    WHILE  shift, and go to state 284
+
+
+State 273
+
+  149 while_stat: WHILE '(' bool_expr ')' . $@21 compound
+
+    $default  reduce using rule 148 ($@21)
+
+    $@21  go to state 285
+
+
+State 274
+
+  164 init_expr_list: func_invo ',' .
+
+    $default  reduce using rule 164 (init_expr_list)
+
+
+State 275
+
+  160 init_expr: var_ref '=' . expr
+  165 init_expr_list: var_ref '=' . expr ','
+
+    ID            shift, and go to state 44
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '!'           shift, and go to state 51
+
+    value_type    go to state 52
+    int_value     go to state 53
+    float_value   go to state 54
+    bool_value    go to state 55
+    string_value  go to state 56
+    expr          go to state 286
+    arr_ref       go to state 58
+    func_invo     go to state 59
+
+
+State 276
+
+  154 for_stat: FOR '(' init_expr ';' . expr ';' incr_expr ')' $@24 compound
+  156         | FOR '(' init_expr ';' . ';' incr_expr ')' $@25 compound
+
+    ID            shift, and go to state 44
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    ';'           shift, and go to state 287
+    '!'           shift, and go to state 51
+
+    value_type    go to state 52
+    int_value     go to state 53
+    float_value   go to state 54
+    bool_value    go to state 55
+    string_value  go to state 56
+    expr          go to state 288
+    arr_ref       go to state 58
+    func_invo     go to state 59
+
+
+State 277
+
+  158 init_expr: init_expr_list func_invo .
+  163 init_expr_list: init_expr_list func_invo . ','
+
+    ','  shift, and go to state 289
+
+    $default  reduce using rule 158 (init_expr)
+
+
+State 278
+
+  157 init_expr: init_expr_list var_ref . '=' expr
+  162 init_expr_list: init_expr_list var_ref . '=' expr ','
+
+    '='  shift, and go to state 290
+
+
+State 279
+
+   35 compound: '{' $@13 compound_list '}' .
+
+    $default  reduce using rule 35 (compound)
+
+
+State 280
+
+  140 simple_stat: var_ref '=' expr ';' .
+
+    $default  reduce using rule 140 (simple_stat)
+
+
+State 281
+
+   18 func_def: basic ID '(' argu_list argu ')' $@1 '{' $@2 compound_in_argu_func '}' .
+
+    $default  reduce using rule 18 (func_def)
+
+
+State 282
+
+   27 func_def: void_reduce ID '(' argu_list argu ')' $@7 '{' $@8 compound_in_argu_func '}' .
+
+    $default  reduce using rule 27 (func_def)
+
+
+State 283
+
+  145 condition: IF '(' bool_expr ')' compound .
+  146          | IF '(' bool_expr ')' compound . ELSE compound
+
+    ELSE  shift, and go to state 291
+
+    $default  reduce using rule 145 (condition)
+
+
+State 284
+
+  152 while_stat: DO $@22 compound $@23 WHILE . '(' bool_expr ')' ';'
+
+    '('  shift, and go to state 292
+
+
+State 285
+
+  149 while_stat: WHILE '(' bool_expr ')' $@21 . compound
+
+    '{'  shift, and go to state 197
+
+    compound  go to state 293
+
+
+State 286
+
+  105 expr: expr . '*' expr
+  106     | expr . '/' expr
+  107     | expr . '+' expr
+  108     | expr . '-' expr
+  109     | expr . '%' expr
+  110     | expr . '<' expr
+  111     | expr . LE expr
+  112     | expr . '>' expr
+  113     | expr . GE expr
+  114     | expr . EQ expr
+  115     | expr . NE expr
+  118     | expr . AND expr
+  119     | expr . OR expr
+  160 init_expr: var_ref '=' expr .
+  165 init_expr_list: var_ref '=' expr . ','
+
+    OR   shift, and go to state 91
+    AND  shift, and go to state 92
+    LE   shift, and go to state 93
+    EQ   shift, and go to state 94
+    GE   shift, and go to state 95
+    NE   shift, and go to state 96
+    '<'  shift, and go to state 97
+    '>'  shift, and go to state 98
+    '+'  shift, and go to state 99
+    '-'  shift, and go to state 100
+    '*'  shift, and go to state 101
+    '/'  shift, and go to state 102
+    '%'  shift, and go to state 103
+    ','  shift, and go to state 294
+
+    $default  reduce using rule 160 (init_expr)
+
+
+State 287
+
+  156 for_stat: FOR '(' init_expr ';' ';' . incr_expr ')' $@25 compound
+
+    ID  shift, and go to state 227
+
+    $default  reduce using rule 168 (incr_expr)
+
+    arr_ref         go to state 228
+    var_ref         go to state 295
+    incr_expr       go to state 296
+    incr_expr_list  go to state 297
+
+
+State 288
+
+  105 expr: expr . '*' expr
+  106     | expr . '/' expr
+  107     | expr . '+' expr
+  108     | expr . '-' expr
+  109     | expr . '%' expr
+  110     | expr . '<' expr
+  111     | expr . LE expr
+  112     | expr . '>' expr
+  113     | expr . GE expr
+  114     | expr . EQ expr
+  115     | expr . NE expr
+  118     | expr . AND expr
+  119     | expr . OR expr
+  154 for_stat: FOR '(' init_expr ';' expr . ';' incr_expr ')' $@24 compound
+
+    OR   shift, and go to state 91
+    AND  shift, and go to state 92
+    LE   shift, and go to state 93
+    EQ   shift, and go to state 94
+    GE   shift, and go to state 95
+    NE   shift, and go to state 96
+    '<'  shift, and go to state 97
+    '>'  shift, and go to state 98
+    '+'  shift, and go to state 99
+    '-'  shift, and go to state 100
+    '*'  shift, and go to state 101
+    '/'  shift, and go to state 102
+    '%'  shift, and go to state 103
+    ';'  shift, and go to state 298
+
+
+State 289
+
+  163 init_expr_list: init_expr_list func_invo ',' .
+
+    $default  reduce using rule 163 (init_expr_list)
+
+
+State 290
+
+  157 init_expr: init_expr_list var_ref '=' . expr
+  162 init_expr_list: init_expr_list var_ref '=' . expr ','
+
+    ID            shift, and go to state 44
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '!'           shift, and go to state 51
+
+    value_type    go to state 52
+    int_value     go to state 53
+    float_value   go to state 54
+    bool_value    go to state 55
+    string_value  go to state 56
+    expr          go to state 299
+    arr_ref       go to state 58
+    func_invo     go to state 59
+
+
+State 291
+
+  146 condition: IF '(' bool_expr ')' compound ELSE . compound
+
+    '{'  shift, and go to state 197
+
+    compound  go to state 300
+
+
+State 292
+
+  152 while_stat: DO $@22 compound $@23 WHILE '(' . bool_expr ')' ';'
+
+    ID            shift, and go to state 44
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '!'           shift, and go to state 51
+
+    value_type    go to state 52
+    int_value     go to state 53
+    float_value   go to state 54
+    bool_value    go to state 55
+    string_value  go to state 56
+    expr          go to state 254
+    arr_ref       go to state 58
+    func_invo     go to state 59
+    bool_expr     go to state 301
+
+
+State 293
+
+  149 while_stat: WHILE '(' bool_expr ')' $@21 compound .
+
+    $default  reduce using rule 149 (while_stat)
+
+
+State 294
+
+  165 init_expr_list: var_ref '=' expr ',' .
+
+    $default  reduce using rule 165 (init_expr_list)
+
+
+State 295
+
+  167 incr_expr: var_ref . '=' expr
+  170 incr_expr_list: var_ref . '=' expr ','
+
+    '='  shift, and go to state 302
+
+
+State 296
+
+  156 for_stat: FOR '(' init_expr ';' ';' incr_expr . ')' $@25 compound
+
+    ')'  shift, and go to state 303
+
+
+State 297
+
+  166 incr_expr: incr_expr_list . var_ref '=' expr ','
+  169 incr_expr_list: incr_expr_list . var_ref '=' expr ','
+
+    ID  shift, and go to state 227
+
+    arr_ref  go to state 228
+    var_ref  go to state 304
+
+
+State 298
+
+  154 for_stat: FOR '(' init_expr ';' expr ';' . incr_expr ')' $@24 compound
+
+    ID  shift, and go to state 227
+
+    $default  reduce using rule 168 (incr_expr)
+
+    arr_ref         go to state 228
+    var_ref         go to state 295
+    incr_expr       go to state 305
+    incr_expr_list  go to state 297
+
+
+State 299
+
+  105 expr: expr . '*' expr
+  106     | expr . '/' expr
+  107     | expr . '+' expr
+  108     | expr . '-' expr
+  109     | expr . '%' expr
+  110     | expr . '<' expr
+  111     | expr . LE expr
+  112     | expr . '>' expr
+  113     | expr . GE expr
+  114     | expr . EQ expr
+  115     | expr . NE expr
+  118     | expr . AND expr
+  119     | expr . OR expr
+  157 init_expr: init_expr_list var_ref '=' expr .
+  162 init_expr_list: init_expr_list var_ref '=' expr . ','
+
+    OR   shift, and go to state 91
+    AND  shift, and go to state 92
+    LE   shift, and go to state 93
+    EQ   shift, and go to state 94
+    GE   shift, and go to state 95
+    NE   shift, and go to state 96
+    '<'  shift, and go to state 97
+    '>'  shift, and go to state 98
+    '+'  shift, and go to state 99
+    '-'  shift, and go to state 100
+    '*'  shift, and go to state 101
+    '/'  shift, and go to state 102
+    '%'  shift, and go to state 103
+    ','  shift, and go to state 306
+
+    $default  reduce using rule 157 (init_expr)
+
+
+State 300
+
+  146 condition: IF '(' bool_expr ')' compound ELSE compound .
+
+    $default  reduce using rule 146 (condition)
+
+
+State 301
+
+  152 while_stat: DO $@22 compound $@23 WHILE '(' bool_expr . ')' ';'
+
+    ')'  shift, and go to state 307
+
+
+State 302
+
+  167 incr_expr: var_ref '=' . expr
+  170 incr_expr_list: var_ref '=' . expr ','
+
+    ID            shift, and go to state 44
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '!'           shift, and go to state 51
+
+    value_type    go to state 52
+    int_value     go to state 53
+    float_value   go to state 54
+    bool_value    go to state 55
+    string_value  go to state 56
+    expr          go to state 308
+    arr_ref       go to state 58
+    func_invo     go to state 59
+
+
+State 303
+
+  156 for_stat: FOR '(' init_expr ';' ';' incr_expr ')' . $@25 compound
+
+    $default  reduce using rule 155 ($@25)
+
+    $@25  go to state 309
+
+
+State 304
+
+  166 incr_expr: incr_expr_list var_ref . '=' expr ','
+  169 incr_expr_list: incr_expr_list var_ref . '=' expr ','
+
+    '='  shift, and go to state 310
+
+
+State 305
+
+  154 for_stat: FOR '(' init_expr ';' expr ';' incr_expr . ')' $@24 compound
+
+    ')'  shift, and go to state 311
+
+
+State 306
+
+  162 init_expr_list: init_expr_list var_ref '=' expr ',' .
+
+    $default  reduce using rule 162 (init_expr_list)
+
+
+State 307
+
+  152 while_stat: DO $@22 compound $@23 WHILE '(' bool_expr ')' . ';'
+
+    ';'  shift, and go to state 312
+
+
+State 308
+
+  105 expr: expr . '*' expr
+  106     | expr . '/' expr
+  107     | expr . '+' expr
+  108     | expr . '-' expr
+  109     | expr . '%' expr
+  110     | expr . '<' expr
+  111     | expr . LE expr
+  112     | expr . '>' expr
+  113     | expr . GE expr
+  114     | expr . EQ expr
+  115     | expr . NE expr
+  118     | expr . AND expr
+  119     | expr . OR expr
+  167 incr_expr: var_ref '=' expr .
+  170 incr_expr_list: var_ref '=' expr . ','
+
+    OR   shift, and go to state 91
+    AND  shift, and go to state 92
+    LE   shift, and go to state 93
+    EQ   shift, and go to state 94
+    GE   shift, and go to state 95
+    NE   shift, and go to state 96
+    '<'  shift, and go to state 97
+    '>'  shift, and go to state 98
+    '+'  shift, and go to state 99
+    '-'  shift, and go to state 100
+    '*'  shift, and go to state 101
+    '/'  shift, and go to state 102
+    '%'  shift, and go to state 103
+    ','  shift, and go to state 313
+
+    $default  reduce using rule 167 (incr_expr)
+
+
+State 309
+
+  156 for_stat: FOR '(' init_expr ';' ';' incr_expr ')' $@25 . compound
+
+    '{'  shift, and go to state 197
+
+    compound  go to state 314
+
+
+State 310
+
+  166 incr_expr: incr_expr_list var_ref '=' . expr ','
+  169 incr_expr_list: incr_expr_list var_ref '=' . expr ','
+
+    ID            shift, and go to state 44
+    INT_CONST     shift, and go to state 45
+    FLOAT_CONST   shift, and go to state 46
+    BOOL_CONST    shift, and go to state 47
+    STRING_CONST  shift, and go to state 48
+    '-'           shift, and go to state 49
+    '('           shift, and go to state 50
+    '!'           shift, and go to state 51
+
+    value_type    go to state 52
+    int_value     go to state 53
+    float_value   go to state 54
+    bool_value    go to state 55
+    string_value  go to state 56
+    expr          go to state 315
+    arr_ref       go to state 58
+    func_invo     go to state 59
+
+
+State 311
+
+  154 for_stat: FOR '(' init_expr ';' expr ';' incr_expr ')' . $@24 compound
+
+    $default  reduce using rule 153 ($@24)
+
+    $@24  go to state 316
+
+
+State 312
+
+  152 while_stat: DO $@22 compound $@23 WHILE '(' bool_expr ')' ';' .
+
+    $default  reduce using rule 152 (while_stat)
+
+
+State 313
+
+  170 incr_expr_list: var_ref '=' expr ',' .
+
+    $default  reduce using rule 170 (incr_expr_list)
+
+
+State 314
+
+  156 for_stat: FOR '(' init_expr ';' ';' incr_expr ')' $@25 compound .
+
+    $default  reduce using rule 156 (for_stat)
+
+
+State 315
+
+  105 expr: expr . '*' expr
+  106     | expr . '/' expr
+  107     | expr . '+' expr
+  108     | expr . '-' expr
+  109     | expr . '%' expr
+  110     | expr . '<' expr
+  111     | expr . LE expr
+  112     | expr . '>' expr
+  113     | expr . GE expr
+  114     | expr . EQ expr
+  115     | expr . NE expr
+  118     | expr . AND expr
+  119     | expr . OR expr
+  166 incr_expr: incr_expr_list var_ref '=' expr . ','
+  169 incr_expr_list: incr_expr_list var_ref '=' expr . ','
+
+    OR   shift, and go to state 91
+    AND  shift, and go to state 92
+    LE   shift, and go to state 93
+    EQ   shift, and go to state 94
+    GE   shift, and go to state 95
+    NE   shift, and go to state 96
+    '<'  shift, and go to state 97
+    '>'  shift, and go to state 98
+    '+'  shift, and go to state 99
+    '-'  shift, and go to state 100
+    '*'  shift, and go to state 101
+    '/'  shift, and go to state 102
+    '%'  shift, and go to state 103
+    ','  shift, and go to state 317
+
+
+State 316
+
+  154 for_stat: FOR '(' init_expr ';' expr ';' incr_expr ')' $@24 . compound
+
+    '{'  shift, and go to state 197
+
+    compound  go to state 318
+
+
+State 317
+
+  166 incr_expr: incr_expr_list var_ref '=' expr ',' .
+  169 incr_expr_list: incr_expr_list var_ref '=' expr ',' .
+
+    ID        reduce using rule 169 (incr_expr_list)
+    $default  reduce using rule 166 (incr_expr)
+
+
+State 318
+
+  154 for_stat: FOR '(' init_expr ';' expr ';' incr_expr ')' $@24 compound .
+
+    $default  reduce using rule 154 (for_stat)
