@@ -2,15 +2,12 @@
 #pragma token off
 #pragma statistic off
 #pragma symbol on
-int ff(int a[3]);
-int ff(int a[3])
-{
-}
-
 int main()
 {
-	int z[3];
-	int b[4][4][4][5][3];
-	ff(z);
+	int t;
+	for(t=0;;t=t+1)
+	{
+		return 1;
+	}
+	return "aaa";
 }
-

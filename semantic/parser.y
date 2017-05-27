@@ -498,6 +498,40 @@ compound
 	}
 ;
 
+statement
+: compound
+	{
+		$$ = $1;
+	}
+| simple_stat
+	{
+		$$ = RETURN_NO;
+	}
+| condition
+	{
+		$$ = $1;
+	}
+| while_stat
+	{
+		$$ = RETURN_NO;
+	}
+| for_stat
+	{
+		$$ = RETURN_NO;
+	}
+| jump_stat
+	{
+		$$ = $1;
+	}
+| expr ';'
+	{
+		const_val* con=(const_val*)$1;
+		check_and_set_scalar($1);
+
+		$$ = RETURN_NO;
+	}
+;
+
 compound_in_argu_func
 : compound_list
 	{
@@ -516,7 +550,10 @@ compound_list
 	}
 | compound_list statement
 	{
-		$$ = ($1 || $2);
+		if($1==RETURN_YES || $2==RETURN_YES)
+			$$ = RETURN_YES;
+		else
+			$$ = RETURN_NO;
 	}
 | statement
 	{
@@ -1863,42 +1900,6 @@ expr_list
 	}
 ;
 
-statement
-: compound
-	{
-		$$ = $1;
-	}
-| simple_stat
-	{
-		$$ = RETURN_NO;
-	}
-| condition
-	{
-		$$ = $1;
-	}
-| while_stat
-	{
-		$$ = $1;
-	}
-| for_stat
-	{
-		$$ = $1;
-	}
-| jump_stat
-	{
-		$$ = $1;
-	}
-| expr ';'
-	{
-		const_val* con=(const_val*)$1;
-		check_and_set_scalar($1);
-
-		$$ = RETURN_NO;
-	}
-;
-
-
-
 simple_stat
 : var_ref '=' expr ';'
 	{
@@ -2015,7 +2016,10 @@ condition
 	}
 | IF '(' bool_expr ')' compound ELSE compound
 	{
-		$$ = ($5 && $7);
+		if($5==RETURN_YES && $7==RETURN_YES)
+			$$ = RETURN_YES;
+		else
+			$$ = RETURN_NO;
 	}
 ;
 
@@ -3314,7 +3318,10 @@ int main( int argc, char **argv )
 	while(parser!=NULL)
 	{
 		if(!parser->isUsed)
+		{
+			isanyerr=1;
 			printf("##########Error at Line #%d: %s.##########\n",parser->line,"no definition of this function declare");
+		}
 		parser=parser->next;
 	}
 
