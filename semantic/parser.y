@@ -38,6 +38,12 @@ typedef enum
 	KIND_LVAL,
 } enum_kind;
 
+typedef enum
+{
+	RETURN_YES,
+	RETURN_NO,
+}	enum_return;
+
 
 typedef enum
 {
@@ -77,6 +83,7 @@ typedef enum
 	ERROR_RETURN_VOID_ERROR,//17
 	ERROR_RETURN_IN_VOID,//18
 	ERROR_RETURN_TYPE,//19
+	ERROR_NO_RETURN,//20
 } enum_error;
 
 typedef struct S_invo_val
@@ -163,6 +170,7 @@ void add_newtable();
 void add_id(char* name, void* my_val);
 void add_newtable_with_argu(char* name);
 void dump_cur_table();
+void pop_cur_table();
 void dump_error(int error);
 
 int find_redclair(char* name);
@@ -192,6 +200,7 @@ int yylex();
 	char* str;
 	void* v;
 	int c_type;
+	int return_type;
 }
 
 %token <str> VOID
@@ -225,6 +234,8 @@ int yylex();
 %type <v> argu argu_list array_argu_step arr_init arr_argu_list
 %type <v> expr expr_list func_invo arr_ref arr_ref_step var_ref simple_stat
 %type <c_type> var_list basic void_reduce const_list
+
+%type <return_type> for_stat while_stat jump_stat condition statement compound_list compound compound_in_argu_func
 
 %left OR
 %left AND
@@ -292,9 +303,17 @@ func_def
 	{
 		add_newtable_with_argu($2);
 	}
-	compound_in_argu_func '}'
+	compound_in_argu_func 
 	{
+		int hasreturn=$10;
+		if(hasreturn==RETURN_NO)
+			dump_error(ERROR_NO_RETURN);
+	} 
+	'}'
+	{
+
 		if(Opt_symbol) dump_cur_table();
+		else pop_cur_table();
 	}
 | basic ID '(' argu ')'
 	{
@@ -323,9 +342,16 @@ func_def
 	{
 		add_newtable_with_argu($2);
 	}
-	compound_in_argu_func '}'
+	compound_in_argu_func 
+	{
+		int hasreturn=$9;
+		if(hasreturn==RETURN_NO)
+			dump_error(ERROR_NO_RETURN);
+	}
+	'}'
 	{
 		if(Opt_symbol) dump_cur_table();
+		else pop_cur_table();
 	}
 | basic ID '(' ')' 
 	{
@@ -347,9 +373,16 @@ func_def
 	{
 		add_newtable();
 	}
-	compound_in_argu_func '}'
+	compound_in_argu_func
+	{
+		int hasreturn=$8;
+		if(hasreturn==RETURN_NO)
+			dump_error(ERROR_NO_RETURN);
+	}
+	'}'
 	{
 		if(Opt_symbol) dump_cur_table();
+		else pop_cur_table();
 	}
 | void_reduce ID '(' argu_list argu ')'
 	{
@@ -380,6 +413,7 @@ func_def
 	compound_in_argu_func '}'
 	{
 		if(Opt_symbol) dump_cur_table();
+		else pop_cur_table();
 	}
 | void_reduce ID '(' argu ')'
 	{
@@ -411,6 +445,7 @@ func_def
 	compound_in_argu_func '}'
 	{
 		if(Opt_symbol) dump_cur_table();
+		else pop_cur_table();
 	}
 | void_reduce ID '(' ')'
 	{
@@ -435,6 +470,7 @@ func_def
 	compound_in_argu_func '}'
 	{
 		if(Opt_symbol) dump_cur_table();
+		else pop_cur_table();
 	}
 ;
 
@@ -445,10 +481,10 @@ compound
 	}  
 	compound_list '}' 
 	{
-		if(Opt_symbol)
-		{
-			dump_cur_table();
-		}
+		if(Opt_symbol) dump_cur_table();
+		else pop_cur_table();
+
+		$$ = $3;
 	}
 | '{'
 	{
@@ -456,20 +492,40 @@ compound
 	} 
 	'}'
 	{
+		$$ = RETURN_NO;
 		if(Opt_symbol) dump_cur_table();
+		else pop_cur_table();
 	}
 ;
 
 compound_in_argu_func
 : compound_list
+	{
+		$$ = $1;
+	}
 | %empty
+	{
+		$$ = RETURN_NO;
+	}
 ;
 
 compound_list
 : compound_list var_all_def
+	{
+		$$ = $1;
+	}
 | compound_list statement
+	{
+		$$ = ($1 || $2);
+	}
 | statement
+	{
+		$$ = $1;
+	}
 | var_all_def 
+	{
+		$$ = RETURN_NO;
+	}
 ;
 
 
@@ -1809,15 +1865,35 @@ expr_list
 
 statement
 : compound
-| simple_stat 
+	{
+		$$ = $1;
+	}
+| simple_stat
+	{
+		$$ = RETURN_NO;
+	}
 | condition
+	{
+		$$ = $1;
+	}
 | while_stat
+	{
+		$$ = $1;
+	}
 | for_stat
+	{
+		$$ = $1;
+	}
 | jump_stat
+	{
+		$$ = $1;
+	}
 | expr ';'
 	{
 		const_val* con=(const_val*)$1;
 		check_and_set_scalar($1);
+
+		$$ = RETURN_NO;
 	}
 ;
 
@@ -1934,7 +2010,13 @@ var_ref
 
 condition
 : IF '(' bool_expr ')' compound
+	{
+		$$ = $5;
+	}
 | IF '(' bool_expr ')' compound ELSE compound
+	{
+		$$ = ($5 && $7);
+	}
 ;
 
 bool_expr
@@ -1951,13 +2033,28 @@ bool_expr
 ;
 
 while_stat
-: WHILE '(' bool_expr ')' { isInLoop+=1;} compound {isInLoop-=1;}
+: WHILE '(' bool_expr ')' { isInLoop+=1;} compound 
+	{
+		isInLoop-=1;
+		$$ = $6;
+	}
 | DO {isInLoop+=1;} compound {isInLoop-=1;} WHILE '(' bool_expr ')' ';'
+	{
+		$$ = $3;
+	}
 ;
 
 for_stat
-: FOR '(' init_expr ';' bool_expr ';' incr_expr ')' {isInLoop+=1;} compound {isInLoop-=1;}
-| FOR '(' init_expr ';' ';' incr_expr ')' {isInLoop+=1;} compound {isInLoop-=1;}
+: FOR '(' init_expr ';' bool_expr ';' incr_expr ')' {isInLoop+=1;} compound 
+	{
+		isInLoop-=1;
+		$$ = $10;
+	}
+| FOR '(' init_expr ';' ';' incr_expr ')' {isInLoop+=1;} compound
+	{
+		isInLoop-=1;
+		$$ = $9;
+	}
 ;
 
 init_expr 
@@ -2325,6 +2422,8 @@ jump_stat
 	{
 		if(func_type != TYPE_VOID)
 			dump_error(ERROR_RETURN_VOID_ERROR);
+
+		$$ = RETURN_YES;
 	}
 | RETURN expr ';'
 	{
@@ -2342,16 +2441,22 @@ jump_stat
 		else if(!check_func_change(func_type,exp->type))
 			dump_error(ERROR_RETURN_TYPE);
 
+		$$ = RETURN_YES;
+
 	}
 | BREAK ';'
 	{
 		if(isInLoop<=0)
 			dump_error(ERROR_JUMP_STATMENT);
+
+		$$ = RETURN_NO;
 	}
 | CONTINUE ';'
 	{
 		if(isInLoop<=0)
 			dump_error(ERROR_JUMP_STATMENT);
+
+		$$ = RETURN_NO;
 	}
 ;
 
@@ -2982,6 +3087,12 @@ void dump_cur_table()
  	cur_level--;
 }
 
+void pop_cur_table()
+{
+	cur_table=cur_table->next;
+	cur_level--;
+}
+
 void add_newtable()
 {
 	cur_level++;
@@ -3150,6 +3261,8 @@ void dump_error(int error)
 		case ERROR_RETURN_TYPE:
 			mess=strdup("return type not match");
 			break;
+		case ERROR_NO_RETURN:
+			mess=strdup("this function might have a route without return");
 	}
 
 
@@ -3194,6 +3307,7 @@ int main( int argc, char **argv )
 
 	if(Opt_symbol)
 		dump_cur_table();
+	else pop_cur_table();
 
 
 	decl_check *parser=decl_stack;

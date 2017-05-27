@@ -79,13 +79,14 @@ extern int yydebug;
 
 union YYSTYPE
 {
-#line 191 "parser.y" /* yacc.c:1915  */
+#line 199 "parser.y" /* yacc.c:1915  */
 
 	char* str;
 	void* v;
 	int c_type;
+	int return_type;
 
-#line 89 "parser.tab.h" /* yacc.c:1915  */
+#line 90 "parser.tab.h" /* yacc.c:1915  */
 };
 
 typedef union YYSTYPE YYSTYPE;
