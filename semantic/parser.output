@@ -256,9 +256,10 @@ Grammar
   173               | var_ref '=' expr ','
   174               | func_invo
 
-  175 jump_stat: RETURN expr ';'
-  176          | BREAK ';'
-  177          | CONTINUE ';'
+  175 jump_stat: RETURN ';'
+  176          | RETURN expr ';'
+  177          | BREAK ';'
+  178          | CONTINUE ';'
 
 
 Terminals, with rules where they appear
@@ -277,7 +278,7 @@ $end (0) 0
 '-' (45) 65 67 108 117
 '/' (47) 106
 ';' (59) 45 47 49 51 53 55 88 89 90 91 92 93 94 95 96 97 139 140 141
-    142 152 154 156 175 176 177
+    142 152 154 156 175 176 177 178
 '<' (60) 110
 '=' (61) 79 81 82 84 86 87 89 91 92 94 96 97 140 157 160 162 165 166
     168 171 173
@@ -302,9 +303,9 @@ ELSE (268) 146
 DO (269) 152
 WHILE (270) 149 152
 FOR (271) 154 156
-CONTINUE (272) 177
-BREAK (273) 176
-RETURN (274) 175
+CONTINUE (272) 178
+BREAK (273) 177
+RETURN (274) 175 176
 CONST (275) 96 97
 OR (276) 119
 AND (277) 118
@@ -419,7 +420,7 @@ expr (93)
     119 120 121 122 123 124, on right: 79 81 89 91 100 101 103 104
     105 106 107 108 109 110 111 112 113 114 115 116 117 118 119 120
     126 127 128 129 131 132 139 140 141 147 157 160 162 165 166 168
-    171 173 175
+    171 173 176
 arr_ref (94)
     on left: 125, on right: 124 144
 arr_ref_step (95)
@@ -463,7 +464,7 @@ incr_expr (112)
 incr_expr_list (113)
     on left: 171 172 173 174, on right: 166 167 171 172
 jump_stat (114)
-    on left: 175 176 177, on right: 138
+    on left: 175 176 177 178, on right: 138
 
 
 State 0
@@ -3163,21 +3164,22 @@ State 193
 
 State 194
 
-  177 jump_stat: CONTINUE . ';'
+  178 jump_stat: CONTINUE . ';'
 
     ';'  shift, and go to state 235
 
 
 State 195
 
-  176 jump_stat: BREAK . ';'
+  177 jump_stat: BREAK . ';'
 
     ';'  shift, and go to state 236
 
 
 State 196
 
-  175 jump_stat: RETURN . expr ';'
+  175 jump_stat: RETURN . ';'
+  176          | RETURN . expr ';'
 
     ID            shift, and go to state 44
     INT_CONST     shift, and go to state 45
@@ -3186,6 +3188,7 @@ State 196
     STRING_CONST  shift, and go to state 48
     '-'           shift, and go to state 49
     '('           shift, and go to state 50
+    ';'           shift, and go to state 237
     '!'           shift, and go to state 51
 
     value_type    go to state 52
@@ -3193,7 +3196,7 @@ State 196
     float_value   go to state 54
     bool_value    go to state 55
     string_value  go to state 56
-    expr          go to state 237
+    expr          go to state 238
     arr_ref       go to state 58
     func_invo     go to state 59
 
@@ -3206,8 +3209,8 @@ State 197
     '}'       reduce using rule 36 ($@14)
     $default  reduce using rule 34 ($@13)
 
-    $@13  go to state 238
-    $@14  go to state 239
+    $@13  go to state 239
+    $@14  go to state 240
 
 
 State 198
@@ -3228,7 +3231,7 @@ State 200
 
    24 func_def: basic ID '(' ')' $@5 '{' $@6 compound_in_argu_func . '}'
 
-    '}'  shift, and go to state 240
+    '}'  shift, and go to state 241
 
 
 State 201
@@ -3260,7 +3263,7 @@ State 201
 
     $default  reduce using rule 38 (compound_in_argu_func)
 
-    var_all_def   go to state 241
+    var_all_def   go to state 242
     compound      go to state 199
     basic         go to state 202
     value_type    go to state 52
@@ -3272,7 +3275,7 @@ State 201
     expr          go to state 204
     arr_ref       go to state 205
     func_invo     go to state 59
-    statement     go to state 242
+    statement     go to state 243
     simple_stat   go to state 207
     var_ref       go to state 208
     condition     go to state 209
@@ -3292,7 +3295,7 @@ State 202
    94        | basic . ID arr_step '=' arr_init ';'
    95        | basic . ID arr_step ';'
 
-    ID  shift, and go to state 243
+    ID  shift, and go to state 244
 
     var_list  go to state 21
 
@@ -3334,7 +3337,7 @@ State 204
     '*'  shift, and go to state 101
     '/'  shift, and go to state 102
     '%'  shift, and go to state 103
-    ';'  shift, and go to state 244
+    ';'  shift, and go to state 245
 
 
 State 205
@@ -3364,7 +3367,7 @@ State 208
 
   140 simple_stat: var_ref . '=' expr ';'
 
-    '='  shift, and go to state 245
+    '='  shift, and go to state 246
 
 
 State 209
@@ -3401,7 +3404,7 @@ State 213
 
     $default  reduce using rule 17 ($@2)
 
-    $@2  go to state 246
+    $@2  go to state 247
 
 
 State 214
@@ -3440,7 +3443,7 @@ State 215
 
     var_all_def            go to state 198
     compound               go to state 199
-    compound_in_argu_func  go to state 247
+    compound_in_argu_func  go to state 248
     compound_list          go to state 201
     basic                  go to state 202
     value_type             go to state 52
@@ -3472,7 +3475,7 @@ State 217
 
    60 array_argu_step: array_argu_step '[' INT_CONST . ']'
 
-    ']'  shift, and go to state 248
+    ']'  shift, and go to state 249
 
 
 State 218
@@ -3514,7 +3517,7 @@ State 223
 
    33 func_def: void_reduce ID '(' ')' $@11 '{' $@12 compound_in_argu_func . '}'
 
-    '}'  shift, and go to state 249
+    '}'  shift, and go to state 250
 
 
 State 224
@@ -3523,7 +3526,7 @@ State 224
 
     $default  reduce using rule 26 ($@8)
 
-    $@8  go to state 250
+    $@8  go to state 251
 
 
 State 225
@@ -3562,7 +3565,7 @@ State 226
 
     var_all_def            go to state 198
     compound               go to state 199
-    compound_in_argu_func  go to state 251
+    compound_in_argu_func  go to state 252
     compound_list          go to state 201
     basic                  go to state 202
     value_type             go to state 52
@@ -3606,7 +3609,7 @@ State 229
 
   142 simple_stat: READ var_ref . ';'
 
-    ';'  shift, and go to state 252
+    ';'  shift, and go to state 253
 
 
 State 230
@@ -3639,7 +3642,7 @@ State 230
     '*'  shift, and go to state 101
     '/'  shift, and go to state 102
     '%'  shift, and go to state 103
-    ';'  shift, and go to state 253
+    ';'  shift, and go to state 254
 
 
 State 231
@@ -3661,10 +3664,10 @@ State 231
     float_value   go to state 54
     bool_value    go to state 55
     string_value  go to state 56
-    expr          go to state 254
+    expr          go to state 255
     arr_ref       go to state 58
     func_invo     go to state 59
-    bool_expr     go to state 255
+    bool_expr     go to state 256
 
 
 State 232
@@ -3673,7 +3676,7 @@ State 232
 
     '{'  shift, and go to state 197
 
-    compound  go to state 256
+    compound  go to state 257
 
 
 State 233
@@ -3694,10 +3697,10 @@ State 233
     float_value   go to state 54
     bool_value    go to state 55
     string_value  go to state 56
-    expr          go to state 254
+    expr          go to state 255
     arr_ref       go to state 58
     func_invo     go to state 59
-    bool_expr     go to state 257
+    bool_expr     go to state 258
 
 
 State 234
@@ -3705,32 +3708,39 @@ State 234
   154 for_stat: FOR '(' . init_expr ';' bool_expr ';' incr_expr ')' $@24 compound
   156         | FOR '(' . init_expr ';' ';' incr_expr ')' $@25 compound
 
-    ID  shift, and go to state 258
+    ID  shift, and go to state 259
 
     $default  reduce using rule 161 (init_expr)
 
     arr_ref         go to state 228
-    func_invo       go to state 259
-    var_ref         go to state 260
-    init_expr       go to state 261
-    init_expr_list  go to state 262
+    func_invo       go to state 260
+    var_ref         go to state 261
+    init_expr       go to state 262
+    init_expr_list  go to state 263
 
 
 State 235
 
-  177 jump_stat: CONTINUE ';' .
+  178 jump_stat: CONTINUE ';' .
 
-    $default  reduce using rule 177 (jump_stat)
+    $default  reduce using rule 178 (jump_stat)
 
 
 State 236
 
-  176 jump_stat: BREAK ';' .
+  177 jump_stat: BREAK ';' .
 
-    $default  reduce using rule 176 (jump_stat)
+    $default  reduce using rule 177 (jump_stat)
 
 
 State 237
+
+  175 jump_stat: RETURN ';' .
+
+    $default  reduce using rule 175 (jump_stat)
+
+
+State 238
 
   105 expr: expr . '*' expr
   106     | expr . '/' expr
@@ -3745,7 +3755,7 @@ State 237
   115     | expr . NE expr
   118     | expr . AND expr
   119     | expr . OR expr
-  175 jump_stat: RETURN expr . ';'
+  176 jump_stat: RETURN expr . ';'
 
     OR   shift, and go to state 91
     AND  shift, and go to state 92
@@ -3760,10 +3770,10 @@ State 237
     '*'  shift, and go to state 101
     '/'  shift, and go to state 102
     '%'  shift, and go to state 103
-    ';'  shift, and go to state 263
+    ';'  shift, and go to state 264
 
 
-State 238
+State 239
 
    35 compound: '{' $@13 . compound_list '}'
 
@@ -3790,7 +3800,7 @@ State 238
 
     var_all_def    go to state 198
     compound       go to state 199
-    compound_list  go to state 264
+    compound_list  go to state 265
     basic          go to state 202
     value_type     go to state 52
     int_value      go to state 53
@@ -3810,35 +3820,35 @@ State 238
     jump_stat      go to state 212
 
 
-State 239
+State 240
 
    37 compound: '{' $@14 . '}'
 
-    '}'  shift, and go to state 265
+    '}'  shift, and go to state 266
 
 
-State 240
+State 241
 
    24 func_def: basic ID '(' ')' $@5 '{' $@6 compound_in_argu_func '}' .
 
     $default  reduce using rule 24 (func_def)
 
 
-State 241
+State 242
 
    40 compound_list: compound_list var_all_def .
 
     $default  reduce using rule 40 (compound_list)
 
 
-State 242
+State 243
 
    41 compound_list: compound_list statement .
 
     $default  reduce using rule 41 (compound_list)
 
 
-State 243
+State 244
 
    80 var_list: ID . ','
    81         | ID . '=' expr ','
@@ -3857,14 +3867,14 @@ State 243
     arr_step  go to state 34
 
 
-State 244
+State 245
 
   139 statement: expr ';' .
 
     $default  reduce using rule 139 (statement)
 
 
-State 245
+State 246
 
   140 simple_stat: var_ref '=' . expr ';'
 
@@ -3882,12 +3892,12 @@ State 245
     float_value   go to state 54
     bool_value    go to state 55
     string_value  go to state 56
-    expr          go to state 266
+    expr          go to state 267
     arr_ref       go to state 58
     func_invo     go to state 59
 
 
-State 246
+State 247
 
    18 func_def: basic ID '(' argu_list argu ')' $@1 '{' $@2 . compound_in_argu_func '}'
 
@@ -3916,7 +3926,7 @@ State 246
 
     var_all_def            go to state 198
     compound               go to state 199
-    compound_in_argu_func  go to state 267
+    compound_in_argu_func  go to state 268
     compound_list          go to state 201
     basic                  go to state 202
     value_type             go to state 52
@@ -3937,28 +3947,28 @@ State 246
     jump_stat              go to state 212
 
 
-State 247
+State 248
 
    21 func_def: basic ID '(' argu ')' $@3 '{' $@4 compound_in_argu_func . '}'
 
-    '}'  shift, and go to state 268
+    '}'  shift, and go to state 269
 
 
-State 248
+State 249
 
    60 array_argu_step: array_argu_step '[' INT_CONST ']' .
 
     $default  reduce using rule 60 (array_argu_step)
 
 
-State 249
+State 250
 
    33 func_def: void_reduce ID '(' ')' $@11 '{' $@12 compound_in_argu_func '}' .
 
     $default  reduce using rule 33 (func_def)
 
 
-State 250
+State 251
 
    27 func_def: void_reduce ID '(' argu_list argu ')' $@7 '{' $@8 . compound_in_argu_func '}'
 
@@ -3987,7 +3997,7 @@ State 250
 
     var_all_def            go to state 198
     compound               go to state 199
-    compound_in_argu_func  go to state 269
+    compound_in_argu_func  go to state 270
     compound_list          go to state 201
     basic                  go to state 202
     value_type             go to state 52
@@ -4008,28 +4018,28 @@ State 250
     jump_stat              go to state 212
 
 
-State 251
+State 252
 
    30 func_def: void_reduce ID '(' argu ')' $@9 '{' $@10 compound_in_argu_func . '}'
 
-    '}'  shift, and go to state 270
+    '}'  shift, and go to state 271
 
 
-State 252
+State 253
 
   142 simple_stat: READ var_ref ';' .
 
     $default  reduce using rule 142 (simple_stat)
 
 
-State 253
+State 254
 
   141 simple_stat: PRINT expr ';' .
 
     $default  reduce using rule 141 (simple_stat)
 
 
-State 254
+State 255
 
   105 expr: expr . '*' expr
   106     | expr . '/' expr
@@ -4063,31 +4073,31 @@ State 254
     $default  reduce using rule 147 (bool_expr)
 
 
-State 255
+State 256
 
   145 condition: IF '(' bool_expr . ')' compound
   146          | IF '(' bool_expr . ')' compound ELSE compound
 
-    ')'  shift, and go to state 271
+    ')'  shift, and go to state 272
 
 
-State 256
+State 257
 
   152 while_stat: DO $@22 compound . $@23 WHILE '(' bool_expr ')' ';'
 
     $default  reduce using rule 151 ($@23)
 
-    $@23  go to state 272
-
-
-State 257
-
-  149 while_stat: WHILE '(' bool_expr . ')' $@21 compound
-
-    ')'  shift, and go to state 273
+    $@23  go to state 273
 
 
 State 258
+
+  149 while_stat: WHILE '(' bool_expr . ')' $@21 compound
+
+    ')'  shift, and go to state 274
+
+
+State 259
 
   125 arr_ref: ID . arr_ref_step
   128 func_invo: ID . '(' expr_list expr ')'
@@ -4103,54 +4113,54 @@ State 258
     arr_ref_step  go to state 87
 
 
-State 259
+State 260
 
   159 init_expr: func_invo .
   164 init_expr_list: func_invo . ','
 
-    ','  shift, and go to state 274
+    ','  shift, and go to state 275
 
     $default  reduce using rule 159 (init_expr)
 
 
-State 260
+State 261
 
   160 init_expr: var_ref . '=' expr
   165 init_expr_list: var_ref . '=' expr ','
 
-    '='  shift, and go to state 275
+    '='  shift, and go to state 276
 
 
-State 261
+State 262
 
   154 for_stat: FOR '(' init_expr . ';' bool_expr ';' incr_expr ')' $@24 compound
   156         | FOR '(' init_expr . ';' ';' incr_expr ')' $@25 compound
 
-    ';'  shift, and go to state 276
+    ';'  shift, and go to state 277
 
 
-State 262
+State 263
 
   157 init_expr: init_expr_list . var_ref '=' expr
   158          | init_expr_list . func_invo
   162 init_expr_list: init_expr_list . var_ref '=' expr ','
   163               | init_expr_list . func_invo ','
 
-    ID  shift, and go to state 258
+    ID  shift, and go to state 259
 
     arr_ref    go to state 228
-    func_invo  go to state 277
-    var_ref    go to state 278
-
-
-State 263
-
-  175 jump_stat: RETURN expr ';' .
-
-    $default  reduce using rule 175 (jump_stat)
+    func_invo  go to state 278
+    var_ref    go to state 279
 
 
 State 264
+
+  176 jump_stat: RETURN expr ';' .
+
+    $default  reduce using rule 176 (jump_stat)
+
+
+State 265
 
    35 compound: '{' $@13 compound_list . '}'
    40 compound_list: compound_list . var_all_def
@@ -4175,10 +4185,10 @@ State 264
     '-'           shift, and go to state 49
     '('           shift, and go to state 50
     '{'           shift, and go to state 197
-    '}'           shift, and go to state 279
+    '}'           shift, and go to state 280
     '!'           shift, and go to state 51
 
-    var_all_def   go to state 241
+    var_all_def   go to state 242
     compound      go to state 199
     basic         go to state 202
     value_type    go to state 52
@@ -4190,7 +4200,7 @@ State 264
     expr          go to state 204
     arr_ref       go to state 205
     func_invo     go to state 59
-    statement     go to state 242
+    statement     go to state 243
     simple_stat   go to state 207
     var_ref       go to state 208
     condition     go to state 209
@@ -4199,14 +4209,14 @@ State 264
     jump_stat     go to state 212
 
 
-State 265
+State 266
 
    37 compound: '{' $@14 '}' .
 
     $default  reduce using rule 37 (compound)
 
 
-State 266
+State 267
 
   105 expr: expr . '*' expr
   106     | expr . '/' expr
@@ -4236,71 +4246,71 @@ State 266
     '*'  shift, and go to state 101
     '/'  shift, and go to state 102
     '%'  shift, and go to state 103
-    ';'  shift, and go to state 280
-
-
-State 267
-
-   18 func_def: basic ID '(' argu_list argu ')' $@1 '{' $@2 compound_in_argu_func . '}'
-
-    '}'  shift, and go to state 281
+    ';'  shift, and go to state 281
 
 
 State 268
+
+   18 func_def: basic ID '(' argu_list argu ')' $@1 '{' $@2 compound_in_argu_func . '}'
+
+    '}'  shift, and go to state 282
+
+
+State 269
 
    21 func_def: basic ID '(' argu ')' $@3 '{' $@4 compound_in_argu_func '}' .
 
     $default  reduce using rule 21 (func_def)
 
 
-State 269
+State 270
 
    27 func_def: void_reduce ID '(' argu_list argu ')' $@7 '{' $@8 compound_in_argu_func . '}'
 
-    '}'  shift, and go to state 282
+    '}'  shift, and go to state 283
 
 
-State 270
+State 271
 
    30 func_def: void_reduce ID '(' argu ')' $@9 '{' $@10 compound_in_argu_func '}' .
 
     $default  reduce using rule 30 (func_def)
 
 
-State 271
+State 272
 
   145 condition: IF '(' bool_expr ')' . compound
   146          | IF '(' bool_expr ')' . compound ELSE compound
 
     '{'  shift, and go to state 197
 
-    compound  go to state 283
-
-
-State 272
-
-  152 while_stat: DO $@22 compound $@23 . WHILE '(' bool_expr ')' ';'
-
-    WHILE  shift, and go to state 284
+    compound  go to state 284
 
 
 State 273
+
+  152 while_stat: DO $@22 compound $@23 . WHILE '(' bool_expr ')' ';'
+
+    WHILE  shift, and go to state 285
+
+
+State 274
 
   149 while_stat: WHILE '(' bool_expr ')' . $@21 compound
 
     $default  reduce using rule 148 ($@21)
 
-    $@21  go to state 285
+    $@21  go to state 286
 
 
-State 274
+State 275
 
   164 init_expr_list: func_invo ',' .
 
     $default  reduce using rule 164 (init_expr_list)
 
 
-State 275
+State 276
 
   160 init_expr: var_ref '=' . expr
   165 init_expr_list: var_ref '=' . expr ','
@@ -4319,12 +4329,12 @@ State 275
     float_value   go to state 54
     bool_value    go to state 55
     string_value  go to state 56
-    expr          go to state 286
+    expr          go to state 287
     arr_ref       go to state 58
     func_invo     go to state 59
 
 
-State 276
+State 277
 
   154 for_stat: FOR '(' init_expr ';' . bool_expr ';' incr_expr ')' $@24 compound
   156         | FOR '(' init_expr ';' . ';' incr_expr ')' $@25 compound
@@ -4336,7 +4346,7 @@ State 276
     STRING_CONST  shift, and go to state 48
     '-'           shift, and go to state 49
     '('           shift, and go to state 50
-    ';'           shift, and go to state 287
+    ';'           shift, and go to state 288
     '!'           shift, and go to state 51
 
     value_type    go to state 52
@@ -4344,85 +4354,85 @@ State 276
     float_value   go to state 54
     bool_value    go to state 55
     string_value  go to state 56
-    expr          go to state 254
+    expr          go to state 255
     arr_ref       go to state 58
     func_invo     go to state 59
-    bool_expr     go to state 288
-
-
-State 277
-
-  158 init_expr: init_expr_list func_invo .
-  163 init_expr_list: init_expr_list func_invo . ','
-
-    ','  shift, and go to state 289
-
-    $default  reduce using rule 158 (init_expr)
+    bool_expr     go to state 289
 
 
 State 278
 
-  157 init_expr: init_expr_list var_ref . '=' expr
-  162 init_expr_list: init_expr_list var_ref . '=' expr ','
+  158 init_expr: init_expr_list func_invo .
+  163 init_expr_list: init_expr_list func_invo . ','
 
-    '='  shift, and go to state 290
+    ','  shift, and go to state 290
+
+    $default  reduce using rule 158 (init_expr)
 
 
 State 279
+
+  157 init_expr: init_expr_list var_ref . '=' expr
+  162 init_expr_list: init_expr_list var_ref . '=' expr ','
+
+    '='  shift, and go to state 291
+
+
+State 280
 
    35 compound: '{' $@13 compound_list '}' .
 
     $default  reduce using rule 35 (compound)
 
 
-State 280
+State 281
 
   140 simple_stat: var_ref '=' expr ';' .
 
     $default  reduce using rule 140 (simple_stat)
 
 
-State 281
+State 282
 
    18 func_def: basic ID '(' argu_list argu ')' $@1 '{' $@2 compound_in_argu_func '}' .
 
     $default  reduce using rule 18 (func_def)
 
 
-State 282
+State 283
 
    27 func_def: void_reduce ID '(' argu_list argu ')' $@7 '{' $@8 compound_in_argu_func '}' .
 
     $default  reduce using rule 27 (func_def)
 
 
-State 283
+State 284
 
   145 condition: IF '(' bool_expr ')' compound .
   146          | IF '(' bool_expr ')' compound . ELSE compound
 
-    ELSE  shift, and go to state 291
+    ELSE  shift, and go to state 292
 
     $default  reduce using rule 145 (condition)
 
 
-State 284
+State 285
 
   152 while_stat: DO $@22 compound $@23 WHILE . '(' bool_expr ')' ';'
 
-    '('  shift, and go to state 292
+    '('  shift, and go to state 293
 
 
-State 285
+State 286
 
   149 while_stat: WHILE '(' bool_expr ')' $@21 . compound
 
     '{'  shift, and go to state 197
 
-    compound  go to state 293
+    compound  go to state 294
 
 
-State 286
+State 287
 
   105 expr: expr . '*' expr
   106     | expr . '/' expr
@@ -4453,41 +4463,41 @@ State 286
     '*'  shift, and go to state 101
     '/'  shift, and go to state 102
     '%'  shift, and go to state 103
-    ','  shift, and go to state 294
+    ','  shift, and go to state 295
 
     $default  reduce using rule 160 (init_expr)
 
 
-State 287
+State 288
 
   156 for_stat: FOR '(' init_expr ';' ';' . incr_expr ')' $@25 compound
 
-    ID  shift, and go to state 258
+    ID  shift, and go to state 259
 
     $default  reduce using rule 170 (incr_expr)
 
     arr_ref         go to state 228
-    func_invo       go to state 295
-    var_ref         go to state 296
-    incr_expr       go to state 297
-    incr_expr_list  go to state 298
-
-
-State 288
-
-  154 for_stat: FOR '(' init_expr ';' bool_expr . ';' incr_expr ')' $@24 compound
-
-    ';'  shift, and go to state 299
+    func_invo       go to state 296
+    var_ref         go to state 297
+    incr_expr       go to state 298
+    incr_expr_list  go to state 299
 
 
 State 289
+
+  154 for_stat: FOR '(' init_expr ';' bool_expr . ';' incr_expr ')' $@24 compound
+
+    ';'  shift, and go to state 300
+
+
+State 290
 
   163 init_expr_list: init_expr_list func_invo ',' .
 
     $default  reduce using rule 163 (init_expr_list)
 
 
-State 290
+State 291
 
   157 init_expr: init_expr_list var_ref '=' . expr
   162 init_expr_list: init_expr_list var_ref '=' . expr ','
@@ -4506,21 +4516,21 @@ State 290
     float_value   go to state 54
     bool_value    go to state 55
     string_value  go to state 56
-    expr          go to state 300
+    expr          go to state 301
     arr_ref       go to state 58
     func_invo     go to state 59
 
 
-State 291
+State 292
 
   146 condition: IF '(' bool_expr ')' compound ELSE . compound
 
     '{'  shift, and go to state 197
 
-    compound  go to state 301
+    compound  go to state 302
 
 
-State 292
+State 293
 
   152 while_stat: DO $@22 compound $@23 WHILE '(' . bool_expr ')' ';'
 
@@ -4538,27 +4548,27 @@ State 292
     float_value   go to state 54
     bool_value    go to state 55
     string_value  go to state 56
-    expr          go to state 254
+    expr          go to state 255
     arr_ref       go to state 58
     func_invo     go to state 59
-    bool_expr     go to state 302
+    bool_expr     go to state 303
 
 
-State 293
+State 294
 
   149 while_stat: WHILE '(' bool_expr ')' $@21 compound .
 
     $default  reduce using rule 149 (while_stat)
 
 
-State 294
+State 295
 
   165 init_expr_list: var_ref '=' expr ',' .
 
     $default  reduce using rule 165 (init_expr_list)
 
 
-State 295
+State 296
 
   169 incr_expr: func_invo .
   174 incr_expr_list: func_invo .
@@ -4567,51 +4577,51 @@ State 295
     $default  reduce using rule 169 (incr_expr)
 
 
-State 296
+State 297
 
   168 incr_expr: var_ref . '=' expr
   173 incr_expr_list: var_ref . '=' expr ','
 
-    '='  shift, and go to state 303
-
-
-State 297
-
-  156 for_stat: FOR '(' init_expr ';' ';' incr_expr . ')' $@25 compound
-
-    ')'  shift, and go to state 304
+    '='  shift, and go to state 304
 
 
 State 298
+
+  156 for_stat: FOR '(' init_expr ';' ';' incr_expr . ')' $@25 compound
+
+    ')'  shift, and go to state 305
+
+
+State 299
 
   166 incr_expr: incr_expr_list . var_ref '=' expr ','
   167          | incr_expr_list . func_invo
   171 incr_expr_list: incr_expr_list . var_ref '=' expr ','
   172               | incr_expr_list . func_invo ','
 
-    ID  shift, and go to state 258
+    ID  shift, and go to state 259
 
     arr_ref    go to state 228
-    func_invo  go to state 305
-    var_ref    go to state 306
+    func_invo  go to state 306
+    var_ref    go to state 307
 
 
-State 299
+State 300
 
   154 for_stat: FOR '(' init_expr ';' bool_expr ';' . incr_expr ')' $@24 compound
 
-    ID  shift, and go to state 258
+    ID  shift, and go to state 259
 
     $default  reduce using rule 170 (incr_expr)
 
     arr_ref         go to state 228
-    func_invo       go to state 295
-    var_ref         go to state 296
-    incr_expr       go to state 307
-    incr_expr_list  go to state 298
+    func_invo       go to state 296
+    var_ref         go to state 297
+    incr_expr       go to state 308
+    incr_expr_list  go to state 299
 
 
-State 300
+State 301
 
   105 expr: expr . '*' expr
   106     | expr . '/' expr
@@ -4642,26 +4652,26 @@ State 300
     '*'  shift, and go to state 101
     '/'  shift, and go to state 102
     '%'  shift, and go to state 103
-    ','  shift, and go to state 308
+    ','  shift, and go to state 309
 
     $default  reduce using rule 157 (init_expr)
 
 
-State 301
+State 302
 
   146 condition: IF '(' bool_expr ')' compound ELSE compound .
 
     $default  reduce using rule 146 (condition)
 
 
-State 302
+State 303
 
   152 while_stat: DO $@22 compound $@23 WHILE '(' bool_expr . ')' ';'
 
-    ')'  shift, and go to state 309
+    ')'  shift, and go to state 310
 
 
-State 303
+State 304
 
   168 incr_expr: var_ref '=' . expr
   173 incr_expr_list: var_ref '=' . expr ','
@@ -4680,60 +4690,60 @@ State 303
     float_value   go to state 54
     bool_value    go to state 55
     string_value  go to state 56
-    expr          go to state 310
+    expr          go to state 311
     arr_ref       go to state 58
     func_invo     go to state 59
 
 
-State 304
+State 305
 
   156 for_stat: FOR '(' init_expr ';' ';' incr_expr ')' . $@25 compound
 
     $default  reduce using rule 155 ($@25)
 
-    $@25  go to state 311
-
-
-State 305
-
-  167 incr_expr: incr_expr_list func_invo .
-  172 incr_expr_list: incr_expr_list func_invo . ','
-
-    ','  shift, and go to state 312
-
-    $default  reduce using rule 167 (incr_expr)
+    $@25  go to state 312
 
 
 State 306
 
-  166 incr_expr: incr_expr_list var_ref . '=' expr ','
-  171 incr_expr_list: incr_expr_list var_ref . '=' expr ','
+  167 incr_expr: incr_expr_list func_invo .
+  172 incr_expr_list: incr_expr_list func_invo . ','
 
-    '='  shift, and go to state 313
+    ','  shift, and go to state 313
+
+    $default  reduce using rule 167 (incr_expr)
 
 
 State 307
 
-  154 for_stat: FOR '(' init_expr ';' bool_expr ';' incr_expr . ')' $@24 compound
+  166 incr_expr: incr_expr_list var_ref . '=' expr ','
+  171 incr_expr_list: incr_expr_list var_ref . '=' expr ','
 
-    ')'  shift, and go to state 314
+    '='  shift, and go to state 314
 
 
 State 308
+
+  154 for_stat: FOR '(' init_expr ';' bool_expr ';' incr_expr . ')' $@24 compound
+
+    ')'  shift, and go to state 315
+
+
+State 309
 
   162 init_expr_list: init_expr_list var_ref '=' expr ',' .
 
     $default  reduce using rule 162 (init_expr_list)
 
 
-State 309
+State 310
 
   152 while_stat: DO $@22 compound $@23 WHILE '(' bool_expr ')' . ';'
 
-    ';'  shift, and go to state 315
+    ';'  shift, and go to state 316
 
 
-State 310
+State 311
 
   105 expr: expr . '*' expr
   106     | expr . '/' expr
@@ -4764,28 +4774,28 @@ State 310
     '*'  shift, and go to state 101
     '/'  shift, and go to state 102
     '%'  shift, and go to state 103
-    ','  shift, and go to state 316
+    ','  shift, and go to state 317
 
     $default  reduce using rule 168 (incr_expr)
 
 
-State 311
+State 312
 
   156 for_stat: FOR '(' init_expr ';' ';' incr_expr ')' $@25 . compound
 
     '{'  shift, and go to state 197
 
-    compound  go to state 317
+    compound  go to state 318
 
 
-State 312
+State 313
 
   172 incr_expr_list: incr_expr_list func_invo ',' .
 
     $default  reduce using rule 172 (incr_expr_list)
 
 
-State 313
+State 314
 
   166 incr_expr: incr_expr_list var_ref '=' . expr ','
   171 incr_expr_list: incr_expr_list var_ref '=' . expr ','
@@ -4804,42 +4814,42 @@ State 313
     float_value   go to state 54
     bool_value    go to state 55
     string_value  go to state 56
-    expr          go to state 318
+    expr          go to state 319
     arr_ref       go to state 58
     func_invo     go to state 59
 
 
-State 314
+State 315
 
   154 for_stat: FOR '(' init_expr ';' bool_expr ';' incr_expr ')' . $@24 compound
 
     $default  reduce using rule 153 ($@24)
 
-    $@24  go to state 319
+    $@24  go to state 320
 
 
-State 315
+State 316
 
   152 while_stat: DO $@22 compound $@23 WHILE '(' bool_expr ')' ';' .
 
     $default  reduce using rule 152 (while_stat)
 
 
-State 316
+State 317
 
   173 incr_expr_list: var_ref '=' expr ',' .
 
     $default  reduce using rule 173 (incr_expr_list)
 
 
-State 317
+State 318
 
   156 for_stat: FOR '(' init_expr ';' ';' incr_expr ')' $@25 compound .
 
     $default  reduce using rule 156 (for_stat)
 
 
-State 318
+State 319
 
   105 expr: expr . '*' expr
   106     | expr . '/' expr
@@ -4870,19 +4880,19 @@ State 318
     '*'  shift, and go to state 101
     '/'  shift, and go to state 102
     '%'  shift, and go to state 103
-    ','  shift, and go to state 320
+    ','  shift, and go to state 321
 
 
-State 319
+State 320
 
   154 for_stat: FOR '(' init_expr ';' bool_expr ';' incr_expr ')' $@24 . compound
 
     '{'  shift, and go to state 197
 
-    compound  go to state 321
+    compound  go to state 322
 
 
-State 320
+State 321
 
   166 incr_expr: incr_expr_list var_ref '=' expr ',' .
   171 incr_expr_list: incr_expr_list var_ref '=' expr ',' .
@@ -4891,7 +4901,7 @@ State 320
     $default  reduce using rule 166 (incr_expr)
 
 
-State 321
+State 322
 
   154 for_stat: FOR '(' init_expr ';' bool_expr ';' incr_expr ')' $@24 compound .
 

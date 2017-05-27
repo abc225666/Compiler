@@ -38,6 +38,13 @@ typedef enum
 	KIND_LVAL,
 } enum_kind;
 
+
+typedef enum
+{
+	FUNC_DECL,
+	FUNC_DEF,
+} enum_func;
+
 typedef enum
 {
 	TYPE_INT,
@@ -62,6 +69,14 @@ typedef enum
 	ERROR_JUMP_STATMENT, //9
 	ERROR_ASSIGN_CONST, //10
 	ERROR_NO_BOOL, //11
+	ERROR_FUNC_DEF_NOT_MATCH, //12
+	ERROR_FUNC_REDEF, //13
+	ERROR_ARR_NO_INT, //14
+	ERROR_DEF_DECL_NOT_PAIR, //15
+	ERROR_ARR_INITIAL,//16
+	ERROR_RETURN_VOID_ERROR,//17
+	ERROR_RETURN_IN_VOID,//18
+	ERROR_RETURN_TYPE,//19
 } enum_error;
 
 typedef struct S_invo_val
@@ -99,6 +114,7 @@ typedef struct S_argu_val
 
 typedef struct S_func_val
 {
+	int type;
 	int argc;
 	argu_val *argv;
 } func_val;
@@ -119,8 +135,9 @@ typedef struct symbol_tables{
 
 typedef struct S_decl_check
 {
-	symbol_list *tar;
+	char *name;
 	int line;
+	int isUsed;
 	struct S_decl_check *next;
 } decl_check;
 
@@ -135,8 +152,9 @@ decl_check *decl_stack=NULL;
 
 int decl_build(char* name, void* my_val);
 int def_build(char* name, void* my_val);
-int isIndef=0;
 
+int isanyerr=0;
+int func_type=0;
 int isInLoop=0;
 
 char* mergestring(char* a, char* b);
@@ -159,7 +177,9 @@ const_val *geneValConst(const_val *a, const_val *b);
 int check_and_set_scalar(const_val *a);
 int check_type_three(const_val *a,const_val *b);
 int check_type_one(const_val *a, const_val *b,int m_type);
+int check_func_change(int assign,int from);
 int is_const_var(char* name);
+
 
 
 int yyerror( char *msg );
@@ -248,9 +268,11 @@ var_all_def
 func_def
 : basic ID '(' argu_list argu ')' 
 	{
+		func_type = $1;
 		argu_val *co=(argu_val*)$5;
 
 		func_val *p_f = (func_val*)$4;
+		p_f->type=FUNC_DEF;
 
 		p_f->argc+=1;
 		p_f->argv=realloc((argu_val*)p_f->argv,sizeof(argu_val)*(p_f->argc));
@@ -262,13 +284,9 @@ func_def
 
 		p->list = (void*)p_f;
 
-		int result= find_redclair($2);
-
-
-		if(result==NO_ERROR)
+		int result= def_build($2,(void*)p);
+		if(result)
 			add_id($2,(void*)p);
-		else
-			dump_error(result);
 	}
 	'{'
 	{
@@ -280,9 +298,11 @@ func_def
 	}
 | basic ID '(' argu ')'
 	{
+		func_type = $1;
 		argu_val *co=(argu_val*)$4;
 
 		func_val *p_f = NEW_VAL(func_val);
+		p_f->type=FUNC_DEF;
 		p_f->argc=1;
 		p_f->argv=NEW_VAL(argu_val);
 
@@ -295,12 +315,9 @@ func_def
 
 		p->list = (void*)p_f;
 
-		int result= find_redclair($2);
-
-		if(result==NO_ERROR)
+		int result= def_build($2,(void*)p);
+		if(result)
 			add_id($2,(void*)p);
-		else
-			dump_error(result);
 	}
 	'{' 
 	{
@@ -312,20 +329,19 @@ func_def
 	}
 | basic ID '(' ')' 
 	{
+		func_type = $1;
 		id_val *p = NEW_VAL(id_val);
 
 		p->kind = KIND_FUNCTION;
 		p->type = $1;
 		func_val *t =NEW_VAL(func_val);
+		t->type=FUNC_DEF;
 		t->argc=0;
 		p->list =(void*)t;
 
-		int result= find_redclair($2);
-
-		if(result==NO_ERROR)
+		int result= def_build($2,(void*)p);
+		if(result)
 			add_id($2,(void*)p);
-		else
-			dump_error(result);
 	}
 	'{'
 	{
@@ -337,9 +353,11 @@ func_def
 	}
 | void_reduce ID '(' argu_list argu ')'
 	{
+		func_type = TYPE_VOID;
 		argu_val *co=(argu_val*)$5;
 
 		func_val *p_f = (func_val*)$4;
+		p_f->type=FUNC_DEF;
 
 		p_f->argc+=1;
 		p_f->argv=realloc((argu_val*)p_f->argv,sizeof(argu_val)*(p_f->argc));
@@ -351,12 +369,9 @@ func_def
 
 		p->list = (void*)p_f;
 
-		int result= find_redclair($2);
-
-		if(result==NO_ERROR)
+		int result= def_build($2,(void*)p);
+		if(result)
 			add_id($2,(void*)p);
-		else
-			dump_error(result);
 	}
 	'{'
 	{
@@ -368,9 +383,11 @@ func_def
 	}
 | void_reduce ID '(' argu ')'
 	{
+		func_type = TYPE_VOID;
 		argu_val *co=(argu_val*)$4;
 
 		func_val *p_f = NEW_VAL(func_val);
+		p_f->type=FUNC_DEF;
 		p_f->argc=1;
 		p_f->argv=NEW_VAL(argu_val);
 
@@ -383,12 +400,9 @@ func_def
 
 		p->list = (void*)p_f;
 
-		int result= find_redclair($2);
-
-		if(result==NO_ERROR)
+		int result= def_build($2,(void*)p);
+		if(result)
 			add_id($2,(void*)p);
-		else
-			dump_error(result);
 	}
 	'{'
 	{
@@ -400,20 +414,19 @@ func_def
 	}
 | void_reduce ID '(' ')'
 	{
+		func_type = TYPE_VOID;
 		id_val *p = NEW_VAL(id_val);
 
 		p->kind = KIND_FUNCTION;
 		p->type = $1;
 		func_val *t =NEW_VAL(func_val);
+		t->type=FUNC_DEF;
 		t->argc=0;
 		p->list =(void*)t;
 
-		int result= find_redclair($2);
-
-		if(result==NO_ERROR)
+		int result= def_build($2,(void*)p);
+		if(result)
 			add_id($2,(void*)p);
-		else
-			dump_error(result);
 	}
 	'{'
 	{
@@ -467,7 +480,7 @@ func_decl
 		argu_val *co=(argu_val*)$5;
 
 		func_val *p_f = (func_val*)$4;
-
+		p_f->type=FUNC_DECL;
 		p_f->argc+=1;
 		p_f->argv=realloc((argu_val*)p_f->argv,sizeof(argu_val)*(p_f->argc));
 		((argu_val*)p_f->argv)[p_f->argc-1] = *co;
@@ -478,13 +491,9 @@ func_decl
 
 		p->list = (void*)p_f;
 
-		int result= find_redclair($2);
-
-		if(result==NO_ERROR)
+		int result= decl_build($2,(void*)p);
+		if(result)
 			add_id($2,(void*)p);
-		else
-			dump_error(result);
-
 	} 
 	';'
 | basic ID '(' argu ')' 
@@ -492,6 +501,7 @@ func_decl
 		argu_val *co=(argu_val*)$4;
 
 		func_val *p_f = NEW_VAL(func_val);
+		p_f->type=FUNC_DECL;
 		p_f->argc=1;
 		p_f->argv=NEW_VAL(argu_val);
 
@@ -504,12 +514,9 @@ func_decl
 
 		p->list = (void*)p_f;
 
-		int result= find_redclair($2);
-
-		if(result==NO_ERROR)
+		int result= decl_build($2,(void*)p);
+		if(result)
 			add_id($2,(void*)p);
-		else
-			dump_error(result);
 	} 
 	';'
 | basic ID '(' ')'
@@ -520,15 +527,13 @@ func_decl
 		p->type = $1;
 
 		func_val *t =NEW_VAL(func_val);
+		t->type=FUNC_DECL;
 		t->argc=0;
 		p->list =(void*)t;
 
-		int result= find_redclair($2);
-
-		if(result==NO_ERROR)
+		int result= decl_build($2,(void*)p);
+		if(result)
 			add_id($2,(void*)p);
-		else
-			dump_error(result);
 	}
 	';'
 | void_reduce ID '(' argu_list argu ')'
@@ -536,6 +541,7 @@ func_decl
 		argu_val *co=(argu_val*)$5;
 
 		func_val *p_f = (func_val*)$4;
+		p_f->type=FUNC_DECL;
 
 		p_f->argc+=1;
 		p_f->argv=realloc((argu_val*)p_f->argv,sizeof(argu_val)*(p_f->argc));
@@ -547,12 +553,9 @@ func_decl
 
 		p->list = (void*)p_f;
 
-		int result= find_redclair($2);
-
-		if(result==NO_ERROR)
+		int result= decl_build($2,(void*)p);
+		if(result)
 			add_id($2,(void*)p);
-		else
-			dump_error(result);
 
 	}
 	';'
@@ -561,6 +564,7 @@ func_decl
 		argu_val *co=(argu_val*)$4;
 
 		func_val *p_f = NEW_VAL(func_val);
+		p_f->type=FUNC_DECL;
 		p_f->argc=1;
 		p_f->argv=NEW_VAL(argu_val);
 
@@ -573,12 +577,9 @@ func_decl
 
 		p->list = (void*)p_f;
 
-		int result= find_redclair($2);
-
-		if(result==NO_ERROR)
+		int result= decl_build($2,(void*)p);
+		if(result)
 			add_id($2,(void*)p);
-		else
-			dump_error(result);
 		
 	}
 	';'
@@ -589,15 +590,13 @@ func_decl
 		p->type = $1;
 
 		func_val *t =NEW_VAL(func_val);
+		t->type=FUNC_DECL;
 		t->argc=0;
 		p->list =(void*)t;
 
-		int result= find_redclair($2);
-
-		if(result==NO_ERROR)
+		int result= decl_build($2,(void*)p);
+		if(result)
 			add_id($2,(void*)p);
-		else
-			dump_error(result);
 	}
 	';'
 ;
@@ -820,7 +819,7 @@ float_value
 		float *val = NEW_VAL(float);
 		*val = (float)atof($1);
 		p->value = (void*)val;
-		p->type = TYPE_DOUBLE;
+		p->type = TYPE_FLOAT;
 		$$ = (void*)p;
 	}
 ;
@@ -944,7 +943,7 @@ var_list
 
 		if(invo->listc > allstep)
 		{
-			dump_error(ERROR_ARR_STEP);
+			dump_error(ERROR_ARR_INITIAL);
 		}
 
 		int typeerr=0;
@@ -952,7 +951,7 @@ var_list
 		{
 			const_val *constp=((const_val*)invo->listv)+t;
 
-			if(constp->type != p->type)
+			if(!(check_func_change(p->type,constp->type)))
 				typeerr=1;
 		}
 
@@ -1003,7 +1002,7 @@ var_list
 
 		if(invo->listc > allstep)
 		{
-			dump_error(ERROR_ARR_STEP);
+			dump_error(ERROR_ARR_INITIAL);
 		}
 
 		int typeerr=0;
@@ -1011,7 +1010,7 @@ var_list
 		{
 			const_val *constp=((const_val*)invo->listv)+t;
 
-			if(constp->type != p->type)
+			if(!(check_func_change(p->type,constp->type)))
 				typeerr=1;
 		}
 
@@ -1179,7 +1178,7 @@ var_def
 		{
 			const_val *constp=((const_val*)invo->listv)+t;
 
-			if(constp->type != p->type)
+			if(!(check_func_change(p->type,constp->type)))
 				typeerr=1;
 		}
 
@@ -1235,7 +1234,7 @@ var_def
 		{
 			const_val *constp=((const_val*)invo->listv)+t;
 
-			if(constp->type != p->type)
+			if(!(check_func_change(p->type,constp->type)))
 				typeerr=1;
 		}
 
@@ -1640,6 +1639,7 @@ expr
 			}
 			else
 			{
+				check_step(sym,p);
 				q->kind=KIND_RVAL;
 				q->value= (void*)p;
 			}
@@ -1721,12 +1721,21 @@ arr_ref_step
 	{
 		invo_val *p=(invo_val*)$1;
 		p->listc += 1;
+
+		const_val *exp=$3;
+		if(exp->type!=TYPE_INT)
+			dump_error(ERROR_ARR_NO_INT);
+
 		$$ =(void*)p;
 	}
 | '[' expr ']'
 	{
 		invo_val *p =NEW_VAL(invo_val);
 		p->listc = 1;
+
+		const_val *exp=$2;
+		if(exp->type!=TYPE_INT)
+			dump_error(ERROR_ARR_NO_INT);
 
 		$$ = (void*)p;
 	}
@@ -1825,7 +1834,21 @@ simple_stat
 		else
 		{
 			if(con->type!=exp->type)
-				dump_error(ERROR_IDTYPE_NOT_MATCH);
+			{
+				if(con->type==TYPE_INT || con->type==TYPE_DOUBLE || con->type==TYPE_FLOAT)
+				{
+					if(exp->type==TYPE_INT || exp->type==TYPE_DOUBLE || exp->type==TYPE_FLOAT)
+					{
+						if(con->type<exp->type)
+							dump_error(ERROR_IDTYPE_NOT_MATCH);
+					}
+					else
+						dump_error(ERROR_IDTYPE_NOT_MATCH);
+				}
+				else
+					dump_error(ERROR_IDTYPE_NOT_MATCH);
+				
+			}
 			check_and_set_scalar(con);
 			check_and_set_scalar(exp);
 		}
@@ -1873,6 +1896,7 @@ var_ref
 			}
 			else
 			{
+				check_step(sym,p);
 				q->kind=KIND_LVAL;
 				q->value= (void*)p;
 			}
@@ -2297,7 +2321,12 @@ incr_expr_list
 ;
 
 jump_stat
-: RETURN expr ';'
+: RETURN ';'
+	{
+		if(func_type != TYPE_VOID)
+			dump_error(ERROR_RETURN_VOID_ERROR);
+	}
+| RETURN expr ';'
 	{
 		const_val *exp=(const_val*)$2;
 		if(exp->kind==KIND_RVAL)
@@ -2305,7 +2334,14 @@ jump_stat
 			invo_val* exp_invo=(invo_val*)exp->value;
 			if(exp_invo->listc!=0)
 				dump_error(ERROR_ARR_STEP);
+			check_and_set_scalar(exp);
 		}
+
+		if(func_type==TYPE_VOID)
+			dump_error(ERROR_RETURN_IN_VOID);
+		else if(!check_func_change(func_type,exp->type))
+			dump_error(ERROR_RETURN_TYPE);
+
 	}
 | BREAK ';'
 	{
@@ -2322,6 +2358,203 @@ jump_stat
 
 
 %%
+
+int check_parameter(symbol_list* list, invo_val* invo)
+{
+	id_val *id=(id_val*)list->val;
+	func_val *func=(func_val*)id->list;
+
+	if(func->argc != invo->listc)
+		return 0;
+	else
+	{
+		for(int t=0;t<func->argc;t++) //check para
+		{
+
+			argu_val *argu = ((argu_val*)func->argv)+t;
+			const_val *constp = ((const_val*)invo->listv)+t;
+			id_val *id_d = (id_val*)argu->val;
+
+			if(!check_func_change(id_d->type,constp->type))
+				return 0;
+
+			if( (constp->kind!=KIND_CONST_VAL))
+			{
+				invo_val *source=(invo_val*)constp->value;
+
+				arr_val *arr_source = count_arr_ref(source->name);
+				arr_val *arr_func = ((arr_val*)((id_val*)argu->val)->list);
+				
+				if(arr_func->stepc == source->listc)
+				{
+
+					for(int i1=0,i2=arr_source->stepc-source->listc;i1<arr_func->stepc;i1++,i2++)
+					{
+						if( arr_func->stepv[i1] != *(((int*)arr_source->stepv)+i2) )
+							
+							return 0;
+					}
+
+				}
+				else return 0;
+			}
+			else
+			{
+				arr_val *arr_func = ((arr_val*)((id_val*)argu->val)->list);
+
+				if(arr_func->stepc!=0)
+					return 0;
+			}
+
+		}
+		return 1;
+	}
+}
+
+arr_val* count_arr_ref(char* name)
+{
+	arr_val* ans=NEW_VAL(arr_val);
+	ans->stepc=-1;
+	symbol_table *p =cur_table;
+	while(p!=NULL)
+	{
+		symbol_list *list=p->s_list;
+		while(list!=NULL)
+		{
+			if(strcmp(list->name,name)==0)
+			{
+				id_val* pr=(id_val*)list->val;
+				if(pr->kind==KIND_CONSTANT)
+				{
+					ans->stepc=0;
+					return ans;
+				}
+				if(pr->kind==KIND_PARAMETER || pr->kind==KIND_VARIABLE)
+				{
+					ans= (arr_val*)pr->list;
+					return ans;
+				}
+
+			}
+			list=list->next;
+		}
+		p=p->next;
+	}
+	return ans;
+}
+
+int def_build(char* name, void* my_val)
+{
+
+	symbol_list* list=find_symbol(name,0);
+	if(list!=NULL)
+	{
+		id_val* id=(id_val*)list->val;
+		id_val* id2=(id_val*)my_val;
+		if(id->kind!=KIND_FUNCTION)
+		{
+			dump_error(ERROR_ID_REDCLARED);
+			return 0;
+		}
+		else
+		{
+			func_val *func_ori=(func_val*)id->list;
+			func_val *func=(func_val*)id2->list;
+			if(func_ori->type==FUNC_DEF)
+			{
+				dump_error(ERROR_FUNC_REDEF);
+				return 0;
+			}
+			if(id->type != id2->type)
+			{
+				dump_error(ERROR_FUNC_DEF_NOT_MATCH);
+				return 0;
+			}
+			if(func->argc != func_ori->argc)
+			{
+				dump_error(ERROR_FUNC_DEF_NOT_MATCH);
+				return 0;
+			}
+			else
+			{
+				for(int t=0;t<func->argc;t++)
+				{
+					argu_val *argu1 = ((argu_val*)func->argv)+t;
+					argu_val *argu2 = ((argu_val*)func_ori->argv)+t;
+					id_val *id1 = (id_val*)argu1->val;
+					id_val *id2 = (id_val*)argu2->val;
+					if(id1->type != id2->type)
+					{
+						dump_error(ERROR_FUNC_DEF_NOT_MATCH);
+						return 0;
+					}
+					else
+					{
+						arr_val *arr1=(arr_val*)id1->list;
+						arr_val *arr2=(arr_val*)id2->list;
+						if(arr1->stepc != arr2->stepc)
+						{
+							dump_error(ERROR_FUNC_DEF_NOT_MATCH);
+							return 0;
+						}
+						else
+						{
+							for(int t1=0;t1<arr1->stepc;t1++)
+							{	
+								if( arr1->stepv[t1] != arr2->stepv[t1] )
+								{
+									dump_error(ERROR_FUNC_DEF_NOT_MATCH);
+									return 0;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		//
+		decl_check *parser=decl_stack;
+		while(parser!=0)
+		{
+			if(strcmp(parser->name,name)==0)
+			{
+				parser->isUsed=1;
+				break;
+			}
+			parser=parser->next;
+		}
+		//
+		return 0;
+	}
+	else
+	{
+		return 1;
+	}
+
+}
+
+int decl_build(char* name, void* my_val)
+{
+	symbol_list* list=find_symbol(name,0);
+	if(list!=NULL)
+	{
+		dump_error(ERROR_ID_REDCLARED);
+		return 0;
+	}
+	else
+	{
+		
+		decl_check *node =NEW_VAL(decl_check);
+		node->isUsed=0;
+		node->name=strdup(name);
+		node->line=linenum;
+		node->next=decl_stack;
+		decl_stack=node;
+
+		return 1;
+	}
+}
 
 symbol_list* find_symbol(char* name,int dump)
 {
@@ -2401,8 +2634,8 @@ const_val *geneValConstOne(const_val *a, const_val *b, int m_type)
 	else
 	{
 		//combine a b
-		output->kind=KIND_RVAL;
-		output->value= a->value;
+		output->kind=KIND_CONST_VAL;
+		output->value=a->value;
 	}
 	return output;
 
@@ -2414,10 +2647,10 @@ const_val *geneValConst(const_val *a, const_val *b)
 
 	int type=TYPE_DOUBLE+1;
 	int ch=0;
-	if(a->type<=TYPE_DOUBLE && a->type > type)
+	if(a->type<=TYPE_DOUBLE && (a->type > type || type> TYPE_DOUBLE) )
 		type=a->type , ch+=1;
-	if(b->type<=TYPE_DOUBLE && b->type > type)
-		type=a->type , ch+=2;
+	if(b->type<=TYPE_DOUBLE && (b->type > type||type > TYPE_DOUBLE) )
+		type=b->type , ch+=2;
 
 	output->type=type;
 	if(a->kind==KIND_RVAL && ch&1)
@@ -2474,45 +2707,35 @@ int check_type_three(const_val *a,const_val *b)
 	return 1;
 }
 
+int check_func_change(int assign, int from)
+{
+	if(assign == TYPE_VOID || from==TYPE_VOID)
+		return 0;
+	if(assign != from)
+	{
+		if(assign==TYPE_INT || assign==TYPE_FLOAT || assign==TYPE_DOUBLE)
+		{
+			if(from==TYPE_INT ||from==TYPE_FLOAT || from==TYPE_DOUBLE)
+			{
+				if(assign > from)
+					return 1;
+				else
+					return 0;
+			}
+			else
+				return 0;
+		}
+		else
+			return 0;
+	}
+	else
+		return 1;
+}
+
 int check_type_one(const_val *a, const_val *b,int m_type)
 {
 	if(a->type!=m_type || b->type!=m_type) return 0;
 	return 1;
-}
-
-int check_parameter(symbol_list* list, invo_val* invo)
-{
-	id_val *id=(id_val*)list->val;
-	func_val *func=(func_val*)id->list;
-
-	if(func->argc != invo->listc)
-		return 0;
-	else
-	{
-		for(int t=0;t<func->argc;t++) //check para
-		{
-
-
-			argu_val *argu = ((argu_val*)func->argv)+t;
-			const_val *constp = ((const_val*)invo->listv)+t;
-			invo_val *source=(invo_val*)constp->value;
-
-			arr_val *arr_source = count_arr_ref(source->name);
-			arr_val *arr_func = ((arr_val*)((id_val*)argu->val)->list);
-
-			if(arr_func->stepc == source->listc)
-			{
-				for(int i1=0,i2=arr_source->stepc-source->listc;i1<arr_func->stepc;i1++,i2++)
-				{
-					if( arr_func->stepv[i1] != *(((int*)arr_source->stepv)+i2) )
-						return 0;
-				}
-			}
-			else return 0;
-
-		}
-		return 1;
-	}
 }
 
 int check_step(symbol_list *list,invo_val *invo)
@@ -2527,37 +2750,6 @@ int check_step(symbol_list *list,invo_val *invo)
 	return 1;
 }
 
-arr_val* count_arr_ref(char* name)
-{
-	arr_val* ans=NEW_VAL(arr_val);
-	ans->stepc=-1;
-	symbol_table *p =cur_table;
-	while(p!=NULL)
-	{
-		symbol_list *list=p->s_list;
-		while(list!=NULL)
-		{
-			if(strcmp(list->name,name)==0)
-			{
-				id_val* pr=(id_val*)list->val;
-				if(pr->kind==KIND_CONSTANT)
-				{
-					ans->stepc=0;
-					return ans;
-				}
-				if(pr->kind==KIND_PARAMETER || pr->kind==KIND_VARIABLE)
-				{
-					ans= (arr_val*)pr->list;
-					return ans;
-				}
-
-			}
-			list=list->next;
-		}
-		p=p->next;
-	}
-	return ans;
-}
 
 int is_const_var(char* name)
 {
@@ -2894,7 +3086,76 @@ void add_id(char* name, void* my_val)
 
 void dump_error(int error)
 {
-	printf("///////////////////// error in line:%d ---> %d //////////////////\n",linenum,error);
+
+	char* mess;
+
+	isanyerr=1;
+
+	switch(error)
+	{
+		case ERROR_NON_CHECK:
+			mess=strdup("unknown error");
+			break;
+		case ERROR_ID_NO_FOUND:
+			mess=strdup("identfier not define");
+			break;
+		case ERROR_IDTYPE_NOT_MATCH:
+			mess=strdup("value can't be assigned by Coercion");
+			break;
+		case ERROR_TYPE_ERROR:
+			mess=strdup("value can't be Coercion");
+			break;
+		case ERROR_ID_KIND:
+			mess=strdup("identifier is not defined in such kind");
+			break;
+		case ERROR_FUNC_ARGU_NOT_MATCH:
+			mess=strdup("function argument not match");
+			break;
+		case ERROR_ARR_STEP:
+			mess=strdup("array's dimention wrong");
+			break;
+		case ERROR_ID_REDCLARED:
+			mess=strdup("identifier is redeclared");
+			break;
+		case ERROR_JUMP_STATMENT:
+			mess=strdup("jump statement need in loop structure");
+			break;
+		case ERROR_ASSIGN_CONST:
+			mess=strdup("can't assigned value to const");
+			break;
+		case ERROR_NO_BOOL:
+			mess=strdup("expression must be bool type");
+			break;
+		case ERROR_FUNC_DEF_NOT_MATCH:
+			mess=strdup("function define and declare not match");
+			break;
+		case ERROR_FUNC_REDEF:
+			mess=strdup("function is redefined");
+			break;
+		case ERROR_ARR_NO_INT:
+			mess=strdup("array dimention argument need to be integer");
+			break;
+		case ERROR_DEF_DECL_NOT_PAIR:
+			mess=strdup("no definition of this function declare");
+			break;
+		case ERROR_ARR_INITIAL:
+			mess=strdup("array initial error");
+			break;
+		case ERROR_RETURN_VOID_ERROR:
+			mess=strdup("need to return a value");
+			break;
+		case ERROR_RETURN_IN_VOID:
+			mess=strdup("can't return value in a void function");
+			break;
+		case ERROR_RETURN_TYPE:
+			mess=strdup("return type not match");
+			break;
+	}
+
+
+
+
+	printf("##########Error at Line #%d: %s.##########\n",linenum,mess);
 
 }
 
@@ -2934,10 +3195,22 @@ int main( int argc, char **argv )
 	if(Opt_symbol)
 		dump_cur_table();
 
-	fprintf( stdout, "\n" );
-	fprintf( stdout, "|--------------------------------|\n" );
-	fprintf( stdout, "|  There is no syntactic error!  |\n" );
-	fprintf( stdout, "|--------------------------------|\n" );
+
+	decl_check *parser=decl_stack;
+	while(parser!=NULL)
+	{
+		if(!parser->isUsed)
+			printf("##########Error at Line #%d: %s.##########\n",parser->line,"no definition of this function declare");
+		parser=parser->next;
+	}
+
+	if(!isanyerr)
+	{
+		fprintf( stdout, "\n" );
+		fprintf( stdout, "|-------------------------------------------|\n" );
+		fprintf( stdout, "| There is no syntactic and semantic error! |\n" );
+		fprintf( stdout, "|-------------------------------------------|\n" );
+	}
 
 
 

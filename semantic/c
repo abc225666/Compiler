@@ -2,47 +2,8 @@
 #pragma token off
 #pragma statistic off
 #pragma symbol on
-int ff()
-{
-}
 
 int main()
 {
-	string a;
-	bool b;
-	int c;
-	double d;
-	float f;
-
-	a+b;//x
-	b+c;//x
-	c+d;
-	d/ff();
-	a*c;//x
-	a-d;//x
-	a<=f;//x
-	b>=d;//x
-	b<f;//x
-	c>f;
-
-	c %c;
-	c%a;
-	a%c;
-	b%a;
-
-	b==c; //x
-	c==d; 
-	c!=f;
-	a!=f; //x
-	
-	-a;//x
-	-b;//x
-	-c;
-	-d;
-	-f;
-
-	!a;//x
-	!b;
-
-	
-}
+ string a="int intin";
+ }
