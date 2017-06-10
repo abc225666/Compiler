@@ -740,44 +740,8 @@ argu
 
 		$$ = (void*)p;
 	}
-| basic ID array_argu_step
-	{
-		argu_val *p = NEW_VAL(argu_val);
-		p->name=strdup($2);
-
-		p->val=NEW_VAL(id_val);
-		p->val->kind=KIND_PARAMETER;
-		p->val->type=$1;
-
-		p->val->list=$3;
-
-		$$ = (void*)p;
-	}
 ;
 
-
-array_argu_step
-: array_argu_step '[' INT_CONST ']'
-	{
-		arr_val *p = (arr_val*)$1;
-
-		p->stepc+=1;
-		p->stepv=(int*)realloc((int*)p->stepv,sizeof(int)*(p->stepc));
-		((int*)p->stepv)[p->stepc-1] = atoi($3);
-
-		$$ = (void*)p;
-
-	}
-| '[' INT_CONST ']' 
-	{
-		arr_val* p =NEW_VAL(arr_val);
-		p->stepc=1;
-		p->stepv=NEW_VAL(int);
-		p->stepv[0]= atoi($2);
-
-		$$ = (void*)p;
-	}
-;
 
 basic
 : BASIC_TYPE
@@ -1014,126 +978,6 @@ var_list
 		else
 			dump_error(result);
 	}
-| var_list ID arr_step '=' arr_init  ','
-	{
-		$$ = $<c_type>0;
-
-		id_val *p=NEW_VAL(id_val);
-		p->kind=KIND_VARIABLE;
-		p->type=$<c_type>0;
-
-		p->list=$3;
-
-
-		arr_val *arrs=(arr_val*)$3;
-		invo_val *invo=(invo_val*)$5;
-
-		long long int allstep=1;
-		for(int t=0;t<arrs->stepc;t++)
-		{
-			allstep *= arrs->stepv[t];
-		}
-
-		if(invo->listc > allstep)
-		{
-			dump_error(ERROR_ARR_INITIAL);
-		}
-
-		int typeerr=0;
-		for(int t=0;t<invo->listc;t++)
-		{
-			const_val *constp=((const_val*)invo->listv)+t;
-
-			if(!(check_func_change(p->type,constp->type)))
-				typeerr=1;
-		}
-
-		if(typeerr)
-		{
-			dump_error(ERROR_TYPE_ERROR);
-		}
-
-
-		int result= find_redclair($2);
-
-		if(result==NO_ERROR)
-			add_id($2,(void*)p);
-		else
-			dump_error(result);
-	}
-| var_list ID arr_step ','
-	{
-		$$ = $<c_type>0;
-		id_val *p= NEW_VAL(id_val);
-		p->kind=KIND_VARIABLE;
-		p->type=$<c_type>0;
-		p->list=$3;
-
-		int result= find_redclair($2);
-
-		if(result==NO_ERROR)
-			add_id($2,(void*)p);
-		else
-			dump_error(result);
-	}
-| ID arr_step '=' arr_init ','
-	{
-		$$ = $<c_type>0;
-		id_val *p= NEW_VAL(id_val);
-		p->kind=KIND_VARIABLE;
-		p->type=$<c_type>0;
-		p->list=$2;
-
-		arr_val *arrs=(arr_val*)$2;
-		invo_val *invo=(invo_val*)$4;
-
-		long long int allstep=1;
-		for(int t=0;t<arrs->stepc;t++)
-		{
-			allstep *= arrs->stepv[t];
-		}
-
-		if(invo->listc > allstep)
-		{
-			dump_error(ERROR_ARR_INITIAL);
-		}
-
-		int typeerr=0;
-		for(int t=0;t<invo->listc;t++)
-		{
-			const_val *constp=((const_val*)invo->listv)+t;
-
-			if(!(check_func_change(p->type,constp->type)))
-				typeerr=1;
-		}
-
-		if(typeerr)
-		{
-			dump_error(ERROR_TYPE_ERROR);
-		}
-
-		int result= find_redclair($1);
-
-		if(result==NO_ERROR)
-			add_id($1,(void*)p);
-		else
-			dump_error(result);
-	}
-| ID arr_step ','
-	{
-		$$ = $<c_type>0;
-		id_val *p=NEW_VAL(id_val);
-		p->kind=KIND_VARIABLE;
-		p->type=$<c_type>0;
-		p->list=$2;
-
-		int result= find_redclair($1);
-
-		if(result==NO_ERROR)
-			add_id($1,(void*)p);
-		else
-			dump_error(result);
-	}
 ;
 
 const_list
@@ -1245,48 +1089,7 @@ var_def
 		else
 			dump_error(result);
 	}
-| basic var_list ID arr_step '=' arr_init ';'
-	{
-		id_val* p=NEW_VAL(id_val);
-		p->kind = KIND_VARIABLE;
-		p->type = $1;
-		p->list = $4;
 
-		arr_val *arrs=(arr_val*)$4;
-		invo_val *invo=(invo_val*)$6;
-
-		long long int allstep=1;
-		for(int t=0;t<arrs->stepc;t++)
-		{
-			allstep *= arrs->stepv[t];
-		}
-
-		if(invo->listc > allstep)
-		{
-			dump_error(ERROR_ARR_STEP);
-		}
-
-		int typeerr=0;
-		for(int t=0;t<invo->listc;t++)
-		{
-			const_val *constp=((const_val*)invo->listv)+t;
-
-			if(!(check_func_change(p->type,constp->type)))
-				typeerr=1;
-		}
-
-		if(typeerr)
-		{
-			dump_error(ERROR_TYPE_ERROR);
-		}
-
-		int result= find_redclair($3);
-
-		if(result==NO_ERROR)
-			add_id($3,(void*)p);
-		else
-			dump_error(result);
-	}
 | basic var_list ID arr_step ';'
 	{
 		id_val* p=NEW_VAL(id_val);
@@ -1298,62 +1101,6 @@ var_def
 
 		if(result==NO_ERROR)
 			add_id($3,(void*)p);
-		else
-			dump_error(result);
-	}
-| basic ID arr_step '=' arr_init ';'
-	{
-		id_val* p=NEW_VAL(id_val);
-		p->kind = KIND_VARIABLE;
-		p->type = $1;
-		p->list = $3;
-
-		arr_val *arrs=(arr_val*)$3;
-		invo_val *invo=(invo_val*)$5;
-
-		long long int allstep=1;
-		for(int t=0;t<arrs->stepc;t++)
-		{
-			allstep *= arrs->stepv[t];
-		}
-
-		if(invo->listc > allstep)
-		{
-			dump_error(ERROR_ARR_STEP);
-		}
-
-		int typeerr=0;
-		for(int t=0;t<invo->listc;t++)
-		{
-			const_val *constp=((const_val*)invo->listv)+t;
-
-			if(!(check_func_change(p->type,constp->type)))
-				typeerr=1;
-		}
-
-		if(typeerr)
-		{
-			dump_error(ERROR_TYPE_ERROR);
-		}
-
-		int result= find_redclair($2);
-
-		if(result==NO_ERROR)
-			add_id($2,(void*)p);
-		else
-			dump_error(result);
-	}
-| basic ID arr_step ';'
-	{
-		id_val* p=NEW_VAL(id_val);
-		p->kind = KIND_VARIABLE;
-		p->type = $1;
-		p->list = $3;
-
-		int result= find_redclair($2);
-
-		if(result==NO_ERROR)
-			add_id($2,(void*)p);
 		else
 			dump_error(result);
 	}
@@ -1392,66 +1139,6 @@ var_def
 	}
 ;
 
-arr_step
-: arr_step '[' INT_CONST ']' 
-	{
-		arr_val *p = (arr_val*)$1;
-
-		p->stepc+=1;
-		p->stepv = (int*)realloc((int*)p->stepv,sizeof(int) * (p->stepc));
-		((int*)p->stepv)[p->stepc-1] = atoi($3);
-
-		$$ = (void*)p;
-
-	}
-| '[' INT_CONST ']'
-	{
-
-		arr_val *p = NEW_VAL(arr_val);
-		p->stepc = 1;
-		p->stepv = NEW_VAL(int);
-		p->stepv[0] = atoi($2);
-
-		$$ = (void*)p;
-	}
-;
-
-arr_init
-: '{' arr_argu_list expr '}'
-	{
-		invo_val *p=(invo_val*)$2;
-		const_val *co=(const_val*)$3;
-
-		p->listc+=1;
-		const_val *q=(const_val*)p->listv;
-
-		q=(const_val*)realloc(q,sizeof(const_val)*(p->listc));
-		q[p->listc-1]=*co;
-
-		p->listv=(void*)q;
-
-		$$ = (void*)p;
-	}
-| '{' expr '}'
-	{
-		invo_val *p=NEW_VAL(invo_val);
-		const_val *co=(const_val*)$2;
-		p->listc=1;
-		const_val *q=NEW_VAL(const_val);
-		q[0]=*co;
-
-		p->listv=(void*)q;
-
-		$$ =(void*)p;
-	}
-| '{' '}'
-	{
-		invo_val *p =NEW_VAL(invo_val);
-		p->listc=0;
-
-		$$ = (void*)p;
-	}
-;
 
 arr_argu_list
 : arr_argu_list expr ','
