@@ -148,6 +148,12 @@ typedef struct S_decl_check
 	struct S_decl_check *next;
 } decl_check;
 
+typedef struct S_output_list
+{
+	char *content;
+	struct S_output_list *next;
+} output_list;
+
 int cur_level=0;
 
 symbol_table* cur_table=NULL;
@@ -187,6 +193,27 @@ int check_type_three(const_val *a,const_val *b);
 int check_type_one(const_val *a, const_val *b,int m_type);
 int check_func_change(int assign,int from);
 int is_const_var(char* name);
+
+FILE *fg = NULL;
+output_list *output_head = NULL;
+output_list *output_index = NULL;
+output_list *output_func_head = NULL;
+output_list *output_func_index = NULL;
+output_list *output_main_head = NULL;
+output_list *output_main_index = NULL;
+output_list *output_cur_head = NULL;
+output_list *output_cur_index = NULL;
+int output_stack = 0;
+int output_oper = 0;
+
+void gene_init_code();
+void code_gvar(char* name, int type);
+void code_final();
+void code_cur_func_start(char* name, id_val* id);
+void code_cur_func_end();
+void f_output_cur_init();
+void f_output_stack_add(int type);
+char* f_get_type(int type);
 
 
 
@@ -230,10 +257,10 @@ int yylex();
 %token NE
 
 %type <v> int_value float_value string_value bool_value
-%type <v> arr_step liter_const value_type 
-%type <v> argu argu_list array_argu_step arr_init arr_argu_list
-%type <v> expr expr_list func_invo arr_ref arr_ref_step var_ref simple_stat
-%type <c_type> var_list basic void_reduce const_list
+%type <v> liter_const value_type 
+%type <v> argu argu_list 
+%type <v> expr expr_list func_invo var_ref simple_stat
+%type <c_type> var_list basic void_reduce const_list gvar_list gconst_list
 
 %type <return_type> for_stat while_stat jump_stat condition statement compound_list compound compound_in_argu_func
 
@@ -257,18 +284,18 @@ program
 ;
 
 prog_content
-: prog_content var_def
+: prog_content gvar_def
 | prog_content func_def
 | prog_content func_decl
-| var_def
+| gvar_def
 | func_def
 | func_decl
 ;
 
 gvar_all_def 
-: gvar_all_def var_def 
+: gvar_all_def gvar_def 
 | gvar_all_def func_decl
-| var_def
+| gvar_def
 | func_decl
 ;
 
@@ -276,9 +303,384 @@ var_all_def
 : var_def
 ;
 
+gvar_def
+: basic gvar_list ID ';'
+	{
+		id_val* p=NEW_VAL(id_val);
+		p->kind = KIND_VARIABLE;
+		p->type = $1;
+
+		arr_val *t = NEW_VAL(arr_val);
+		t->stepc=0;
+		p->list=(void*)t;
+		
+
+		int result= find_redclair($3);
+
+		if(result==NO_ERROR)
+		{
+			add_id($3,(void*)p);
+			code_gvar($3,$1);
+		}
+		else
+			dump_error(result);
+	}
+| basic gvar_list ID '=' expr ';'
+	{
+		id_val* p=NEW_VAL(id_val);
+		p->kind = KIND_VARIABLE;
+		p->type = $1;
+		
+		arr_val *t = NEW_VAL(arr_val);
+		t->stepc=0;
+		p->list=(void*)t;
+
+		int result= find_redclair($3);
+
+		if(result==NO_ERROR)
+		{
+			add_id($3,(void*)p);
+			code_gvar($3,$1);
+		}
+		else
+			dump_error(result);
+	}
+| basic ID ';'
+	{
+		id_val* p=NEW_VAL(id_val);
+		p->kind = KIND_VARIABLE;
+		p->type = $1;
+		
+		arr_val *t = NEW_VAL(arr_val);
+		t->stepc=0;
+		p->list=(void*)t;
+
+		int result= find_redclair($2);
+
+		if(result==NO_ERROR)
+		{
+			add_id($2,(void*)p);
+			code_gvar($2,$1);
+		}
+		else
+			dump_error(result);
+	}
+| basic ID '=' expr ';'
+	{
+		id_val* p=NEW_VAL(id_val);
+		p->kind = KIND_VARIABLE;
+		p->type = $1;
+		
+		arr_val *t = NEW_VAL(arr_val);
+		t->stepc=0;
+		p->list=(void*)t;
+
+		int result= find_redclair($2);
+
+		if(result==NO_ERROR)
+		{
+			add_id($2,(void*)p);
+			code_gvar($2,$1);
+		}
+		else
+			dump_error(result);
+	}
+
+| CONST basic gconst_list ID '=' liter_const ';' 
+	{
+		id_val *p=NEW_VAL(id_val);
+		p->kind = KIND_CONSTANT;
+		p->type = $2;
+
+		id_val *get_const=(id_val*)$6;
+		p->list = get_const->list;
+
+		int result= find_redclair($4);
+
+		if(result==NO_ERROR)
+		{
+			add_id($4,(void*)p);
+			code_gvar($4,$2);
+		}
+		else
+			dump_error(result);
+	}
+| CONST basic  ID '=' liter_const ';' 
+	{
+		id_val *p=NEW_VAL(id_val);
+		p->kind = KIND_CONSTANT;
+		p->type = $2;
+
+		id_val *get_const=(id_val*)$5;
+		p->list = get_const->list;
+
+
+		int result= find_redclair($3);
+
+		if(result==NO_ERROR)
+		{
+			add_id($3,(void*)p);
+			code_gvar($3,$2);
+		}
+		else
+			dump_error(result);
+	}
+;
+
+gvar_list
+: gvar_list ID ','
+	{
+		$$ = $<c_type>0;
+		id_val *p=NEW_VAL(id_val);
+		p->kind=KIND_VARIABLE;
+		p->type = $<c_type>0;
+
+		arr_val *t = NEW_VAL(arr_val);
+		t->stepc=0;
+		p->list=(void*)t;
+
+		int result= find_redclair($2);
+
+		if(result==NO_ERROR)
+		{
+			add_id($2,(void*)p);
+			code_gvar($2,$<c_type>0);
+		}
+		else
+			dump_error(result);
+	}
+| gvar_list ID '=' expr ','
+	{
+		$$ = $<c_type>0;
+		id_val *p=NEW_VAL(id_val);
+		p->kind = KIND_VARIABLE;
+		p->type = $<c_type>0;
+
+		arr_val *t = NEW_VAL(arr_val);
+		t->stepc=0;
+		p->list=(void*)t;
+
+
+		int result= find_redclair($2);
+
+		if(result==NO_ERROR)
+		{
+			add_id($2,(void*)p);
+			code_gvar($2,$<c_type>0);
+		}
+		else
+			dump_error(result);
+	}
+| ID ','
+	{
+		$$ = $<c_type>0;
+		id_val *p=NEW_VAL(id_val);
+		p->kind = KIND_VARIABLE;
+		p->type = $<c_type>0;
+		arr_val *t = NEW_VAL(arr_val);
+		t->stepc=0;
+		p->list=(void*)t;
+
+		int result= find_redclair($1);
+
+		if(result==NO_ERROR)
+		{
+			add_id($1,(void*)p);
+			code_gvar($1,$<c_type>0);
+		}
+		else
+			dump_error(result);
+	}
+| ID '=' expr ','
+	{
+		$$ = $<c_type>0;
+		id_val *p=NEW_VAL(id_val);
+		p->kind=KIND_VARIABLE;
+		p->type=$<c_type>0;
+		arr_val *t = NEW_VAL(arr_val);
+		t->stepc=0;
+		p->list=(void*)t;
+
+		int result= find_redclair($1);
+
+		if(result==NO_ERROR)
+		{
+			add_id($1,(void*)p);
+			code_gvar($1,$<c_type>0);
+		}
+		else
+			dump_error(result);
+	}
+;
+
+gconst_list
+: gconst_list ID '=' liter_const ','
+	{
+		$$ = $<c_type>0;
+
+		id_val *p=NEW_VAL(id_val);
+		p->kind = KIND_CONSTANT;
+		p->type = $<c_type>0;
+
+		id_val *get_const=(id_val*)$4;
+		p->list = get_const->list;
+
+		int result= find_redclair($2);
+
+		if(result==NO_ERROR)
+		{
+			add_id($2,(void*)p);
+			code_gvar($2,$<c_type>0);
+		}
+		else
+			dump_error(result);
+	}
+| ID '=' liter_const ','
+	{
+		$$ = $<c_type>0;
+
+		id_val *p=NEW_VAL(id_val);
+		p->kind = KIND_CONSTANT;
+		p->type = $<c_type>0;
+
+		id_val *get_const=(id_val*)$3;
+		p->list = get_const->list;
+
+		int result= find_redclair($1);
+
+		if(result==NO_ERROR)
+		{
+			add_id($1,(void*)p);
+			code_gvar($1,$<c_type>0);
+		}
+		else
+			dump_error(result);
+	}
+;
+
+var_def
+: basic var_list ID ';'
+	{
+		id_val* p=NEW_VAL(id_val);
+		p->kind = KIND_VARIABLE;
+		p->type = $1;
+
+		arr_val *t = NEW_VAL(arr_val);
+		t->stepc=0;
+		p->list=(void*)t;
+		
+
+		int result= find_redclair($3);
+
+		if(result==NO_ERROR)
+		{
+			add_id($3,(void*)p);
+			f_output_stack_add($1);
+		}
+		else
+			dump_error(result);
+	}
+| basic var_list ID '=' expr ';'
+	{
+		id_val* p=NEW_VAL(id_val);
+		p->kind = KIND_VARIABLE;
+		p->type = $1;
+		
+		arr_val *t = NEW_VAL(arr_val);
+		t->stepc=0;
+		p->list=(void*)t;
+
+		int result= find_redclair($3);
+
+		if(result==NO_ERROR)
+		{
+			add_id($3,(void*)p);
+			f_output_stack_add($1);
+		}
+		else
+			dump_error(result);
+	}
+| basic ID ';'
+	{
+		id_val* p=NEW_VAL(id_val);
+		p->kind = KIND_VARIABLE;
+		p->type = $1;
+		
+		arr_val *t = NEW_VAL(arr_val);
+		t->stepc=0;
+		p->list=(void*)t;
+
+		int result= find_redclair($2);
+
+		if(result==NO_ERROR)
+		{
+			add_id($2,(void*)p);
+			f_output_stack_add($1);
+		}
+		else
+			dump_error(result);
+	}
+| basic ID '=' expr ';'
+	{
+		id_val* p=NEW_VAL(id_val);
+		p->kind = KIND_VARIABLE;
+		p->type = $1;
+		
+		arr_val *t = NEW_VAL(arr_val);
+		t->stepc=0;
+		p->list=(void*)t;
+
+		int result= find_redclair($2);
+
+		if(result==NO_ERROR)
+		{
+			add_id($2,(void*)p);
+			f_output_stack_add($1);
+		}
+		else
+			dump_error(result);
+	}
+
+| CONST basic const_list ID '=' liter_const ';' 
+	{
+		id_val *p=NEW_VAL(id_val);
+		p->kind = KIND_CONSTANT;
+		p->type = $2;
+
+		id_val *get_const=(id_val*)$6;
+		p->list = get_const->list;
+
+		int result= find_redclair($4);
+
+		if(result==NO_ERROR)
+			add_id($4,(void*)p);
+		else
+			dump_error(result);
+	}
+| CONST basic  ID '=' liter_const ';' 
+	{
+		id_val *p=NEW_VAL(id_val);
+		p->kind = KIND_CONSTANT;
+		p->type = $2;
+
+		id_val *get_const=(id_val*)$5;
+		p->list = get_const->list;
+
+
+		int result= find_redclair($3);
+
+		if(result==NO_ERROR)
+			add_id($3,(void*)p);
+		else
+			dump_error(result);
+	}
+;
+
 func_def
 : basic ID '(' argu_list argu ')' 
 	{
+		
+
 		func_type = $1;
 		argu_val *co=(argu_val*)$5;
 
@@ -298,6 +700,9 @@ func_def
 		int result= def_build($2,(void*)p);
 		if(result)
 			add_id($2,(void*)p);
+
+		f_output_cur_init();
+		code_cur_func_start($2,p);
 	}
 	'{'
 	{
@@ -311,7 +716,8 @@ func_def
 	} 
 	'}'
 	{
-
+		code_cur_func_end();
+		output_stack = 0;
 		if(Opt_symbol) dump_cur_table();
 		else pop_cur_table();
 	}
@@ -337,6 +743,9 @@ func_def
 		int result= def_build($2,(void*)p);
 		if(result)
 			add_id($2,(void*)p);
+
+		f_output_cur_init();
+		code_cur_func_start($2,p);
 	}
 	'{' 
 	{
@@ -350,6 +759,8 @@ func_def
 	}
 	'}'
 	{
+		code_cur_func_end();
+		output_stack = 0;
 		if(Opt_symbol) dump_cur_table();
 		else pop_cur_table();
 	}
@@ -368,6 +779,9 @@ func_def
 		int result= def_build($2,(void*)p);
 		if(result)
 			add_id($2,(void*)p);
+
+		f_output_cur_init();
+		code_cur_func_start($2,p);
 	}
 	'{'
 	{
@@ -381,10 +795,12 @@ func_def
 	}
 	'}'
 	{
+		code_cur_func_end();
+		output_stack = 0;
 		if(Opt_symbol) dump_cur_table();
 		else pop_cur_table();
 	}
-| void_reduce ID '(' argu_list argu ')'
+| void_reduce ID  '(' argu_list argu ')'
 	{
 		func_type = TYPE_VOID;
 		argu_val *co=(argu_val*)$5;
@@ -405,6 +821,9 @@ func_def
 		int result= def_build($2,(void*)p);
 		if(result)
 			add_id($2,(void*)p);
+
+		f_output_cur_init();
+		code_cur_func_start($2,p);
 	}
 	'{'
 	{
@@ -412,6 +831,8 @@ func_def
 	}
 	compound_in_argu_func '}'
 	{
+		code_cur_func_end();
+		output_stack = 0;
 		if(Opt_symbol) dump_cur_table();
 		else pop_cur_table();
 	}
@@ -437,6 +858,9 @@ func_def
 		int result= def_build($2,(void*)p);
 		if(result)
 			add_id($2,(void*)p);
+
+		f_output_cur_init();
+		code_cur_func_start($2,p);
 	}
 	'{'
 	{
@@ -444,6 +868,7 @@ func_def
 	}
 	compound_in_argu_func '}'
 	{
+		code_cur_func_end();
 		if(Opt_symbol) dump_cur_table();
 		else pop_cur_table();
 	}
@@ -462,6 +887,9 @@ func_def
 		int result= def_build($2,(void*)p);
 		if(result)
 			add_id($2,(void*)p);
+
+		f_output_cur_init();
+		code_cur_func_start($2,p);
 	}
 	'{'
 	{
@@ -469,6 +897,8 @@ func_def
 	}
 	compound_in_argu_func '}'
 	{
+		code_cur_func_end();
+		output_stack = 0;
 		if(Opt_symbol) dump_cur_table();
 		else pop_cur_table();
 	}
@@ -587,6 +1017,8 @@ func_decl
 		int result= decl_build($2,(void*)p);
 		if(result)
 			add_id($2,(void*)p);
+
+		output_stack = 0;
 	} 
 	';'
 | basic ID '(' argu ')' 
@@ -610,6 +1042,8 @@ func_decl
 		int result= decl_build($2,(void*)p);
 		if(result)
 			add_id($2,(void*)p);
+
+		output_stack = 0;
 	} 
 	';'
 | basic ID '(' ')'
@@ -627,6 +1061,8 @@ func_decl
 		int result= decl_build($2,(void*)p);
 		if(result)
 			add_id($2,(void*)p);
+
+		output_stack = 0;
 	}
 	';'
 | void_reduce ID '(' argu_list argu ')'
@@ -650,6 +1086,7 @@ func_decl
 		if(result)
 			add_id($2,(void*)p);
 
+		output_stack = 0;
 	}
 	';'
 | void_reduce ID '(' argu ')'
@@ -673,6 +1110,8 @@ func_decl
 		int result= decl_build($2,(void*)p);
 		if(result)
 			add_id($2,(void*)p);
+
+		output_stack = 0;
 		
 	}
 	';'
@@ -690,6 +1129,8 @@ func_decl
 		int result= decl_build($2,(void*)p);
 		if(result)
 			add_id($2,(void*)p);
+
+		output_stack = 0;
 	}
 	';'
 ;
@@ -739,6 +1180,8 @@ argu
 		p->val->list=(void*)t;
 
 		$$ = (void*)p;
+
+		f_output_stack_add($1);
 	}
 ;
 
@@ -921,7 +1364,10 @@ var_list
 		int result= find_redclair($2);
 
 		if(result==NO_ERROR)
+		{
 			add_id($2,(void*)p);
+			f_output_stack_add($<c_type>0);
+		}
 		else
 			dump_error(result);
 	}
@@ -940,7 +1386,10 @@ var_list
 		int result= find_redclair($2);
 
 		if(result==NO_ERROR)
+		{
 			add_id($2,(void*)p);
+			f_output_stack_add($<c_type>0);
+		}
 		else
 			dump_error(result);
 	}
@@ -957,7 +1406,10 @@ var_list
 		int result= find_redclair($1);
 
 		if(result==NO_ERROR)
+		{
 			add_id($1,(void*)p);
+			f_output_stack_add($<c_type>0);
+		}
 		else
 			dump_error(result);
 	}
@@ -974,7 +1426,10 @@ var_list
 		int result= find_redclair($1);
 
 		if(result==NO_ERROR)
+		{
 			add_id($1,(void*)p);
+			f_output_stack_add($<c_type>0);
+		}
 		else
 			dump_error(result);
 	}
@@ -1016,158 +1471,6 @@ const_list
 			add_id($1,(void*)p);
 		else
 			dump_error(result);
-	}
-;
-
-var_def
-: basic var_list ID ';'
-	{
-		id_val* p=NEW_VAL(id_val);
-		p->kind = KIND_VARIABLE;
-		p->type = $1;
-
-		arr_val *t = NEW_VAL(arr_val);
-		t->stepc=0;
-		p->list=(void*)t;
-		
-
-		int result= find_redclair($3);
-
-		if(result==NO_ERROR)
-			add_id($3,(void*)p);
-		else
-			dump_error(result);
-	}
-| basic var_list ID '=' expr ';'
-	{
-		id_val* p=NEW_VAL(id_val);
-		p->kind = KIND_VARIABLE;
-		p->type = $1;
-		
-		arr_val *t = NEW_VAL(arr_val);
-		t->stepc=0;
-		p->list=(void*)t;
-
-		int result= find_redclair($3);
-
-		if(result==NO_ERROR)
-			add_id($3,(void*)p);
-		else
-			dump_error(result);
-	}
-| basic ID ';'
-	{
-		id_val* p=NEW_VAL(id_val);
-		p->kind = KIND_VARIABLE;
-		p->type = $1;
-		
-		arr_val *t = NEW_VAL(arr_val);
-		t->stepc=0;
-		p->list=(void*)t;
-
-		int result= find_redclair($2);
-
-		if(result==NO_ERROR)
-			add_id($2,(void*)p);
-		else
-			dump_error(result);
-	}
-| basic ID '=' expr ';'
-	{
-		id_val* p=NEW_VAL(id_val);
-		p->kind = KIND_VARIABLE;
-		p->type = $1;
-		
-		arr_val *t = NEW_VAL(arr_val);
-		t->stepc=0;
-		p->list=(void*)t;
-
-		int result= find_redclair($2);
-
-		if(result==NO_ERROR)
-			add_id($2,(void*)p);
-		else
-			dump_error(result);
-	}
-
-| basic var_list ID arr_step ';'
-	{
-		id_val* p=NEW_VAL(id_val);
-		p->kind = KIND_VARIABLE;
-		p->type = $1;
-		p->list = $4;
-
-		int result= find_redclair($3);
-
-		if(result==NO_ERROR)
-			add_id($3,(void*)p);
-		else
-			dump_error(result);
-	}
-| CONST basic const_list ID '=' liter_const ';' 
-	{
-		id_val *p=NEW_VAL(id_val);
-		p->kind = KIND_CONSTANT;
-		p->type = $2;
-
-		id_val *get_const=(id_val*)$6;
-		p->list = get_const->list;
-
-		int result= find_redclair($4);
-
-		if(result==NO_ERROR)
-			add_id($4,(void*)p);
-		else
-			dump_error(result);
-	}
-| CONST basic  ID '=' liter_const ';' 
-	{
-		id_val *p=NEW_VAL(id_val);
-		p->kind = KIND_CONSTANT;
-		p->type = $2;
-
-		id_val *get_const=(id_val*)$5;
-		p->list = get_const->list;
-
-
-		int result= find_redclair($3);
-
-		if(result==NO_ERROR)
-			add_id($3,(void*)p);
-		else
-			dump_error(result);
-	}
-;
-
-
-arr_argu_list
-: arr_argu_list expr ','
-	{
-		invo_val *p=(invo_val*)$1;
-		const_val *co=(const_val*)$2;
-
-		p->listc+=1;
-		const_val *q=(const_val*)p->listv;
-
-		q=(const_val*)realloc(q,sizeof(const_val)*(p->listc));
-		q[p->listc-1]=*co;
-
-		p->listv=(void*)q;
-
-		$$ = (void*)p;
-
-	}
-| expr ','
-	{
-		invo_val *p=NEW_VAL(invo_val);
-		const_val *co=(const_val*)$1;
-		p->listc=1;
-		const_val *q=NEW_VAL(const_val);
-		q[0]=*co;
-
-		p->listv=(void*)q;
-
-		$$ =(void*)p;
 	}
 ;
 
@@ -1458,67 +1761,6 @@ expr
 
 		$$ = (void*)q;
 	}
-| arr_ref
-	{
-		// check arr id exist and dimention correct;
-		invo_val *p=(invo_val*)$1;
-		symbol_list* sym=find_symbol(p->name,1);
-
-		const_val *q= NEW_VAL(const_val);
-		q->kind= KIND_RVAL;
-		q->type= TYPE_INT;
-		q->value = (void*)p;
-
-		if(sym!=NULL)
-		{
-			id_val* sym_id=(id_val*)sym->val;
-			if(sym_id->kind==KIND_FUNCTION || sym_id->kind==KIND_CONSTANT)
-				dump_error(ERROR_ID_KIND);
-			else
-			{
-				if(!check_step(sym,p))
-					dump_error(ERROR_ARR_STEP);
-			}
-			q->type=sym_id->type;
-		}
-
-		$$ = (void*)q;
-	}
-;
-
-arr_ref
-: ID arr_ref_step 
-	{
-		invo_val *p = (invo_val*)$2;
-		p->name = strdup($1);
-		
-		$$ = (void*)p;
-	}
-;
-
-arr_ref_step
-: arr_ref_step '[' expr ']' 
-	{
-		invo_val *p=(invo_val*)$1;
-		p->listc += 1;
-
-		const_val *exp=$3;
-		if(exp->type!=TYPE_INT)
-			dump_error(ERROR_ARR_NO_INT);
-
-		$$ =(void*)p;
-	}
-| '[' expr ']'
-	{
-		invo_val *p =NEW_VAL(invo_val);
-		p->listc = 1;
-
-		const_val *exp=$2;
-		if(exp->type!=TYPE_INT)
-			dump_error(ERROR_ARR_NO_INT);
-
-		$$ = (void*)p;
-	}
 ;
 
 func_invo
@@ -1664,31 +1906,6 @@ var_ref
 				q->kind=KIND_LVAL;
 				q->value= (void*)p;
 			}
-		}
-
-		$$ = (void*)q;
-	}
-| arr_ref
-	{
-		invo_val *p=(invo_val*)$1;
-		symbol_list* sym=find_symbol(p->name,1);
-
-		const_val *q= NEW_VAL(const_val);
-		q->kind= KIND_LVAL;
-		q->type= TYPE_INT;
-		q->value = (void*)p;
-
-		if(sym!=NULL)
-		{
-			id_val* sym_id=(id_val*)sym->val;
-			if(sym_id->kind==KIND_FUNCTION || sym_id->kind==KIND_CONSTANT)
-				dump_error(ERROR_ID_KIND);
-			else
-			{
-				if(!check_step(sym,p))
-					dump_error(ERROR_ARR_STEP);
-			}
-			q->type=sym_id->type;
 		}
 
 		$$ = (void*)q;
@@ -2974,6 +3191,212 @@ int yyerror( char *msg )
   exit(-1);
 }
 
+void gene_init_code()
+{
+	output_list *new_node = NEW_VAL(output_list);
+	new_node->content = strdup(".class public demo\n");
+	new_node->next = NULL;
+
+	output_head = new_node;
+	output_index = new_node;
+
+	new_node = NEW_VAL(output_list);
+	new_node->content = strdup(".super java/lang/Object\n");
+	new_node->next = NULL;
+
+	output_index->next = new_node;
+	output_index = new_node;
+
+	new_node = NEW_VAL(output_list);
+	new_node->content = strdup(".field public static _sc Ljava/util/Scanner;\n");
+
+	output_index->next = new_node;
+	output_index = new_node;
+
+	//
+
+	new_node = NEW_VAL(output_list);
+	new_node->content = strdup("");
+	new_node->next = NULL;
+
+	output_func_head = new_node;
+	output_func_index = new_node;
+
+	//
+
+	new_node = NEW_VAL(output_list);
+	new_node->content = strdup("");
+	new_node->next = NULL;
+
+	output_main_head = new_node;
+	output_main_index = new_node;
+
+
+
+}
+
+void code_gvar(char* name, int type)
+{
+	output_list *new_node = NEW_VAL(output_list);
+	new_node->next = NULL;
+	new_node->content = strdup(".field public static ");
+	new_node->content = mergestring(new_node->content,name);
+	switch(type)
+	{
+		case TYPE_INT:
+			new_node->content = mergestring(new_node->content," I\n");
+			break;
+		case TYPE_FLOAT:
+			new_node->content = mergestring(new_node->content," F\n");
+			break;
+		case TYPE_DOUBLE:
+			new_node->content = mergestring(new_node->content," D\n");
+			break;
+		case TYPE_BOOL:
+			new_node->content = mergestring(new_node->content," Z\n");
+			break;
+	}
+
+	output_index->next = new_node;
+	output_index = new_node;
+}
+
+void code_cur_func_start(char *name, id_val *id)
+{
+	output_list *new_node = NEW_VAL(output_list);
+	new_node->next = NULL;
+
+	new_node->content = strdup(".method public static _");
+	new_node->content = mergestring(new_node->content,name);
+	new_node->content = mergestring(new_node->content,"(");
+	
+	func_val *f = (func_val*)id->list;
+
+	int t;
+	for(t=0;t<f->argc;t++)
+	{
+		argu_val* argu = &f->argv[t];
+		new_node->content = mergestring(new_node->content,f_get_type(argu->val->type));
+	}
+
+	new_node->content = mergestring(new_node->content,")");
+	new_node->content = mergestring(new_node->content,f_get_type(id->type));
+	new_node->content = mergestring(new_node->content,"\n");
+
+	output_func_index->next = new_node;
+	output_func_index = new_node;
+
+}
+
+void code_cur_func_end()
+{
+	char* num = (char*)malloc(sizeof(char)*200);
+	output_list *new_node = NEW_VAL(output_list);
+	new_node->next = NULL;
+
+	new_node->content = strdup(".limit stack ");
+	sprintf(num,"%d",output_oper);
+	new_node->content = mergestring(new_node->content,num);
+	new_node->content = mergestring(new_node->content,"\n");
+
+	output_func_index->next = new_node;
+	output_func_index = new_node;
+
+	new_node = NEW_VAL(output_list);
+	new_node->next = NULL;
+
+	new_node->content = strdup(".limit locals ");
+	sprintf(num,"%d",output_stack);
+	new_node->content = mergestring(new_node->content,num);
+	new_node->content = mergestring(new_node->content,"\n");
+
+	output_func_index->next = new_node;
+	output_func_index = new_node;
+
+	//.....
+
+	new_node = NEW_VAL(output_list);
+	new_node->next = NULL;
+	new_node->content = strdup(".end method\n");
+
+	output_func_index->next = new_node;
+	output_func_index = new_node;
+}
+
+
+void code_final()
+{
+	fg = fopen("gene.j", "w");
+	
+	output_list *parser = output_head;
+	while(parser!=NULL)
+	{
+		fprintf(fg,"%s",parser->content);
+		parser = parser->next;
+	}
+
+	parser = output_func_head;
+	while(parser!=NULL)
+	{
+		fprintf(fg,"%s",parser->content);
+		parser = parser->next;
+	}
+	fclose(fg);
+}
+
+void f_output_cur_init()
+{
+	output_list *new_node = NEW_VAL(output_list);
+	new_node->content = strdup("");
+	new_node->next = NULL;
+	output_cur_head = new_node;
+	output_cur_index = new_node;
+	//output_stack = 0;
+	output_oper = 0;
+}
+
+void f_output_stack_add(int type)
+{
+	switch(type)
+	{
+		case TYPE_INT:
+		case TYPE_BOOL:
+		case TYPE_FLOAT:
+			output_stack += 1;
+			break;
+		case TYPE_DOUBLE:
+			output_stack += 2;
+			break;
+	}
+}
+
+char* f_get_type(int type)
+{
+	char* ans=NULL;
+	switch(type)
+	{
+		case TYPE_INT:
+			ans = strdup("I");
+			break;
+		case TYPE_FLOAT:
+			ans = strdup("F");
+			break;
+		case TYPE_DOUBLE:
+			ans = strdup("D");
+			break;
+		case TYPE_BOOL:
+			ans = strdup("Z");
+			break;
+		case TYPE_VOID:
+			ans = strdup("V");
+			break;
+		default:
+			ans = strdup("");
+			break;
+	}
+	return ans;
+}
+
 int main( int argc, char **argv )
 {
 	if( argc != 2 ) {
@@ -2982,6 +3405,7 @@ int main( int argc, char **argv )
 	}
 
 	FILE *fp = fopen( argv[1], "r" );
+	gene_init_code();
 	
 	if( fp == NULL )  {
 		fprintf( stdout, "Open  file  error\n" );
@@ -3018,6 +3442,7 @@ int main( int argc, char **argv )
 		fprintf( stdout, "|-------------------------------------------|\n" );
 		fprintf( stdout, "| There is no syntactic and semantic error! |\n" );
 		fprintf( stdout, "|-------------------------------------------|\n" );
+		code_final();
 	}
 
 
@@ -3040,6 +3465,7 @@ int main( int argc, char **argv )
 	 }
 
 	 
-
+	 fclose(fp);
+	 fclose(fg);
 	exit(0);
 }

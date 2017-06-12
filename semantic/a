@@ -1,34 +1,34 @@
 #pragma token off
 #pragma source off
-#pragma symbol off
+#pragma symbol on
 #pragma statistic off
-int zzz;
 
-void ff(int qa,float qz, int qx[5][6]);
+int a,b,c;
+bool check;
 
-int main(int qa,float qz,int qx[5])
+int main()
 {
-	int a=-5;
-	int a[5][3][4]={ 1,3,445};
-	int funcerr=ff(5,1);
-	const int aa=5;
-	const int minus=-222;
+	int a;
+	int b=5;
+	b=a+5*2+3+200*b;
+	return 0;
+}
+
+int f(int a,int vv,float c)
+{
+	int aaaaa;
+	double azzz;
+	float zzzzzz=1231.312124;
 	{
-		int qz;
-		const string aa="here is new scope!!";
-		const bool bb=true;
+		int xsdf;
 	}
-	const string bb="this is string";
-	const float zz=1.555555;
-	float b[6][7],c[8],d,e[10][11]={0,0};
+	c=532452;
+	return 4;
 }
+int azzc;
+double fafs;
 
-void ff(int qa,float qz, int qx[5][6])
+void tt()
 {
-	int in;
-	const string aa="first",bb="second";
-	bool bb=false;
-	float z=f;
+	return;
 }
-
-
