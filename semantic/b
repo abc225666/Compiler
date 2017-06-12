@@ -3,14 +3,12 @@
 #pragma symbol on
 #pragma statistic off
 
-int f(int a[3][4],int b)
+int z;
+int z()
 {
 }
-
 int main()
 {
-	int a[2][3][4];
-	int bb;
-
-	a[3][1]= bb;
+	return 0;
 }
+

@@ -129,6 +129,7 @@ typedef struct S_func_val
 typedef struct symbol_lists{
 	char *name;
 	id_val *val;
+	int cur_index;
 	struct symbol_lists *next;
 } symbol_list;
 
@@ -205,6 +206,7 @@ output_list *output_cur_head = NULL;
 output_list *output_cur_index = NULL;
 int output_stack = 0;
 int output_oper = 0;
+int output_cur_position = 0;
 
 void gene_init_code();
 void code_gvar(char* name, int type);
@@ -3020,23 +3022,24 @@ void add_newtable_with_argu(char* name)
 	add_newtable();
 	symbol_list *p= cur_table->next->s_list;
 
-	symbol_list *f;
-	
+	symbol_list *f = NULL;
+
 	while(p!=NULL)
 	{
 		if(strcmp(p->name,name)==0)
 		{
-			f = p;
+			if(p->val->kind==KIND_FUNCTION)
+				f = p;
 		}
 		p=p->next;
 	}
 
-	func_val *f_list = (func_val*)f->val->list;
+	func_val *f_list = f==NULL?(NULL):((func_val*)f->val->list);
 
 	symbol_list *argu_head=NULL;
 	symbol_list *argu_index=NULL;
 
-	for(int t=0;t<f_list->argc;t++)
+	for(int t=0; f_list!=NULL && t<f_list->argc;t++)
 	{
 		symbol_list *new_node=NEW_VAL(symbol_list);
 
@@ -3367,6 +3370,19 @@ void f_output_stack_add(int type)
 		case TYPE_DOUBLE:
 			output_stack += 2;
 			break;
+	}
+}
+
+int f_type_need(int type)
+{
+	switch(type)
+	{
+		case TYPE_INT:
+		case TYPE_FLOAT:
+		case TYPE_BOOL:
+			return 1;
+		case TYPE_DOUBLE:
+			return 2;
 	}
 }
 
