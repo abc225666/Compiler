@@ -785,7 +785,7 @@ func_def
 	}
 	'{'
 	{
-		add_newtable();
+		add_newtable_with_argu($2);
 	}
 	compound_in_argu_func
 	{
@@ -893,7 +893,7 @@ func_def
 	}
 	'{'
 	{
-		add_newtable();
+		add_newtable_with_argu($2);
 	}
 	compound_in_argu_func '}'
 	{

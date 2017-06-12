@@ -30,5 +30,7 @@ double fafs;
 
 void tt()
 {
+	int invoid;
+	double isoube;
 	return;
 }

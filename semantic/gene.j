@@ -17,5 +17,5 @@
 .end method
 .method public static _tt()V
 .limit stack 0
-.limit locals 0
+.limit locals 3
 .end method
