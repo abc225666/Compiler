@@ -29,6 +29,15 @@ extern int Opt_symbol ;
 
 typedef enum
 {
+	CAL_PLUS,
+	CAL_MINUS,
+	CAL_DIV,
+	CAL_MULTI,
+	CAL_MOD,
+} enum_cal;
+
+typedef enum
+{
 	KIND_FUNCTION,
 	KIND_VARIABLE,
 	KIND_PARAMETER,
@@ -86,6 +95,12 @@ typedef enum
 	ERROR_NO_RETURN,//20
 } enum_error;
 
+typedef struct S_output_list
+{
+	char *content;
+	struct S_output_list *next;
+} output_list;
+
 typedef struct S_invo_val
 {
 	char *name;
@@ -98,6 +113,8 @@ typedef struct S_const_val
 	int kind;
 	int type;
 	void* value;
+	output_list* code_head;
+	output_list* code_index;
 } const_val;
 
 typedef struct S_id_val
@@ -149,11 +166,7 @@ typedef struct S_decl_check
 	struct S_decl_check *next;
 } decl_check;
 
-typedef struct S_output_list
-{
-	char *content;
-	struct S_output_list *next;
-} output_list;
+
 
 int cur_level=0;
 
@@ -206,16 +219,23 @@ output_list *output_cur_head = NULL;
 output_list *output_cur_index = NULL;
 int output_stack = 0;
 int output_oper = 0;
-int output_cur_position = 0;
+int output_cur_position = 1;
 
 void gene_init_code();
 void code_gvar(char* name, int type);
 void code_final();
 void code_cur_func_start(char* name, id_val* id);
 void code_cur_func_end();
+void code_calculate(const_val*output,const_val* v1, const_val *v2,int cal_type);
+void code_go_minus(const_val* v1);
+void code_load_val(const_val* v1);
+void code_dump_expr(const_val* v1);
+void code_change_type(const_val *output, const_val *v1, const_val *v2);
+void code_merge_expr(const_val *output, const_val *v1, const_val *v2);
 void f_output_cur_init();
 void f_output_stack_add(int type);
 char* f_get_type(int type);
+int f_type_need(int type);
 
 
 
@@ -598,6 +618,7 @@ var_def
 		{
 			add_id($3,(void*)p);
 			f_output_stack_add($1);
+			
 		}
 		else
 			dump_error(result);
@@ -958,6 +979,7 @@ statement
 | expr ';'
 	{
 		const_val* con=(const_val*)$1;
+		code_dump_expr(con);
 		check_and_set_scalar($1);
 
 		$$ = RETURN_NO;
@@ -1318,9 +1340,8 @@ float_value
 : FLOAT_CONST
 	{
 		const_val *p = NEW_VAL(const_val);
-		float *val = NEW_VAL(float);
-		*val = (float)atof($1);
-		p->value = (void*)val;
+		char *ou = strdup($1);
+		p->value = (void*) ou;
 		p->type = TYPE_FLOAT;
 		$$ = (void*)p;
 	}
@@ -1489,6 +1510,8 @@ expr
 			dump_error(ERROR_TYPE_ERROR);
 		}
 		output=geneValConst(v1,v2);
+		code_change_type(v1,v2,output);
+		code_calculate(output,v1,v2,CAL_MULTI);
 		$$=(void*)output;
 	}
 | expr '/' expr
@@ -1649,6 +1672,7 @@ expr
 			dump_error(ERROR_TYPE_ERROR);
 		}
 		output=geneOneVal(v1,v1->type);
+		code_go_minus(v1);
 		$$=(void*)v1;
 
 	}
@@ -1695,6 +1719,7 @@ expr
 	}
 | value_type
 	{
+		code_load_val((const_val*)$1);
 		$$ = $1;
 	}
 | ID
@@ -1730,6 +1755,7 @@ expr
 			}
 		}
 
+		code_load_val(q);
 		$$ = (void*)q;
 	}
 | func_invo
@@ -2982,7 +3008,7 @@ void dump_cur_table()
  			}
  			printf("%-24s",att_output==NULL?"":att_output);
  		}
-
+ 		printf("  p:%d ",list->cur_index);
 
 		
 		printf("\n");
@@ -3039,6 +3065,8 @@ void add_newtable_with_argu(char* name)
 	symbol_list *argu_head=NULL;
 	symbol_list *argu_index=NULL;
 
+	output_cur_position = 1;
+
 	for(int t=0; f_list!=NULL && t<f_list->argc;t++)
 	{
 		symbol_list *new_node=NEW_VAL(symbol_list);
@@ -3047,6 +3075,8 @@ void add_newtable_with_argu(char* name)
 
 		new_node->name = strdup(argu_p->name);
 		new_node->val=NEW_VAL(id_val);
+		new_node->cur_index = output_cur_position;
+		output_cur_position += f_type_need(argu_p->val->type);
 		memcpy(new_node->val,argu_p->val,sizeof(id_val));
 		new_node->next=NULL;
 
@@ -3092,6 +3122,7 @@ void add_id(char* name, void* my_val)
 		new_identify->next=NULL;
 		cur_table->s_list=new_identify;
 		cur_table->s_index=cur_table->s_list;
+
 	}
 	else
 	{
@@ -3104,6 +3135,12 @@ void add_id(char* name, void* my_val)
 	cur_table->s_index->name=strdup(name);
 
 	cur_table->s_index->val=id_in;
+
+	if(cur_table->level != 0)
+	{
+		cur_table->s_index->cur_index = output_cur_position;
+		output_cur_position += f_type_need(id_in->type);
+	}
 }
 
 void dump_error(int error)
@@ -3212,6 +3249,7 @@ void gene_init_code()
 
 	new_node = NEW_VAL(output_list);
 	new_node->content = strdup(".field public static _sc Ljava/util/Scanner;\n");
+	new_node->next = NULL;
 
 	output_index->next = new_node;
 	output_index = new_node;
@@ -3266,6 +3304,9 @@ void code_gvar(char* name, int type)
 
 void code_cur_func_start(char *name, id_val *id)
 {
+
+
+
 	output_list *new_node = NEW_VAL(output_list);
 	new_node->next = NULL;
 
@@ -3288,6 +3329,12 @@ void code_cur_func_start(char *name, id_val *id)
 
 	output_func_index->next = new_node;
 	output_func_index = new_node;
+
+	new_node = NEW_VAL(output_list);
+	new_node->next = NULL;
+	new_node->content = strdup("");
+	output_cur_head = new_node;
+	output_cur_index = new_node;
 
 }
 
@@ -3317,6 +3364,14 @@ void code_cur_func_end()
 	output_func_index = new_node;
 
 	//.....
+	output_list *parser= output_cur_head;
+	while(parser!=NULL)
+	{
+		output_func_index->next = parser;
+		output_func_index = output_func_index->next;
+		parser = parser->next;
+	}
+	//
 
 	new_node = NEW_VAL(output_list);
 	new_node->next = NULL;
@@ -3326,6 +3381,170 @@ void code_cur_func_end()
 	output_func_index = new_node;
 }
 
+void code_calculate(const_val *output,const_val *v1, const_val *v2, int cal_type)
+{	
+	output_list *new_node = NEW_VAL(output_list);
+	new_node->next = NULL;
+	switch(cal_type)
+	{
+		case CAL_MULTI:
+			code_merge_expr(output,v1,v2);
+			break;
+	}
+}
+
+void code_merge_expr(const_val *output, const_val *v1, const_val *v2)
+{
+	output_list *ans;
+	output_list *index;
+
+	output_list *parser=v1->code_head;
+	ans= parser;
+	index = parser;
+	parser = parser->next;
+	while(parser!=NULL)
+	{
+		index->next = parser;
+		index = parser;
+		parser = parser->next;
+	}
+
+	parser = v2->code_head;
+	while(parser!=NULL)
+	{
+		index->next = parser;
+		index = parser;
+		parser = parser->next;
+	}
+
+	output->code_head = ans;
+	output->code_index = index;
+}
+
+void code_dump_expr(const_val *v1)
+{
+	output_list *parser = v1->code_head;
+	while(parser!=NULL)
+	{
+		output_cur_index->next = parser;
+		output_cur_index = parser;
+		parser = parser->next;
+	}
+}
+
+void code_go_minus(const_val *v1)
+{
+	output_list *new_node = NEW_VAL(output_list);
+	new_node->next = NULL;
+	switch(v1->type)
+	{
+		case TYPE_INT:
+			new_node->content =strdup("ineg\n");
+			break;
+		case TYPE_FLOAT:
+			new_node->content = strdup("fneg\n");
+			break;
+		case TYPE_DOUBLE:
+			new_node->content = strdup("dneg\n");
+			break;
+	}
+
+	v1->code_index->next = new_node;
+	v1->code_index = new_node;
+
+}
+
+	
+void code_load_val(const_val *v1)
+{
+	output_list *new_node = NEW_VAL(output_list);
+	new_node->next = NULL;
+	if( v1->kind == KIND_CONST_VAL )
+	{
+		new_node->content = strdup("ldc");
+		char num[200];
+		switch(v1->type)
+		{
+			case TYPE_INT:
+				sprintf(num," %d",*(int*)v1->value);
+				new_node->content = mergestring(new_node->content,num);
+				break;
+			case TYPE_FLOAT:
+				new_node->content = mergestring(new_node->content," \"");
+				new_node->content = mergestring(new_node->content,(char*)v1->value);
+				new_node->content = mergestring(new_node->content,"\"");
+
+				new_node->content = mergestring(new_node->content,"\ninvokestatic java/lang/Float/parseFloat(Ljava/lang/String;)F");
+				break;
+			case TYPE_DOUBLE:
+				new_node->content = mergestring(new_node->content," \"");
+				new_node->content = mergestring(new_node->content,(char*)v1->value);
+				new_node->content = mergestring(new_node->content,"\"");
+
+				new_node->content = mergestring(new_node->content,"\ninvokestatic java/lang/Double/parseDouble(Ljava/lang/String;)D");
+				break;
+			case TYPE_STRING:
+				new_node->content = mergestring(new_node->content," \"");
+				new_node->content = mergestring(new_node->content,(char*)v1->value);
+				new_node->content = mergestring(new_node->content,"\"");
+				break;
+			case TYPE_BOOL:
+				if(strcmp(v1->value,"true")==0)
+					sprintf(num," %d",1);
+				else
+					sprintf(num," %d",0);
+				new_node->content = mergestring(new_node->content,num);
+				break;
+		}
+	}
+	new_node->content = mergestring(new_node->content,"\n");
+
+	v1->code_head = new_node;
+	v1->code_index = new_node;
+
+}
+
+void code_change_type(const_val* v1, const_val *v2, const_val *output)
+{
+		output_list *new_node = NEW_VAL(output_list);
+		new_node->content = strdup("");
+		new_node->next = NULL;
+
+		if(v1->type!=output->type)
+		{
+			if(v1->type == TYPE_INT)
+				new_node->content = strdup("i2");
+			if(v1->type == TYPE_FLOAT)
+				new_node->content = strdup("f2");
+			
+			if(output->type == TYPE_DOUBLE)
+				new_node->content = mergestring(new_node->content,"d\n");
+			else if(output->type == TYPE_FLOAT)
+				new_node->content = mergestring(new_node->content,"f\n");
+			v1->code_index->next = new_node;
+			v1->code_index = new_node;
+		}
+
+		new_node = NEW_VAL(output_list);
+		new_node->content = strdup("");
+		new_node->next = NULL;
+
+		if(v2->type!=output->type)
+		{
+			if(v2->type == TYPE_INT)
+				new_node->content = strdup("i2");
+			if(v2->type == TYPE_FLOAT)
+				new_node->content = strdup("f2");
+
+			if(output->type == TYPE_DOUBLE)
+				new_node->content = mergestring(new_node->content,"d\n");
+			else if(output->type == TYPE_FLOAT)
+				new_node->content = mergestring(new_node->content,"f\n");
+			v2->code_index->next = new_node;
+			v2->code_index = new_node;
+			
+		}
+}
 
 void code_final()
 {

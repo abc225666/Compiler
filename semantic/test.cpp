@@ -7,11 +7,8 @@ int c= a;
 
 int main()
 {
-	char *num = strdup("1e+5");
-	char output[200];
-	float a = atof(num);
-	sprintf(output,"%f",a);
-	printf("%s\n",output);
+	char *num = strdup("1e+5\naaa");
+	printf("%s",num);
 	return 0;
 }
 
