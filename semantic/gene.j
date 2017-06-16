@@ -9,14 +9,8 @@ ldc 5
 .end method
 .method public static _first()I
 .limit stack 0
-.limit locals 3
+.limit locals 1
 ldc 5
-dload 2
+istore 1
 ldc 1
-i2d
-dadd
-getstatic demo/glo I
-i2d
-dadd
-ldc 0
 .end method

@@ -53,6 +53,16 @@ typedef enum
 	RETURN_NO,
 }	enum_return;
 
+typedef enum
+{
+	CMP_EQ,
+	CMP_NE,
+	CMP_LE,
+	CMP_LT,
+	CMP_GE,
+	CMP_GT,
+	CMP_NOT
+} emun_cmp;
 
 typedef enum
 {
@@ -113,6 +123,7 @@ typedef struct S_const_val
 	int kind;
 	int type;
 	void* value;
+
 	output_list* code_head;
 	output_list* code_index;
 } const_val;
@@ -192,6 +203,8 @@ void add_newtable_with_argu(char* name);
 void dump_cur_table();
 void pop_cur_table();
 void dump_error(int error);
+void equal_type_check(const_val* con,const_val* exp);
+void init_type_check(int type1,int type2);
 
 int find_redclair(char* name);
 
@@ -221,6 +234,8 @@ int output_stack = 0;
 int output_oper = 0;
 int output_cur_position = 1;
 
+int label = 0;
+
 void gene_init_code();
 void code_gvar(char* name, int type);
 void code_final();
@@ -230,12 +245,20 @@ void code_calculate(const_val*output,const_val* v1, const_val *v2,int cal_type);
 void code_go_minus(const_val* v1);
 void code_load_val(const_val* v1);
 void code_dump_expr(const_val* v1);
-void code_change_type(const_val *output, const_val *v1, const_val *v2);
+void code_change_type(const_val *v1, const_val *v2, int type);
 void code_merge_expr(const_val *output, const_val *v1, const_val *v2);
+void code_store_val(char* name);
+void code_single_change_type(const_val* v1, int type);
+void code_find_max_type(const_val *v1,const_val *v2);
+void code_cmp(const_val* output,const_val* v1,const_val* v2,int cmp);
+char *code_cmp_label(int cmp);
 void f_output_cur_init();
 void f_output_stack_add(int type);
 char* f_get_type(int type);
+char* f_get_s_type(int type);
 int f_type_need(int type);
+
+void f_assign_by_const_val(const_val*);
 
 
 
@@ -281,7 +304,7 @@ int yylex();
 %type <v> int_value float_value string_value bool_value
 %type <v> liter_const value_type 
 %type <v> argu argu_list 
-%type <v> expr expr_list func_invo var_ref simple_stat
+%type <v> expr expr_list func_invo var_ref simple_stat bool_expr
 %type <c_type> var_list basic void_reduce const_list gvar_list gconst_list
 
 %type <return_type> for_stat while_stat jump_stat condition statement compound_list compound compound_in_argu_func
@@ -319,10 +342,6 @@ gvar_all_def
 | gvar_all_def func_decl
 | gvar_def
 | func_decl
-;
-
-var_all_def
-: var_def
 ;
 
 gvar_def
@@ -421,11 +440,13 @@ gvar_def
 
 		if(result==NO_ERROR)
 		{
+			init_type_check(p->type,get_const->type);
 			add_id($4,(void*)p);
 			code_gvar($4,$2);
 		}
 		else
 			dump_error(result);
+
 	}
 | CONST basic  ID '=' liter_const ';' 
 	{
@@ -441,6 +462,7 @@ gvar_def
 
 		if(result==NO_ERROR)
 		{
+			init_type_check(p->type,get_const->type);
 			add_id($3,(void*)p);
 			code_gvar($3,$2);
 		}
@@ -551,6 +573,7 @@ gconst_list
 
 		if(result==NO_ERROR)
 		{
+			init_type_check(p->type,get_const->type);
 			add_id($2,(void*)p);
 			code_gvar($2,$<c_type>0);
 		}
@@ -572,6 +595,7 @@ gconst_list
 
 		if(result==NO_ERROR)
 		{
+			init_type_check(p->type,get_const->type);
 			add_id($1,(void*)p);
 			code_gvar($1,$<c_type>0);
 		}
@@ -618,12 +642,19 @@ var_def
 		{
 			add_id($3,(void*)p);
 			f_output_stack_add($1);
-			
+
+			const_val *exp = (const_val*)$5;
+			init_type_check(p->type,exp->type);
 		}
 		else
 			dump_error(result);
+
+
 		const_val *con = (const_val*)$5;
+		code_single_change_type(con,p->type);
 		code_dump_expr(con);
+
+		code_store_val($3);
 	}
 | basic ID ';'
 	{
@@ -661,12 +692,20 @@ var_def
 		{
 			add_id($2,(void*)p);
 			f_output_stack_add($1);
+
+			const_val *exp = (const_val*)$4;
+			init_type_check(p->type,exp->type);
+
+
+
 		}
 		else
 			dump_error(result);
 
 		const_val *con = (const_val*)$4;
+		code_single_change_type(con,p->type);
 		code_dump_expr(con);
+		code_store_val($2);
 	}
 
 | CONST basic const_list ID '=' liter_const ';' 
@@ -681,7 +720,10 @@ var_def
 		int result= find_redclair($4);
 
 		if(result==NO_ERROR)
+		{
+			init_type_check(p->type,get_const->type);
 			add_id($4,(void*)p);
+		}
 		else
 			dump_error(result);
 	}
@@ -698,7 +740,10 @@ var_def
 		int result= find_redclair($3);
 
 		if(result==NO_ERROR)
+		{
+			init_type_check(p->type,get_const->type);
 			add_id($3,(void*)p);
+		}
 		else
 			dump_error(result);
 	}
@@ -998,14 +1043,18 @@ compound_in_argu_func
 	}
 | %empty
 	{
+
 		$$ = RETURN_NO;
 	}
 ;
 
 compound_list
-: compound_list var_all_def
+: compound_list var_def
 	{
+		
+		
 		$$ = $1;
+
 	}
 | compound_list statement
 	{
@@ -1013,12 +1062,13 @@ compound_list
 			$$ = RETURN_YES;
 		else
 			$$ = RETURN_NO;
+
 	}
 | statement
 	{
 		$$ = $1;
 	}
-| var_all_def 
+| var_def
 	{
 		$$ = RETURN_NO;
 	}
@@ -1419,11 +1469,18 @@ var_list
 		{
 			add_id($2,(void*)p);
 			f_output_stack_add($<c_type>0);
+
+			const_val *exp = (const_val*)$4;
+			init_type_check(p->type,exp->type);
+
+			
 		}
 		else
 			dump_error(result);
 		const_val *con = (const_val*)$4;
+		code_single_change_type(con,p->type);
 		code_dump_expr(con);
+		code_store_val($2);
 	}
 | ID ','
 	{
@@ -1461,11 +1518,18 @@ var_list
 		{
 			add_id($1,(void*)p);
 			f_output_stack_add($<c_type>0);
+
+			const_val *exp = (const_val*)$3;
+			init_type_check(p->type,exp->type);
+
+
 		}
 		else
 			dump_error(result);
 		const_val *con = (const_val*)$3;
+		code_single_change_type(con,p->type);
 		code_dump_expr(con);
+		code_store_val($1);
 	}
 ;
 
@@ -1484,7 +1548,10 @@ const_list
 		int result= find_redclair($2);
 
 		if(result==NO_ERROR)
+		{
+			init_type_check(p->type,get_const->type);
 			add_id($2,(void*)p);
+		}
 		else
 			dump_error(result);
 	}
@@ -1502,7 +1569,10 @@ const_list
 		int result= find_redclair($1);
 
 		if(result==NO_ERROR)
+		{
+			init_type_check(p->type,get_const->type);
 			add_id($1,(void*)p);
+		}
 		else
 			dump_error(result);
 	}
@@ -1521,7 +1591,7 @@ expr
 			dump_error(ERROR_TYPE_ERROR);
 		}
 		output=geneValConst(v1,v2);
-		code_change_type(v1,v2,output);
+		code_change_type(v1,v2,output->type);
 		code_calculate(output,v1,v2,CAL_MULTI);
 		$$=(void*)output;
 	}
@@ -1537,7 +1607,7 @@ expr
 			dump_error(ERROR_TYPE_ERROR);
 		}
 		output=geneValConst(v1,v2);
-		code_change_type(v1,v2,output);
+		code_change_type(v1,v2,output->type);
 		code_calculate(output,v1,v2,CAL_DIV);
 		$$=(void*)output;
 	}
@@ -1551,7 +1621,7 @@ expr
 			dump_error(ERROR_TYPE_ERROR);
 		}
 		output=geneValConst(v1,v2);
-		code_change_type(v1,v2,output);
+		code_change_type(v1,v2,output->type);
 		code_calculate(output,v1,v2,CAL_PLUS);
 		$$=(void*)output;
 	}
@@ -1567,7 +1637,7 @@ expr
 			dump_error(ERROR_TYPE_ERROR);
 		}
 		output=geneValConst(v1,v2);
-		code_change_type(v1,v2,output);
+		code_change_type(v1,v2,output->type);
 		code_calculate(output,v1,v2,CAL_MINUS);
 		$$=(void*)output;
 	}
@@ -1583,7 +1653,7 @@ expr
 			dump_error(ERROR_TYPE_ERROR);
 		}
 		output=geneValConstOne(v1,v2,TYPE_INT);
-		code_change_type(v1,v2,output);
+		code_change_type(v1,v2,output->type);
 		code_calculate(output,v1,v2,CAL_MOD);
 		$$=(void*)output;
 	}
@@ -1599,6 +1669,8 @@ expr
 			dump_error(ERROR_TYPE_ERROR);
 		}
 		output=geneValConstOne(v1,v2,TYPE_BOOL);
+		code_find_max_type(v1,v2);
+		code_cmp(output,v1,v2,CMP_LT);
 		$$=(void*)output;
 	}
 | expr LE expr
@@ -1613,6 +1685,8 @@ expr
 			dump_error(ERROR_TYPE_ERROR);
 		}
 		output=geneValConstOne(v1,v2,TYPE_BOOL);
+		code_find_max_type(v1,v2);
+		code_cmp(output,v1,v2,CMP_LE);
 		$$=(void*)output;
 	}
 | expr '>' expr
@@ -1627,6 +1701,8 @@ expr
 			dump_error(ERROR_TYPE_ERROR);
 		}
 		output=geneValConstOne(v1,v2,TYPE_BOOL);
+		code_find_max_type(v1,v2);
+		code_cmp(output,v1,v2,CMP_GT);
 		$$=(void*)output;
 	}
 | expr GE expr
@@ -1641,6 +1717,8 @@ expr
 			dump_error(ERROR_TYPE_ERROR);
 		}
 		output=geneValConstOne(v1,v2,TYPE_BOOL);
+		code_find_max_type(v1,v2);
+		code_cmp(output,v1,v2,CMP_GE);
 		$$=(void*)output;
 	}
 | expr EQ expr
@@ -1656,6 +1734,8 @@ expr
 				dump_error(ERROR_TYPE_ERROR);
 		}
 		output=geneValConstOne(v1,v2,TYPE_BOOL);
+		code_find_max_type(v1,v2);
+		code_cmp(output,v1,v2,CMP_EQ);
 		$$=(void*)output;
 	}
 | expr NE expr
@@ -1671,6 +1751,8 @@ expr
 				dump_error(ERROR_TYPE_ERROR);
 		}
 		output=geneValConstOne(v1,v2,TYPE_BOOL);
+		code_find_max_type(v1,v2);
+		code_cmp(output,v1,v2,CMP_NE);
 		$$=(void*)output;
 	}
 | '(' expr ')'
@@ -1883,31 +1965,12 @@ simple_stat
 		const_val* con=(const_val*)$1;
 		const_val* exp=(const_val*)$3;
 
-		if(con->kind==KIND_CONST_VAL)
-			dump_error(ERROR_ASSIGN_CONST);
-		else
-		{
-			if(con->type!=exp->type)
-			{
-				if(con->type==TYPE_INT || con->type==TYPE_DOUBLE || con->type==TYPE_FLOAT)
-				{
-					if(exp->type==TYPE_INT || exp->type==TYPE_DOUBLE || exp->type==TYPE_FLOAT)
-					{
-						if(con->type<exp->type)
-							dump_error(ERROR_IDTYPE_NOT_MATCH);
-					}
-					else
-						dump_error(ERROR_IDTYPE_NOT_MATCH);
-				}
-				else
-					dump_error(ERROR_IDTYPE_NOT_MATCH);
-				
-			}
-			check_and_set_scalar(con);
-			check_and_set_scalar(exp);
-	
-		}
+		equal_type_check(con,exp);
+
+		code_single_change_type(exp,con->type);
 		code_dump_expr(exp);
+		code_store_val( ((invo_val*)con->value)->name );
+
 	}
 | PRINT expr ';'
 	{
@@ -1966,17 +2029,24 @@ var_ref
 
 
 condition
-: IF '(' bool_expr ')' compound
+: if_reduce compound
 	{
-		$$ = $5;
+		$$ = $2;
 	}
-| IF '(' bool_expr ')' compound ELSE compound
+| if_reduce compound ELSE compound
 	{
-		if($5==RETURN_YES && $7==RETURN_YES)
+		if($2==RETURN_YES && $4==RETURN_YES)
 			$$ = RETURN_YES;
 		else
 			$$ = RETURN_NO;
 	}
+;
+
+if_reduce
+: IF '(' bool_expr ')'
+{
+
+}
 ;
 
 bool_expr
@@ -1989,6 +2059,7 @@ bool_expr
 		{
 			check_and_set_scalar(con);
 		}
+		$$ = (void*)$1;
 	}
 ;
 
@@ -2023,15 +2094,11 @@ init_expr
 		const_val* con=(const_val*)$2;
 		const_val* exp=(const_val*)$4;
 
-		if(con->kind==KIND_CONST_VAL)
-			dump_error(ERROR_ASSIGN_CONST);
-		else
-		{
-			if(con->type!=exp->type)
-				dump_error(ERROR_IDTYPE_NOT_MATCH);
-			check_and_set_scalar(con);
-			check_and_set_scalar(exp);
-		}
+		equal_type_check(con,exp);
+
+		code_single_change_type(exp,con->type);
+		code_dump_expr(exp);
+		code_store_val( ((invo_val*)con->value)->name );
 	}
 | init_expr_list func_invo
 	{
@@ -2094,17 +2161,11 @@ init_expr
 		const_val* con=(const_val*)$1;
 		const_val* exp=(const_val*)$3;
 
-		if(con->kind==KIND_CONST_VAL)
-			dump_error(ERROR_ASSIGN_CONST);
-		else
-		{
-			if(con->type!=exp->type)
-				dump_error(ERROR_IDTYPE_NOT_MATCH);
-			check_and_set_scalar(con);
-			check_and_set_scalar(exp);
-		}
+		equal_type_check(con,exp);
 
+		code_single_change_type(exp,con->type);
 		code_dump_expr(exp);
+		code_store_val( ((invo_val*)con->value)->name );
 	}
 | %empty
 ;
@@ -2115,15 +2176,11 @@ init_expr_list
 		const_val* con=(const_val*)$2;
 		const_val* exp=(const_val*)$4;
 
-		if(con->kind==KIND_CONST_VAL)
-			dump_error(ERROR_ASSIGN_CONST);
-		else
-		{
-			if(con->type!=exp->type)
-				dump_error(ERROR_IDTYPE_NOT_MATCH);
-			check_and_set_scalar(con);
-			check_and_set_scalar(exp);
-		}
+		equal_type_check(con,exp);
+
+		code_single_change_type(exp,con->type);
+		code_dump_expr(exp);
+		code_store_val( ((invo_val*)con->value)->name );
 	}
 | init_expr_list func_invo ','
 	{
@@ -2186,17 +2243,11 @@ init_expr_list
 		const_val* con=(const_val*)$1;
 		const_val* exp=(const_val*)$3;
 
-		if(con->kind==KIND_CONST_VAL)
-			dump_error(ERROR_ASSIGN_CONST);
-		else
-		{
-			if(con->type!=exp->type)
-				dump_error(ERROR_IDTYPE_NOT_MATCH);
-			check_and_set_scalar(con);
-			check_and_set_scalar(exp);
-		}
+		equal_type_check(con,exp);
 
+		code_single_change_type(exp,con->type);
 		code_dump_expr(exp);
+		code_store_val( ((invo_val*)con->value)->name );
 	}
 ;
 
@@ -2208,15 +2259,11 @@ incr_expr
 		const_val* con=(const_val*)$2;
 		const_val* exp=(const_val*)$4;
 
-		if(con->kind==KIND_CONST_VAL)
-			dump_error(ERROR_ASSIGN_CONST);
-		else
-		{
-			if(con->type!=exp->type)
-				dump_error(ERROR_IDTYPE_NOT_MATCH);
-			check_and_set_scalar(con);
-			check_and_set_scalar(exp);
-		}
+		equal_type_check(con,exp);
+
+		code_single_change_type(exp,con->type);
+		code_dump_expr(exp);
+		code_store_val( ((invo_val*)con->value)->name );
 	}
 | incr_expr_list func_invo
 	{
@@ -2251,17 +2298,11 @@ incr_expr
 		const_val* con=(const_val*)$1;
 		const_val* exp=(const_val*)$3;
 
-		if(con->kind==KIND_CONST_VAL)
-			dump_error(ERROR_ASSIGN_CONST);
-		else
-		{
-			if(con->type!=exp->type)
-				dump_error(ERROR_IDTYPE_NOT_MATCH);
-			check_and_set_scalar(con);
-			check_and_set_scalar(exp);
-		}
+		equal_type_check(con,exp);
 
+		code_single_change_type(exp,con->type);
 		code_dump_expr(exp);
+		code_store_val( ((invo_val*)con->value)->name );
 	}
 | func_invo
 	{
@@ -2300,15 +2341,11 @@ incr_expr_list
 		const_val* con=(const_val*)$2;
 		const_val* exp=(const_val*)$4;
 
-		if(con->kind==KIND_CONST_VAL)
-			dump_error(ERROR_ASSIGN_CONST);
-		else
-		{
-			if(con->type!=exp->type)
-				dump_error(ERROR_IDTYPE_NOT_MATCH);
-			check_and_set_scalar(con);
-			check_and_set_scalar(exp);
-		}
+		equal_type_check(con,exp);
+
+		code_single_change_type(exp,con->type);
+		code_dump_expr(exp);
+		code_store_val( ((invo_val*)con->value)->name );
 	}
 | incr_expr_list func_invo ','
 	{
@@ -2343,17 +2380,11 @@ incr_expr_list
 		const_val* con=(const_val*)$1;
 		const_val* exp=(const_val*)$3;
 
-		if(con->kind==KIND_CONST_VAL)
-			dump_error(ERROR_ASSIGN_CONST);
-		else
-		{
-			if(con->type!=exp->type)
-				dump_error(ERROR_IDTYPE_NOT_MATCH);
-			check_and_set_scalar(con);
-			check_and_set_scalar(exp);
-		}
+		equal_type_check(con,exp);
 
+		code_single_change_type(exp,con->type);
 		code_dump_expr(exp);
+		code_store_val( ((invo_val*)con->value)->name );
 	}
 | func_invo
 	{
@@ -2433,6 +2464,56 @@ jump_stat
 
 
 %%
+
+void init_type_check(int type1,int type2)
+{
+
+	if(type1!=type2)
+	{
+		if(type1==TYPE_INT || type1==TYPE_DOUBLE || type1==TYPE_FLOAT)
+		{
+			if(type2==TYPE_INT || type2==TYPE_DOUBLE || type2==TYPE_FLOAT)
+			{
+				if(type1<type2)
+					dump_error(ERROR_IDTYPE_NOT_MATCH);
+			}
+			else
+				dump_error(ERROR_IDTYPE_NOT_MATCH);
+		}
+		else
+			dump_error(ERROR_IDTYPE_NOT_MATCH);
+		
+	}
+	
+}
+
+void equal_type_check(const_val* con,const_val *exp)
+{
+	if(con->kind==KIND_CONST_VAL)
+		dump_error(ERROR_ASSIGN_CONST);
+	else
+	{
+		if(con->type!=exp->type)
+		{
+			if(con->type==TYPE_INT || con->type==TYPE_DOUBLE || con->type==TYPE_FLOAT)
+			{
+				if(exp->type==TYPE_INT || exp->type==TYPE_DOUBLE || exp->type==TYPE_FLOAT)
+				{
+					if(con->type<exp->type)
+						dump_error(ERROR_IDTYPE_NOT_MATCH);
+				}
+				else
+					dump_error(ERROR_IDTYPE_NOT_MATCH);
+			}
+			else
+				dump_error(ERROR_IDTYPE_NOT_MATCH);
+			
+		}
+		check_and_set_scalar(con);
+		check_and_set_scalar(exp);
+
+	}
+}
 
 int check_parameter(symbol_list* list, invo_val* invo)
 {
@@ -3460,6 +3541,60 @@ void code_calculate(const_val *output,const_val *v1, const_val *v2, int cal_type
 	output->code_index = new_node;
 }
 
+void code_cmp(const_val *output,const_val *v1,const_val *v2, int cmp)
+{
+	int cur_type = (v1->type>v2->type)?(v1->type):(v2->type);
+	code_merge_expr(output,v1,v2);
+	output_list *new_node = NEW_VAL(output_list);
+	new_node->next = NULL;
+	new_node->content = strdup("");
+	char c_out[1000];
+	if( cur_type==TYPE_INT || cur_type == TYPE_BOOL)
+	{
+		sprintf(c_out,"if_icmp%s TRUE_%d\nbipush 0\ngoto END_%d\nTRUE_%d:\nbipush 1\nEND_%d:\n",code_cmp_label(cmp),label,label,label,label);
+		new_node->content = mergestring(new_node->content,c_out);
+	}
+	else
+	{
+		sprintf(c_out,"%scmpg\nif%s TRUE_%d\nbipush 0\ngoto END_%d\nTRUE_%d:\nbipush 1\nEND_%d:\n",f_get_s_type(cur_type),code_cmp_label(cmp)
+			,label,label,label,label);
+		new_node->content = mergestring(new_node->content,c_out);
+	}
+	label++;
+
+	output->code_index->next = new_node;
+	output->code_index = new_node;
+	
+}
+
+char *code_cmp_label(int cmp)
+{
+	char *ans;
+	switch(cmp)
+	{
+		case CMP_EQ:
+			ans = strdup("eq");
+			break;
+		case CMP_NE:
+			ans = strdup("ne");
+			break;
+		case CMP_LT:
+			ans = strdup("lt");
+			break;
+		case CMP_LE:
+			ans = strdup("le");
+			break;
+		case CMP_GT:
+			ans = strdup("gt");
+			break;
+		case CMP_GE:
+			ans = strdup("ge");
+			break;
+
+	}
+	return ans;
+}
+
 
 void code_merge_expr(const_val *output, const_val *v1, const_val *v2)
 {
@@ -3580,20 +3715,8 @@ void code_load_val(const_val *v1)
 		}
 		else
 		{
-
-			switch(v1->type)
-			{
-				case TYPE_INT:
-				case TYPE_BOOL:
-					new_node->content = strdup("iload ");
-					break;
-				case TYPE_FLOAT:
-					new_node->content = strdup("fload ");
-					break;
-				case TYPE_DOUBLE:
-					new_node->content = strdup("dload ");
-					break;
-			}
+			new_node->content = f_get_s_type(v1->type);
+			new_node->content = mergestring(new_node->content,"load ");
 			char num[200];
 			sprintf(num,"%d",f_id->cur_index);
 			new_node->content = mergestring(new_node->content,num);
@@ -3607,47 +3730,119 @@ void code_load_val(const_val *v1)
 
 }
 
-void code_change_type(const_val* v1, const_val *v2, const_val *output)
+void code_store_val(char* name)
 {
-		output_list *new_node = NEW_VAL(output_list);
-		new_node->content = strdup("");
-		new_node->next = NULL;
+	output_list *new_node = NEW_VAL(output_list);
+	new_node->next = NULL;
+	new_node->content = strdup("");
 
-		if(v1->type!=output->type)
-		{
-			if(v1->type == TYPE_INT)
-				new_node->content = strdup("i2");
-			if(v1->type == TYPE_FLOAT)
-				new_node->content = strdup("f2");
-			
-			if(output->type == TYPE_DOUBLE)
-				new_node->content = mergestring(new_node->content,"d\n");
-			else if(output->type == TYPE_FLOAT)
-				new_node->content = mergestring(new_node->content,"f\n");
-			v1->code_index->next = new_node;
-			v1->code_index = new_node;
-		}
+	symbol_list *f_id = find_symbol(name, 0);
+	
+	if(f_id==NULL) return;
 
-		new_node = NEW_VAL(output_list);
-		new_node->content = strdup("");
-		new_node->next = NULL;
+	id_val *id = (id_val*)f_id->val;
+	if(f_id->cur_index == -1) //global
+	{
+		new_node->content = strdup("putstatic demo/");
+		new_node->content = mergestring(new_node->content,name);
+		new_node->content = mergestring(new_node->content," ");
+		new_node->content = mergestring(new_node->content,f_get_type(id->type));
+	}
+	else
+	{
+		new_node->content = f_get_s_type(id->type);
+		new_node->content = mergestring(new_node->content,"store ");
+		char num[200];
+		sprintf(num,"%d",f_id->cur_index);
+		new_node->content = mergestring(new_node->content,num);
+	}
 
-		if(v2->type!=output->type)
-		{
-			if(v2->type == TYPE_INT)
-				new_node->content = strdup("i2");
-			if(v2->type == TYPE_FLOAT)
-				new_node->content = strdup("f2");
+	new_node->content = mergestring(new_node->content,"\n");
+	
 
-			if(output->type == TYPE_DOUBLE)
-				new_node->content = mergestring(new_node->content,"d\n");
-			else if(output->type == TYPE_FLOAT)
-				new_node->content = mergestring(new_node->content,"f\n");
-			v2->code_index->next = new_node;
-			v2->code_index = new_node;
-			
-		}
+	output_cur_index->next = new_node;
+	output_cur_index = new_node;
 }
+
+void code_single_change_type(const_val *v1,int type)
+{
+	output_list *new_node = NEW_VAL(output_list);
+	new_node->content = strdup("");
+	new_node->next = NULL;
+
+	if(v1->type!=type)
+	{
+		if(v1->type == TYPE_INT)
+			new_node->content = strdup("i2");
+		if(v1->type == TYPE_FLOAT)
+			new_node->content = strdup("f2");
+		
+		if(type == TYPE_DOUBLE)
+			new_node->content = mergestring(new_node->content,"d\n");
+		else if(type == TYPE_FLOAT)
+			new_node->content = mergestring(new_node->content,"f\n");
+		v1->code_index->next = new_node;
+		v1->code_index = new_node;
+	}
+
+	new_node = NEW_VAL(output_list);
+	new_node->content = strdup("");
+	new_node->next = NULL;
+
+}
+
+void code_change_type(const_val* v1, const_val *v2, int type)
+{
+	output_list *new_node = NEW_VAL(output_list);
+	new_node->content = strdup("");
+	new_node->next = NULL;
+
+	if(v1->type!=type)
+	{
+		if(v1->type == TYPE_INT)
+			new_node->content = strdup("i2");
+		if(v1->type == TYPE_FLOAT)
+			new_node->content = strdup("f2");
+		
+		if(type == TYPE_DOUBLE)
+			new_node->content = mergestring(new_node->content,"d\n");
+		else if(type == TYPE_FLOAT)
+			new_node->content = mergestring(new_node->content,"f\n");
+		v1->code_index->next = new_node;
+		v1->code_index = new_node;
+	}
+
+	new_node = NEW_VAL(output_list);
+	new_node->content = strdup("");
+	new_node->next = NULL;
+
+	if(v2->type!=type)
+	{
+		if(v2->type == TYPE_INT)
+			new_node->content = strdup("i2");
+		if(v2->type == TYPE_FLOAT)
+			new_node->content = strdup("f2");
+
+		if(type == TYPE_DOUBLE)
+			new_node->content = mergestring(new_node->content,"d\n");
+		else if(type == TYPE_FLOAT)
+			new_node->content = mergestring(new_node->content,"f\n");
+		v2->code_index->next = new_node;
+		v2->code_index = new_node;
+		
+	}
+}
+
+void code_find_max_type(const_val* v1, const_val* v2)
+{
+	int cur_type;
+	if(v1->type <= TYPE_DOUBLE && v2->type <= TYPE_DOUBLE)
+	{
+		cur_type = (v1->type>v2->type) ? (v1->type): (v2->type);
+		code_change_type(v1,v2,cur_type);
+	}
+}
+
 
 void code_final()
 {
@@ -3706,6 +3901,24 @@ int f_type_need(int type)
 		case TYPE_DOUBLE:
 			return 2;
 	}
+}
+
+char* f_get_s_type(int type)
+{
+	char* ans = NULL;
+	switch(type)
+	{
+		case TYPE_INT:
+		case TYPE_BOOL:
+			ans = strdup("i");
+			break;
+		case TYPE_DOUBLE:
+			ans = strdup("d");
+			break;
+		case TYPE_FLOAT:
+			ans = strdup("f");
+	}
+	return ans;
 }
 
 char* f_get_type(int type)
