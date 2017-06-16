@@ -1748,6 +1748,7 @@ expr
 
 		symbol_list* sym=find_symbol(p->name,1);
 
+
 		const_val *q=NEW_VAL(const_val);
 		q->kind=KIND_RVAL;
 		q->type=TYPE_INT;
@@ -1770,9 +1771,11 @@ expr
 				q->kind=KIND_RVAL;
 				q->value= (void*)p;
 			}
+
+			code_load_val(q);
 		}
 
-		code_load_val(q);
+		
 		$$ = (void*)q;
 	}
 | func_invo
@@ -3172,6 +3175,8 @@ void add_id(char* name, void* my_val)
 		cur_table->s_index->cur_index = output_cur_position;
 		output_cur_position += f_type_need(id_in->type);
 	}
+	else
+		cur_table->s_index->cur_index = -1;
 }
 
 void dump_error(int error)
@@ -3561,8 +3566,38 @@ void code_load_val(const_val *v1)
 				break;
 		}
 	}
-	if( v1->kind == KIND_LVAL)
+	if( v1->kind == KIND_RVAL)
 	{
+		invo_val *id_info = (invo_val*)v1->value;
+		symbol_list *f_id = find_symbol(id_info->name,0);
+
+		if(f_id->cur_index==-1) //global
+		{
+			new_node->content = strdup("getstatic demo/");
+			new_node->content = mergestring(new_node->content,id_info->name);
+			new_node->content = mergestring(new_node->content," ");
+			new_node->content = mergestring(new_node->content,f_get_type(v1->type));
+		}
+		else
+		{
+
+			switch(v1->type)
+			{
+				case TYPE_INT:
+				case TYPE_BOOL:
+					new_node->content = strdup("iload ");
+					break;
+				case TYPE_FLOAT:
+					new_node->content = strdup("fload ");
+					break;
+				case TYPE_DOUBLE:
+					new_node->content = strdup("dload ");
+					break;
+			}
+			char num[200];
+			sprintf(num,"%d",f_id->cur_index);
+			new_node->content = mergestring(new_node->content,num);
+		}
 
 	}
 	new_node->content = mergestring(new_node->content,"\n");

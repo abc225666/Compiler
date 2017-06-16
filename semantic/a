@@ -3,12 +3,17 @@
 #pragma symbol on
 #pragma statistic off
 
+int glo;
+
+int g()
+{
+	return 5;
+}
 int first()
 {
-	const float f = 1.1;
-	const double x = 2.6;
-	double t;
-	x*1.6+t;
+	int ii;
+	double a=5;
+	a+1+glo;
 	return 0;
 
 }
