@@ -622,6 +622,8 @@ var_def
 		}
 		else
 			dump_error(result);
+		const_val *con = (const_val*)$5;
+		code_dump_expr(con);
 	}
 | basic ID ';'
 	{
@@ -662,6 +664,9 @@ var_def
 		}
 		else
 			dump_error(result);
+
+		const_val *con = (const_val*)$4;
+		code_dump_expr(con);
 	}
 
 | CONST basic const_list ID '=' liter_const ';' 
@@ -687,8 +692,8 @@ var_def
 		p->type = $2;
 
 		id_val *get_const=(id_val*)$5;
-		p->list = get_const->list;
 
+		p->list = get_const->list;
 
 		int result= find_redclair($3);
 
@@ -1272,8 +1277,10 @@ liter_const
 		id_val* p = NEW_VAL(id_val);
 		p->kind=KIND_CONSTANT;
 		p->type=in->type;
-		p->list=in->value;
-		*(double*)p->list= -*((double*)p->list);
+
+		char *str = strdup("-");
+		p->list=(void*)mergestring(str,(char*)in->value);
+		
 		$$ = (void*)p;
 	}
 | bool_value
@@ -1415,6 +1422,8 @@ var_list
 		}
 		else
 			dump_error(result);
+		const_val *con = (const_val*)$4;
+		code_dump_expr(con);
 	}
 | ID ','
 	{
@@ -1455,6 +1464,8 @@ var_list
 		}
 		else
 			dump_error(result);
+		const_val *con = (const_val*)$3;
+		code_dump_expr(con);
 	}
 ;
 
@@ -1526,6 +1537,8 @@ expr
 			dump_error(ERROR_TYPE_ERROR);
 		}
 		output=geneValConst(v1,v2);
+		code_change_type(v1,v2,output);
+		code_calculate(output,v1,v2,CAL_DIV);
 		$$=(void*)output;
 	}
 | expr '+' expr
@@ -1533,13 +1546,13 @@ expr
 		const_val *v1=(const_val*)$1;
 		const_val *v2=(const_val*)$3;
 		const_val *output;
-		check_and_set_scalar(v1);
-		check_and_set_scalar(v2);
 		if(!check_type_three(v1,v2))
 		{
 			dump_error(ERROR_TYPE_ERROR);
 		}
 		output=geneValConst(v1,v2);
+		code_change_type(v1,v2,output);
+		code_calculate(output,v1,v2,CAL_PLUS);
 		$$=(void*)output;
 	}
 | expr '-' expr
@@ -1554,6 +1567,8 @@ expr
 			dump_error(ERROR_TYPE_ERROR);
 		}
 		output=geneValConst(v1,v2);
+		code_change_type(v1,v2,output);
+		code_calculate(output,v1,v2,CAL_MINUS);
 		$$=(void*)output;
 	}
 | expr '%' expr
@@ -1568,6 +1583,8 @@ expr
 			dump_error(ERROR_TYPE_ERROR);
 		}
 		output=geneValConstOne(v1,v2,TYPE_INT);
+		code_change_type(v1,v2,output);
+		code_calculate(output,v1,v2,CAL_MOD);
 		$$=(void*)output;
 	}
 | expr '<' expr 
@@ -1885,12 +1902,16 @@ simple_stat
 			}
 			check_and_set_scalar(con);
 			check_and_set_scalar(exp);
+	
 		}
+		code_dump_expr(exp);
 	}
 | PRINT expr ';'
 	{
 		const_val* con=(const_val*)$2;
 		check_and_set_scalar(con);
+
+		code_dump_expr(con);
 		
 	}
 | READ var_ref ';'
@@ -2079,6 +2100,8 @@ init_expr
 			check_and_set_scalar(con);
 			check_and_set_scalar(exp);
 		}
+
+		code_dump_expr(exp);
 	}
 | %empty
 ;
@@ -2169,6 +2192,8 @@ init_expr_list
 			check_and_set_scalar(con);
 			check_and_set_scalar(exp);
 		}
+
+		code_dump_expr(exp);
 	}
 ;
 
@@ -2232,6 +2257,8 @@ incr_expr
 			check_and_set_scalar(con);
 			check_and_set_scalar(exp);
 		}
+
+		code_dump_expr(exp);
 	}
 | func_invo
 	{
@@ -2322,6 +2349,8 @@ incr_expr_list
 			check_and_set_scalar(con);
 			check_and_set_scalar(exp);
 		}
+
+		code_dump_expr(exp);
 	}
 | func_invo
 	{
@@ -2376,6 +2405,8 @@ jump_stat
 			dump_error(ERROR_RETURN_IN_VOID);
 		else if(!check_func_change(func_type,exp->type))
 			dump_error(ERROR_RETURN_TYPE);
+
+		code_dump_expr(exp);
 
 		$$ = RETURN_YES;
 
@@ -2917,13 +2948,13 @@ void dump_cur_table()
  			switch(pr->type)
  			{
  				case TYPE_FLOAT:
- 					printf("%-24f",*(float*)pr->list);
+ 					printf("%-24s",(char*)pr->list);
  					break;
  				case TYPE_INT:
  					printf("%-24d",*(int*)pr->list);
  					break;
  				case TYPE_DOUBLE:
- 					printf("%-24f",*(double*)pr->list);
+ 					printf("%-24s",(char*)pr->list);
  					break;
  				case TYPE_BOOL:
  					printf("%-24s",(char*)pr->list);
@@ -3383,15 +3414,47 @@ void code_cur_func_end()
 
 void code_calculate(const_val *output,const_val *v1, const_val *v2, int cal_type)
 {	
-	output_list *new_node = NEW_VAL(output_list);
-	new_node->next = NULL;
+	code_merge_expr(output,v1,v2);
+	char *oper = strdup("");
+	switch(output->type)
+	{
+		case TYPE_INT:
+			oper = strdup("i");
+			break;
+		case TYPE_FLOAT:
+			oper = strdup("f");
+			break;
+		case TYPE_DOUBLE:
+			oper = strdup("d");
+			break;
+	}
 	switch(cal_type)
 	{
 		case CAL_MULTI:
-			code_merge_expr(output,v1,v2);
+			oper = mergestring(oper,"mul\n");
+			break;
+		case CAL_PLUS:
+			oper = mergestring(oper,"add\n");
+			break;
+		case CAL_MINUS:
+			oper = mergestring(oper,"sub\n");
+			break;
+		case CAL_DIV:
+			oper = mergestring(oper,"div\n");
+			break;
+		case CAL_MOD:
+			oper = mergestring(oper,"rem\n");
 			break;
 	}
+
+	output_list *new_node = NEW_VAL(output_list);
+	new_node->next = NULL;
+	new_node->content = oper;
+
+	output->code_index->next = new_node;
+	output->code_index = new_node;
 }
+
 
 void code_merge_expr(const_val *output, const_val *v1, const_val *v2)
 {
@@ -3459,6 +3522,7 @@ void code_load_val(const_val *v1)
 {
 	output_list *new_node = NEW_VAL(output_list);
 	new_node->next = NULL;
+	new_node->content = strdup("");
 	if( v1->kind == KIND_CONST_VAL )
 	{
 		new_node->content = strdup("ldc");
@@ -3496,6 +3560,10 @@ void code_load_val(const_val *v1)
 				new_node->content = mergestring(new_node->content,num);
 				break;
 		}
+	}
+	if( v1->kind == KIND_LVAL)
+	{
+
 	}
 	new_node->content = mergestring(new_node->content,"\n");
 
