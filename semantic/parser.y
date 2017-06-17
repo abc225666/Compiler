@@ -123,7 +123,8 @@ typedef struct S_const_val
 	int kind;
 	int type;
 	void* value;
-
+	int basic_val;
+	int return_val;
 	output_list* code_head;
 	output_list* code_index;
 } const_val;
@@ -247,7 +248,7 @@ void code_load_val(const_val* v1);
 void code_dump_expr(const_val* v1);
 void code_change_type(const_val *v1, const_val *v2, int type);
 void code_merge_expr(const_val *output, const_val *v1, const_val *v2);
-void code_store_val(char* name);
+void code_store_val(char* name,const_val*v1);
 void code_single_change_type(const_val* v1, int type);
 void code_find_max_type(const_val *v1,const_val *v2);
 void code_cmp(const_val* output,const_val* v1,const_val* v2,int cmp);
@@ -305,9 +306,10 @@ int yylex();
 %type <v> liter_const value_type 
 %type <v> argu argu_list 
 %type <v> expr expr_list func_invo var_ref simple_stat bool_expr
-%type <c_type> var_list basic void_reduce const_list gvar_list gconst_list
+%type <c_type> basic void_reduce const_list gvar_list gconst_list
 
-%type <return_type> for_stat while_stat jump_stat condition statement compound_list compound compound_in_argu_func
+%type <v> var_list var_def compound_list init_expr init_expr_list incr_expr incr_expr_list
+%type <v> for_stat while_stat jump_stat condition statement compound compound_in_argu_func
 
 %left OR
 %left AND
@@ -625,6 +627,9 @@ var_def
 		}
 		else
 			dump_error(result);
+
+
+		$$ = $2;
 	}
 | basic var_list ID '=' expr ';'
 	{
@@ -651,10 +656,13 @@ var_def
 
 
 		const_val *con = (const_val*)$5;
+		const_val *rev = (const_val*)$2;
 		code_single_change_type(con,p->type);
-		code_dump_expr(con);
+		//code_dump_expr(con);
+		code_store_val($3,con);
+		code_merge_expr(rev,rev,con);
 
-		code_store_val($3);
+		$$ = (void*)rev;
 	}
 | basic ID ';'
 	{
@@ -675,6 +683,15 @@ var_def
 		}
 		else
 			dump_error(result);
+
+		const_val *con  = NEW_VAL(const_val);
+		output_list *new_node = NEW_VAL(output_list);
+		new_node->next = NULL;
+		new_node->content = strdup("");
+		con->code_head = new_node;
+		con->code_index = new_node;
+
+		$$ = (void*)con;
 	}
 | basic ID '=' expr ';'
 	{
@@ -695,17 +712,16 @@ var_def
 
 			const_val *exp = (const_val*)$4;
 			init_type_check(p->type,exp->type);
-
-
-
 		}
 		else
 			dump_error(result);
 
 		const_val *con = (const_val*)$4;
 		code_single_change_type(con,p->type);
-		code_dump_expr(con);
-		code_store_val($2);
+		//code_dump_expr(con);
+		code_store_val($2,con);
+
+		$$ = (void*)con;
 	}
 
 | CONST basic const_list ID '=' liter_const ';' 
@@ -726,6 +742,15 @@ var_def
 		}
 		else
 			dump_error(result);
+
+		const_val *con  = NEW_VAL(const_val);
+		output_list *new_node = NEW_VAL(output_list);
+		new_node->next = NULL;
+		new_node->content = strdup("");
+		con->code_head = new_node;
+		con->code_index = new_node;
+
+		$$ = (void*)con;
 	}
 | CONST basic  ID '=' liter_const ';' 
 	{
@@ -746,6 +771,15 @@ var_def
 		}
 		else
 			dump_error(result);
+
+		const_val *con  = NEW_VAL(const_val);
+		output_list *new_node = NEW_VAL(output_list);
+		new_node->next = NULL;
+		new_node->content = strdup("");
+		con->code_head = new_node;
+		con->code_index = new_node;
+
+		$$ = (void*)con;
 	}
 ;
 
@@ -783,13 +817,17 @@ func_def
 	}
 	compound_in_argu_func 
 	{
-		int hasreturn=$10;
+		const_val *v1 = (const_val*)$10;
+		int hasreturn=v1->return_val;
 		if(hasreturn==RETURN_NO)
 			dump_error(ERROR_NO_RETURN);
 	} 
 	'}'
 	{
+		const_val* code= (const_val*)$10;
+		code_dump_expr(code);
 		code_cur_func_end();
+
 		output_stack = 0;
 		if(Opt_symbol) dump_cur_table();
 		else pop_cur_table();
@@ -826,12 +864,15 @@ func_def
 	}
 	compound_in_argu_func 
 	{
-		int hasreturn=$9;
+		const_val *v1 = (const_val*)$9;
+		int hasreturn=v1->return_val;
 		if(hasreturn==RETURN_NO)
 			dump_error(ERROR_NO_RETURN);
 	}
 	'}'
 	{
+		const_val* code= (const_val*)$9;
+		code_dump_expr(code);
 		code_cur_func_end();
 		output_stack = 0;
 		if(Opt_symbol) dump_cur_table();
@@ -862,12 +903,15 @@ func_def
 	}
 	compound_in_argu_func
 	{
-		int hasreturn=$8;
+		const_val *v1 = (const_val*)$8;
+		int hasreturn=v1->return_val;
 		if(hasreturn==RETURN_NO)
 			dump_error(ERROR_NO_RETURN);
 	}
 	'}'
 	{
+		const_val* code= (const_val*)$8;
+		code_dump_expr(code);
 		code_cur_func_end();
 		output_stack = 0;
 		if(Opt_symbol) dump_cur_table();
@@ -995,7 +1039,14 @@ compound
 	} 
 	'}'
 	{
-		$$ = RETURN_NO;
+		const_val *v1 = NEW_VAL(const_val);
+		v1->return_val = RETURN_NO;
+		output_list *new_node = NEW_VAL(output_list);
+		new_node->next=NULL;
+		new_node->content = strdup("");
+		v1->code_head=new_node;
+		v1->code_index=new_node;
+		$$ = (void*)v1;
 		if(Opt_symbol) dump_cur_table();
 		else pop_cur_table();
 	}
@@ -1008,7 +1059,9 @@ statement
 	}
 | simple_stat
 	{
-		$$ = RETURN_NO;
+		const_val *con = (const_val*)$1;
+		con->return_val = RETURN_NO;
+		$$ = (void*)con;
 	}
 | condition
 	{
@@ -1016,11 +1069,15 @@ statement
 	}
 | while_stat
 	{
-		$$ = RETURN_NO;
+		const_val *con = (const_val*)$1;
+		con->return_val = RETURN_NO;
+		$$ = (void*)con;
 	}
 | for_stat
 	{
-		$$ = RETURN_NO;
+		const_val *con = (const_val*)$1;
+		con->return_val = RETURN_NO;
+		$$ = (void*)con;
 	}
 | jump_stat
 	{
@@ -1029,10 +1086,10 @@ statement
 | expr ';'
 	{
 		const_val* con=(const_val*)$1;
-		code_dump_expr(con);
+		//code_dump_expr(con);
 		check_and_set_scalar($1);
-
-		$$ = RETURN_NO;
+		con->return_val = RETURN_NO;
+		$$ = (void*)con;
 	}
 ;
 
@@ -1043,25 +1100,39 @@ compound_in_argu_func
 	}
 | %empty
 	{
+		const_val *con = NEW_VAL(const_val);
+		output_list *new_node = NEW_VAL(output_list);
+		new_node->next = NULL;
+		new_node->content = strdup("");
+		con->return_val = RETURN_NO;
+		con->code_head = new_node;
+		con->code_index = new_node;
 
-		$$ = RETURN_NO;
+		$$ = (void*)con;
 	}
 ;
 
 compound_list
 : compound_list var_def
 	{
-		
-		
-		$$ = $1;
+		const_val *v1 = (const_val*)$1;
+		const_val *v2 = (const_val*)$2;
+		code_merge_expr(v1,v1,v2);
 
+		$$ = (void*)v1;
 	}
 | compound_list statement
 	{
-		if($1==RETURN_YES || $2==RETURN_YES)
-			$$ = RETURN_YES;
+		const_val *v1 = (const_val*)$1;
+		const_val *v2 = (const_val*)$2;
+		code_merge_expr(v1,v1,v2);
+
+		if(v1->return_val==RETURN_YES || v2->return_val==RETURN_YES)
+			v1->return_val = RETURN_YES;
 		else
-			$$ = RETURN_NO;
+			v1->return_val = RETURN_NO;
+
+		$$ = (void*)v1;
 
 	}
 | statement
@@ -1070,7 +1141,9 @@ compound_list
 	}
 | var_def
 	{
-		$$ = RETURN_NO;
+		const_val *v1 = (const_val*)$1;
+		v1->return_val = RETURN_NO;
+		$$ = (const_val*)v1;
 	}
 ;
 
@@ -1432,10 +1505,14 @@ string_value
 var_list
 : var_list ID ','
 	{
-		$$ = $<c_type>0;
+		//$$ = $<c_type>0;
+		const_val *ori = (const_val*)$<v>0;
+		const_val *v1 = (const_val*)$1;
+		v1->basic_val = ori->basic_val;
+
 		id_val *p=NEW_VAL(id_val);
 		p->kind=KIND_VARIABLE;
-		p->type = $<c_type>0;
+		p->type = ori->basic_val;
 
 		arr_val *t = NEW_VAL(arr_val);
 		t->stepc=0;
@@ -1450,13 +1527,19 @@ var_list
 		}
 		else
 			dump_error(result);
+
+		$$ = (void*)v1;
 	}
 | var_list ID '=' expr ','
 	{
-		$$ = $<c_type>0;
+		const_val *ori = (const_val*)$<v>0;
+		const_val *v1 = (const_val*)$1;
+		v1->basic_val = ori->basic_val;
+
 		id_val *p=NEW_VAL(id_val);
-		p->kind = KIND_VARIABLE;
-		p->type = $<c_type>0;
+		p->kind=KIND_VARIABLE;
+		p->type = ori->basic_val;
+
 
 		arr_val *t = NEW_VAL(arr_val);
 		t->stepc=0;
@@ -1477,14 +1560,19 @@ var_list
 		}
 		else
 			dump_error(result);
+
 		const_val *con = (const_val*)$4;
 		code_single_change_type(con,p->type);
-		code_dump_expr(con);
-		code_store_val($2);
+		//code_dump_expr(con);
+		code_store_val($2,con);
+		code_merge_expr(v1,v1,con);
+
+		$$ = (void*)v1;
 	}
 | ID ','
 	{
-		$$ = $<c_type>0;
+		// $$ = $<c_type>0;
+		const_val *ori = (const_val*)$<v>0;
 		id_val *p=NEW_VAL(id_val);
 		p->kind = KIND_VARIABLE;
 		p->type = $<c_type>0;
@@ -1501,13 +1589,26 @@ var_list
 		}
 		else
 			dump_error(result);
+
+		const_val *v1 = NEW_VAL(const_val);
+		v1->basic_val = ori->basic_val;
+		output_list *new_node = NEW_VAL(output_list);
+		new_node->next = NULL;
+		new_node->content = strdup("");
+		v1->code_head = new_node;
+		v1->code_index = new_node;
+
+		$$ = (void*)v1;
+
+
 	}
 | ID '=' expr ','
 	{
-		$$ = $<c_type>0;
+		//$$ = $<c_type>0;
+		const_val *ori = (const_val*)$<v>0;
 		id_val *p=NEW_VAL(id_val);
-		p->kind=KIND_VARIABLE;
-		p->type=$<c_type>0;
+		p->kind = KIND_VARIABLE;
+		p->type = $<c_type>0;
 		arr_val *t = NEW_VAL(arr_val);
 		t->stepc=0;
 		p->list=(void*)t;
@@ -1529,7 +1630,10 @@ var_list
 		const_val *con = (const_val*)$3;
 		code_single_change_type(con,p->type);
 		code_dump_expr(con);
-		code_store_val($1);
+		code_store_val($1,con);
+		con->basic_val = ori->basic_val;
+
+		$$ = (void*)con;
 	}
 ;
 
@@ -1968,8 +2072,10 @@ simple_stat
 		equal_type_check(con,exp);
 
 		code_single_change_type(exp,con->type);
-		code_dump_expr(exp);
-		code_store_val( ((invo_val*)con->value)->name );
+		//code_dump_expr(exp);
+		code_store_val( ((invo_val*)con->value)->name ,exp);
+
+		$$ = (void*)exp;
 
 	}
 | PRINT expr ';'
@@ -1977,7 +2083,7 @@ simple_stat
 		const_val* con=(const_val*)$2;
 		check_and_set_scalar(con);
 
-		code_dump_expr(con);
+		//code_dump_expr(con);
 		
 	}
 | READ var_ref ';'
@@ -2035,10 +2141,14 @@ condition
 	}
 | if_reduce compound ELSE compound
 	{
-		if($2==RETURN_YES && $4==RETURN_YES)
-			$$ = RETURN_YES;
+		const_val *v1 = (const_val*)$2;
+		const_val *v2=(const_val*)$4;
+		if(v1->return_val==RETURN_YES && v2->return_val==RETURN_YES)
+			v1->return_val = RETURN_YES;
 		else
-			$$ = RETURN_NO;
+			v1->return_val = RETURN_NO;
+
+		$$ = (void*)v1;
 	}
 ;
 
@@ -2091,14 +2201,19 @@ for_stat
 init_expr 
 : init_expr_list var_ref '=' expr 
 	{
+		const_val *v1 = (const_val*)$1;
 		const_val* con=(const_val*)$2;
 		const_val* exp=(const_val*)$4;
 
 		equal_type_check(con,exp);
 
 		code_single_change_type(exp,con->type);
-		code_dump_expr(exp);
-		code_store_val( ((invo_val*)con->value)->name );
+		//code_dump_expr(exp);
+		code_store_val( ((invo_val*)con->value)->name,exp );
+
+		code_merge_expr(v1,v1,exp);
+
+		$$ = (void*)con;
 	}
 | init_expr_list func_invo
 	{
@@ -2164,23 +2279,39 @@ init_expr
 		equal_type_check(con,exp);
 
 		code_single_change_type(exp,con->type);
-		code_dump_expr(exp);
-		code_store_val( ((invo_val*)con->value)->name );
+		//code_dump_expr(exp);
+		code_store_val( ((invo_val*)con->value)->name ,exp);
+
+		$$ = (void*)exp;
 	}
 | %empty
+	{
+		const_val *v1 = NEW_VAL(const_val);
+		output_list *new_node = NEW_VAL(output_list);
+		new_node -> next =NULL;
+		new_node->content =strdup("");
+		v1->code_head = new_node;
+		v1->code_index = new_node;
+
+		$$ = (void*)v1;
+	}
 ;
 
 init_expr_list 
 : init_expr_list var_ref '=' expr ','
 	{
+		const_val* v1 = (const_val*)$1;
 		const_val* con=(const_val*)$2;
 		const_val* exp=(const_val*)$4;
 
 		equal_type_check(con,exp);
 
 		code_single_change_type(exp,con->type);
-		code_dump_expr(exp);
-		code_store_val( ((invo_val*)con->value)->name );
+		//code_dump_expr(exp);
+		code_store_val( ((invo_val*)con->value)->name ,exp);
+		code_merge_expr(v1,v1,exp);
+
+		$$ = (void*)v1;
 	}
 | init_expr_list func_invo ','
 	{
@@ -2246,8 +2377,10 @@ init_expr_list
 		equal_type_check(con,exp);
 
 		code_single_change_type(exp,con->type);
-		code_dump_expr(exp);
-		code_store_val( ((invo_val*)con->value)->name );
+		//code_dump_expr(exp);
+		code_store_val( ((invo_val*)con->value)->name,exp );
+
+		$$ = (void*)exp;
 	}
 ;
 
@@ -2256,14 +2389,19 @@ init_expr_list
 incr_expr
 : incr_expr_list var_ref '=' expr ','
 	{
+		const_val* v1= (const_val*)$1;
 		const_val* con=(const_val*)$2;
 		const_val* exp=(const_val*)$4;
 
 		equal_type_check(con,exp);
 
 		code_single_change_type(exp,con->type);
-		code_dump_expr(exp);
-		code_store_val( ((invo_val*)con->value)->name );
+		//code_dump_expr(exp);
+		code_store_val( ((invo_val*)con->value)->name ,exp);
+
+		code_merge_expr(v1,v1,exp);
+
+		$$ = (void*)v1;
 	}
 | incr_expr_list func_invo
 	{
@@ -2301,8 +2439,11 @@ incr_expr
 		equal_type_check(con,exp);
 
 		code_single_change_type(exp,con->type);
-		code_dump_expr(exp);
-		code_store_val( ((invo_val*)con->value)->name );
+		//code_dump_expr(exp);
+		code_store_val( ((invo_val*)con->value)->name ,exp);
+
+		$$ = (void*)exp;
+
 	}
 | func_invo
 	{
@@ -2333,19 +2474,32 @@ incr_expr
 		}
 	}
 | %empty
+	{
+		const_val *v1 = NEW_VAL(const_val);
+		output_list *new_node = NEW_VAL(output_list);
+		new_node -> next =NULL;
+		new_node->content =strdup("");
+		v1->code_head = new_node;
+		v1->code_index = new_node;
+
+		$$ = (void*)v1;
+	}
 ;
 
 incr_expr_list
 : incr_expr_list var_ref '=' expr ','
 	{
+		const_val * v1 =(const_val*)$1;
 		const_val* con=(const_val*)$2;
 		const_val* exp=(const_val*)$4;
 
 		equal_type_check(con,exp);
 
 		code_single_change_type(exp,con->type);
-		code_dump_expr(exp);
-		code_store_val( ((invo_val*)con->value)->name );
+		//code_dump_expr(exp);
+		code_store_val( ((invo_val*)con->value)->name ,exp);
+
+		code_merge_expr(v1,v1,exp);
 	}
 | incr_expr_list func_invo ','
 	{
@@ -2384,7 +2538,9 @@ incr_expr_list
 
 		code_single_change_type(exp,con->type);
 		code_dump_expr(exp);
-		code_store_val( ((invo_val*)con->value)->name );
+		code_store_val( ((invo_val*)con->value)->name ,exp);
+
+		$$ = (void*)exp;
 	}
 | func_invo
 	{
@@ -2422,7 +2578,15 @@ jump_stat
 		if(func_type != TYPE_VOID)
 			dump_error(ERROR_RETURN_VOID_ERROR);
 
-		$$ = RETURN_YES;
+		const_val *v1 = NEW_VAL(const_val);
+		v1->return_val = RETURN_YES;
+		output_list *new_node = NEW_VAL(output_list);
+		new_node->next = NULL;
+		new_node->content = strdup("");
+		v1->code_head = new_node;
+		v1->code_index = new_node;
+
+		$$ = (void*)v1;
 	}
 | RETURN expr ';'
 	{
@@ -2440,9 +2604,19 @@ jump_stat
 		else if(!check_func_change(func_type,exp->type))
 			dump_error(ERROR_RETURN_TYPE);
 
-		code_dump_expr(exp);
+		//code_dump_expr(exp);
 
-		$$ = RETURN_YES;
+
+
+		const_val *v1 = NEW_VAL(const_val);
+		v1->return_val = RETURN_YES;
+		output_list *new_node = NEW_VAL(output_list);
+		new_node->next = NULL;
+		new_node->content = strdup("");
+		v1->code_head = new_node;
+		v1->code_index = new_node;
+
+		$$ = (void*)v1;
 
 	}
 | BREAK ';'
@@ -2450,14 +2624,30 @@ jump_stat
 		if(isInLoop<=0)
 			dump_error(ERROR_JUMP_STATMENT);
 
-		$$ = RETURN_NO;
+		const_val *v1 = NEW_VAL(const_val);
+		v1->return_val = RETURN_NO;
+		output_list *new_node = NEW_VAL(output_list);
+		new_node->next = NULL;
+		new_node->content = strdup("");
+		v1->code_head = new_node;
+		v1->code_index = new_node;
+
+		$$ = (void*)v1;
 	}
 | CONTINUE ';'
 	{
 		if(isInLoop<=0)
 			dump_error(ERROR_JUMP_STATMENT);
 
-		$$ = RETURN_NO;
+		const_val *v1 = NEW_VAL(const_val);
+		v1->return_val = RETURN_NO;
+		output_list *new_node = NEW_VAL(output_list);
+		new_node->next = NULL;
+		new_node->content = strdup("");
+		v1->code_head = new_node;
+		v1->code_index = new_node;
+
+		$$ = (void*)v1;
 	}
 ;
 
@@ -3730,7 +3920,7 @@ void code_load_val(const_val *v1)
 
 }
 
-void code_store_val(char* name)
+void code_store_val(char* name,const_val *v1)
 {
 	output_list *new_node = NEW_VAL(output_list);
 	new_node->next = NULL;
@@ -3760,8 +3950,10 @@ void code_store_val(char* name)
 	new_node->content = mergestring(new_node->content,"\n");
 	
 
-	output_cur_index->next = new_node;
-	output_cur_index = new_node;
+	v1->code_index->next = new_node;
+	v1->code_index = new_node;
+	//output_cur_index->next = new_node;
+	//output_cur_index = new_node;
 }
 
 void code_single_change_type(const_val *v1,int type)

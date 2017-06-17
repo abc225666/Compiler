@@ -13,6 +13,8 @@ int first()
 
 {
 	int a=5;
+	a+4234;
+	a<4134;
 	return 1;
 }
 
