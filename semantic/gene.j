@@ -2,24 +2,23 @@
 .super java/lang/Object
 .field public static _sc Ljava/util/Scanner;
 .field public static glo I
-.method public static _g()I
+.method public static _g()V
 .limit stack 0
 .limit locals 0
+ldc 1
+ldc 1
+iadd
+return
 .end method
 .method public static _first()I
 .limit stack 0
 .limit locals 1
+LOOP_START_0:
 ldc 5
-istore 1
-iload 1
-ldc 4234
+ldc 5
 iadd
-iload 1
-ldc 4134
-if_icmplt TRUE_0
-bipush 0
-goto END_0
-TRUE_0:
-bipush 1
-END_0:
+NEXT_0:
+goto LOOP_START_0
+LOOP_END_0:
+ireturn
 .end method

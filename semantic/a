@@ -5,16 +5,19 @@
 
 int glo;
 
-int g()
+void g()
 {
-	return 5;
+	1+1;
+	return;
 }
 int first()
-
 {
-	int a=5;
-	a+4234;
-	a<4134;
+	int i;
+	for(;;)
+	{
+		5+5;
+	}
+
 	return 1;
 }
 

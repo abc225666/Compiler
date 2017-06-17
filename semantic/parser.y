@@ -252,11 +252,15 @@ void code_store_val(char* name,const_val*v1);
 void code_single_change_type(const_val* v1, int type);
 void code_find_max_type(const_val *v1,const_val *v2);
 void code_cmp(const_val* output,const_val* v1,const_val* v2,int cmp);
+void code_read(const_val* v1,int type);
+void code_print(const_val* v1,int type);
 char *code_cmp_label(int cmp);
 void f_output_cur_init();
 void f_output_stack_add(int type);
 char* f_get_type(int type);
 char* f_get_s_type(int type);
+char* f_read_type(int type);
+char* f_print_type(int type);
 int f_type_need(int type);
 
 void f_assign_by_const_val(const_val*);
@@ -948,6 +952,8 @@ func_def
 	}
 	compound_in_argu_func '}'
 	{
+		const_val* code= (const_val*)$10;
+		code_dump_expr(code);
 		code_cur_func_end();
 		output_stack = 0;
 		if(Opt_symbol) dump_cur_table();
@@ -985,6 +991,8 @@ func_def
 	}
 	compound_in_argu_func '}'
 	{
+		const_val* code= (const_val*)$9;
+		code_dump_expr(code);
 		code_cur_func_end();
 		if(Opt_symbol) dump_cur_table();
 		else pop_cur_table();
@@ -1014,6 +1022,8 @@ func_def
 	}
 	compound_in_argu_func '}'
 	{
+		const_val* code= (const_val*)$8;
+		code_dump_expr(code);
 		code_cur_func_end();
 		output_stack = 0;
 		if(Opt_symbol) dump_cur_table();
@@ -2083,6 +2093,16 @@ simple_stat
 		const_val* con=(const_val*)$2;
 		check_and_set_scalar(con);
 
+		output_list *new_node = NEW_VAL(output_list);
+		new_node->next = NULL;
+		new_node->content = strdup("getstatic java/lang/System/out Ljava/io/PrintStream;\n");
+
+		new_node->next = con->code_head;
+		con->code_head = new_node;
+		
+		code_print(con,con->type);
+
+		$$ = (void*)con;
 		//code_dump_expr(con);
 		
 	}
@@ -2090,6 +2110,18 @@ simple_stat
 	{
 		const_val* con=(const_val*)$2;
 		check_and_set_scalar(con);
+
+		const_val* v1= NEW_VAL(const_val);
+		output_list *new_node = NEW_VAL(output_list);
+		new_node->next = NULL;
+		new_node->content = strdup("");
+		v1->code_head = new_node;
+		v1->code_index = new_node;
+
+		code_read(v1,con->type);
+		code_store_val( ((invo_val*)con->value)->name,v1 );
+
+		$$ = (void*)v1;
 	}
 ;
 
@@ -2135,28 +2167,82 @@ var_ref
 
 
 condition
-: if_reduce compound
+: IF '(' bool_expr ')' compound
 	{
-		$$ = $2;
+		char outstring[2000];
+		const_val *exp = (const_val*)$3;
+
+		
+		output_list *new_node = NEW_VAL(output_list);
+		new_node->next = NULL;
+		new_node->content = strdup("");
+		sprintf(outstring,"ifne TRUE_%d\ngoto END_%d\nTRUE_%d:\n",label,label,label);
+		new_node->content = mergestring(new_node->content,outstring);
+		
+		exp->code_index->next = new_node;
+		exp->code_index = new_node;
+
+		const_val *v1 = (const_val*)$5;
+		code_merge_expr(v1,exp,v1);
+
+		new_node = NEW_VAL(output_list);
+		new_node->next = NULL;
+		new_node->content = strdup("");
+		sprintf(outstring,"END_%d:\n",label);
+		new_node->content = mergestring(new_node->content,outstring);
+
+		v1->code_index->next = new_node;
+		v1->code_index = new_node;
+
+		label++;
+
+
+
+		$$ = (void*)v1;
 	}
-| if_reduce compound ELSE compound
+| IF '(' bool_expr ')' compound ELSE compound
 	{
-		const_val *v1 = (const_val*)$2;
-		const_val *v2=(const_val*)$4;
+		char outstring[2000];
+		const_val *v1 = (const_val*)$5;
+		const_val *v2=(const_val*)$7;
 		if(v1->return_val==RETURN_YES && v2->return_val==RETURN_YES)
 			v1->return_val = RETURN_YES;
 		else
 			v1->return_val = RETURN_NO;
 
+		const_val *exp = (const_val*)$3;
+		output_list *new_node = NEW_VAL(output_list);
+		new_node->next = NULL;
+		new_node->content = strdup("");
+		sprintf(outstring,"ifne TRUE_%d\ngoto FALSE_%d\nTRUE_%d:\n",label,label,label);
+		new_node->content = mergestring(new_node->content,outstring);
+
+		exp->code_index->next = new_node;
+		exp->code_index = new_node;
+
+		code_merge_expr(v1,exp,v1);
+
+		new_node = NEW_VAL(output_list);
+		new_node->next = NULL;
+		new_node->content = strdup("");
+		sprintf(outstring,"goto END_%d\nFALSE_%d:\n",label,label);
+		new_node->content = mergestring(new_node->content,outstring);
+
+		v1->code_index->next = new_node;
+		v1->code_index = new_node;
+		code_merge_expr(v1,v1,v2);
+		
+		new_node = NEW_VAL(output_list);
+		new_node->next = NULL;
+		new_node->content = strdup("");
+		sprintf(outstring,"END_%d:\n",label);
+		new_node->content = mergestring(new_node->content,outstring);
+		v1->code_index->next = new_node;
+		v1->code_index = new_node;
+
+		label++;
 		$$ = (void*)v1;
 	}
-;
-
-if_reduce
-: IF '(' bool_expr ')'
-{
-
-}
 ;
 
 bool_expr
@@ -2186,15 +2272,108 @@ while_stat
 ;
 
 for_stat
-: FOR '(' init_expr ';' bool_expr ';' incr_expr ')' {isInLoop+=1;} compound 
+: FOR '(' init_expr ';' bool_expr ';' incr_expr ')'
 	{
+		isInLoop+=1;
+	} 
+	compound 
+	{
+		char outstring[2000];
+		
+		int loop_label=0;
+
+		const_val *v1 = (const_val*)$10;
+		const_val *init = (const_val*)$3;
+		const_val *cond = (const_val*)$5;
+		const_val *incr = (const_val*)$7;
+
+		output_list *new_node = NEW_VAL(output_list);
+		new_node->next = NULL;
+		sprintf(outstring,"LOOP_START_%d:\n",loop_label);
+		new_node->content = strdup("");
+		new_node->content = mergestring(new_node->content,outstring);
+
+		init->code_index->next = new_node;
+		init->code_index = new_node;
+
+		new_node = NEW_VAL(output_list);
+		new_node->next = NULL;
+		new_node->content = strdup("");
+		sprintf(outstring,"ifeq LOOP_END_%d\n",loop_label);
+		new_node->content = mergestring(new_node->content,outstring);
+
+		cond->code_index->next = new_node;
+		cond->code_index = new_node;
+
+		code_merge_expr(v1,cond,v1);
+		code_merge_expr(v1,init,v1);
+
+		new_node = NEW_VAL(output_list);
+		new_node->next = NULL;
+		sprintf(outstring,"NEXT_%d:\n",loop_label);
+		new_node->content = strdup("");
+		new_node->content = mergestring(new_node->content,outstring);
+		v1->code_index->next = new_node;
+		v1->code_index = new_node;
+
+		code_merge_expr(v1,v1,incr);
+
+		new_node = NEW_VAL(output_list);
+		new_node->next = NULL;
+		sprintf(outstring,"goto LOOP_START_%d\nLOOP_END_%d:\n",loop_label,loop_label);
+		new_node->content = strdup("");
+		new_node->content = mergestring(new_node->content,outstring);
+		v1->code_index->next = new_node;
+		v1->code_index = new_node;
+
 		isInLoop-=1;
-		$$ = $10;
+		$$ = (void*)v1;
 	}
-| FOR '(' init_expr ';' ';' incr_expr ')' {isInLoop+=1;} compound
+| FOR '(' init_expr ';' ';' incr_expr ')'
 	{
+		isInLoop+=1;
+	} compound
+	{
+
+		char outstring[2000];
+		
+		int loop_label=0;
+
+		const_val *v1 = (const_val*)$9;
+		const_val *init = (const_val*)$3;
+		const_val *incr = (const_val*)$6;
+
+		output_list *new_node = NEW_VAL(output_list);
+		new_node->next = NULL;
+		sprintf(outstring,"LOOP_START_%d:\n",loop_label);
+		new_node->content = strdup("");
+		new_node->content = mergestring(new_node->content,outstring);
+
+		init->code_index->next = new_node;
+		init->code_index = new_node;
+
+		code_merge_expr(v1,init,v1);
+
+		new_node = NEW_VAL(output_list);
+		new_node->next = NULL;
+		sprintf(outstring,"NEXT_%d:\n",loop_label);
+		new_node->content = strdup("");
+		new_node->content = mergestring(new_node->content,outstring);
+		v1->code_index->next = new_node;
+		v1->code_index = new_node;
+
+		code_merge_expr(v1,v1,incr);
+
+		new_node = NEW_VAL(output_list);
+		new_node->next = NULL;
+		sprintf(outstring,"goto LOOP_START_%d\nLOOP_END_%d:\n",loop_label,loop_label);
+		new_node->content = strdup("");
+		new_node->content = mergestring(new_node->content,outstring);
+		v1->code_index->next = new_node;
+		v1->code_index = new_node;
+
 		isInLoop-=1;
-		$$ = $9;
+		$$ = (void*)v1;
 	}
 ;
 
@@ -2582,7 +2761,7 @@ jump_stat
 		v1->return_val = RETURN_YES;
 		output_list *new_node = NEW_VAL(output_list);
 		new_node->next = NULL;
-		new_node->content = strdup("");
+		new_node->content = strdup("return\n");
 		v1->code_head = new_node;
 		v1->code_index = new_node;
 
@@ -2612,7 +2791,8 @@ jump_stat
 		v1->return_val = RETURN_YES;
 		output_list *new_node = NEW_VAL(output_list);
 		new_node->next = NULL;
-		new_node->content = strdup("");
+		new_node->content = f_get_s_type(exp->type);
+		new_node->content = mergestring(new_node->content,"return\n");
 		v1->code_head = new_node;
 		v1->code_index = new_node;
 
@@ -3645,6 +3825,33 @@ void code_cur_func_start(char *name, id_val *id)
 
 }
 
+void code_read(const_val *v1,int type)
+{
+	output_list *new_node = NEW_VAL(output_list);
+	new_node->next = NULL;
+	new_node->content = strdup("getstatic demo/_sc Ljava/util/Scanner;\n");
+	new_node->content = mergestring(new_node->content,"invokevirtual java/util/Scanner/");
+	new_node->content = mergestring(new_node->content,f_read_type(type));
+	new_node->content = mergestring(new_node->content,"()");
+	new_node->content = mergestring(new_node->content,f_get_type(type));
+	new_node->content = mergestring(new_node->content,"\n");
+
+	v1->code_index->next = new_node;
+	v1->code_index = new_node;
+}
+
+void code_print(const_val *v1, int type)
+{
+	output_list *new_node = NEW_VAL(output_list);
+	new_node->next = NULL;
+	new_node->content = strdup("invokevirtual java/io/PrintStream/print(");
+	new_node->content = mergestring(new_node->content,f_print_type(type));
+	new_node->content = mergestring(new_node->content,")V\n");
+
+	v1->code_index->next = new_node;
+	v1->code_index = new_node;
+}
+
 void code_cur_func_end()
 {
 	char* num = (char*)malloc(sizeof(char)*200);
@@ -4054,6 +4261,52 @@ void code_final()
 		parser = parser->next;
 	}
 	fclose(fg);
+}
+
+char *f_print_type(int type)
+{
+	char *ans = strdup("");
+	switch(type)
+	{
+		case TYPE_INT:
+			ans = strdup("I");
+			break;
+		case TYPE_FLOAT:
+			ans = strdup("F");
+			break;
+		case TYPE_DOUBLE:
+			ans = strdup("D");
+			break;
+		case TYPE_BOOL:
+			ans = strdup("Z");
+			break;
+		case TYPE_STRING:
+			ans = strdup("Ljava/lang/String;");
+			break;
+	}
+
+	return ans;
+}
+
+char *f_read_type(int type)
+{
+	char *ans=strdup("");
+	switch(type)
+	{
+		case TYPE_INT:
+			ans = strdup("Int");
+			break;
+		case TYPE_FLOAT:
+			ans = strdup("Float");
+			break;
+		case TYPE_DOUBLE:
+			ans = strdup("Double");
+			break;
+		case TYPE_BOOL:
+			ans = strdup("Boolean");
+			break;
+	}
+	return ans;
 }
 
 void f_output_cur_init()
