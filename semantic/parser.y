@@ -2260,14 +2260,97 @@ bool_expr
 ;
 
 while_stat
-: WHILE '(' bool_expr ')' { isInLoop+=1;} compound 
+: WHILE '(' bool_expr ')'
 	{
-		isInLoop-=1;
-		$$ = $6;
+		isInLoop+=1;
 	}
-| DO {isInLoop+=1;} compound {isInLoop-=1;} WHILE '(' bool_expr ')' ';'
+	compound 
 	{
-		$$ = $3;
+		char outstring[2000];
+
+		int loop_label = 0;
+
+		const_val *v1 = (const_val*)$6;
+		const_val *exp = (const_val*)$3;
+
+		output_list *new_node = NEW_VAL(output_list);
+		new_node->next = NULL;
+		new_node->content = strdup("");
+		sprintf(outstring,"LOOP_START_%d:\n",loop_label);
+		new_node->content = mergestring(new_node->content,outstring);
+
+		new_node->next = exp->code_head;
+		exp->code_head = new_node;
+
+		new_node = NEW_VAL(output_list);
+		new_node->next = NULL;
+		new_node->content = strdup("");
+		sprintf(outstring,"ifeq LOOP_END_%d\n",loop_label);
+		new_node->content = mergestring(new_node->content,outstring);
+
+		exp->code_index->next = new_node;
+		exp->code_index = new_node;
+
+		code_merge_expr(v1,exp,v1);
+
+		new_node = NEW_VAL(output_list);
+		new_node->next = NULL;
+		new_node->content = strdup("");
+		sprintf(outstring,"NEXT_%d:\ngoto LOOP_START_%d\nLOOP_END_%d:\n",loop_label,loop_label,loop_label);
+		new_node->content = mergestring(new_node->content,outstring);
+
+		v1->code_index->next = new_node;
+		v1->code_index = new_node;
+
+		isInLoop-=1;
+		$$ = (void*)v1;
+	}
+| DO 
+	{
+		isInLoop+=1;
+	}
+	compound WHILE '(' bool_expr ')' ';'
+	{
+		char outstring[2000];
+
+		int loop_label = 0;
+
+		const_val *v1 = (const_val*)$3;
+		const_val *exp = (const_val*)$6;
+
+		output_list *new_node = NEW_VAL(output_list);
+		new_node->next = NULL;
+		new_node->content = strdup("");
+		sprintf(outstring,"LOOP_START_%d:\n",loop_label);
+		new_node->content = mergestring(new_node->content,outstring);
+
+		new_node->next = exp->code_head;
+		exp->code_head = new_node;
+
+		new_node = NEW_VAL(output_list);
+		new_node->next = NULL;
+		new_node->content = strdup("");
+		sprintf(outstring,"ifeq LOOP_END_%d\n",loop_label);
+		new_node->content = mergestring(new_node->content,outstring);
+
+		exp->code_index->next = new_node;
+		exp->code_index = new_node;
+
+
+		code_merge_expr(exp,v1,exp);
+		code_merge_expr(v1,exp,v1);
+
+		new_node = NEW_VAL(output_list);
+		new_node->next = NULL;
+		new_node->content = strdup("");
+		sprintf(outstring,"NEXT_%d:\ngoto LOOP_START_%d\nLOOP_END_%d:\n",loop_label,loop_label,loop_label);
+		new_node->content = mergestring(new_node->content,outstring);
+
+		v1->code_index->next = new_node;
+		v1->code_index = new_node;
+
+		isInLoop-=1;
+		$$ = (void*)v1;
 	}
 ;
 
@@ -2795,6 +2878,8 @@ jump_stat
 		new_node->content = mergestring(new_node->content,"return\n");
 		v1->code_head = new_node;
 		v1->code_index = new_node;
+
+		code_merge_expr(v1,exp,v1);
 
 		$$ = (void*)v1;
 
@@ -3999,21 +4084,36 @@ void code_merge_expr(const_val *output, const_val *v1, const_val *v2)
 	output_list *index;
 
 	output_list *parser=v1->code_head;
-	ans= parser;
-	index = parser;
+
+	output_list *new_node = NEW_VAL(output_list);
+	new_node->content = strdup(parser->content);
+	new_node->next = NULL;
+
+
+	ans= new_node;
+	index = new_node;
 	parser = parser->next;
 	while(parser!=NULL)
 	{
-		index->next = parser;
-		index = parser;
+		new_node = NEW_VAL(output_list);
+		new_node->content = strdup(parser->content);
+		new_node->next = NULL;
+
+		index->next = new_node;
+		index = new_node;
 		parser = parser->next;
 	}
 
 	parser = v2->code_head;
 	while(parser!=NULL)
 	{
-		index->next = parser;
-		index = parser;
+
+		new_node = NEW_VAL(output_list);
+		new_node->content = strdup(parser->content);
+		new_node->next = NULL;
+
+		index->next = new_node;
+		index = new_node;
 		parser = parser->next;
 	}
 

@@ -12,13 +12,14 @@ return
 .end method
 .method public static _first()I
 .limit stack 0
-.limit locals 1
-LOOP_START_0:
-ldc 5
-ldc 5
-iadd
-NEXT_0:
-goto LOOP_START_0
-LOOP_END_0:
+.limit locals 3
+iload 1
+i2f
+ldc "1.5"
+invokestatic java/lang/Float/parseFloat(Ljava/lang/String;)F
+fmul
+f2d
+dstore 2
+ldc 1
 ireturn
 .end method

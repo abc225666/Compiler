@@ -4,6 +4,7 @@ using namespace std;
 
 int a;
 int c= a;
+a=5;
 
 int main()
 {

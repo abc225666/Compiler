@@ -12,12 +12,9 @@ void g()
 }
 int first()
 {
-	int i;
-	for(;;)
-	{
-		5+5;
-	}
-
+	int a;
+	double e;
+	e = a*1.5;
 	return 1;
 }
 
