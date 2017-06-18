@@ -464,7 +464,19 @@ gvar_def
 		p->type = ((const_val*)$2)->basic_val;
 
 		id_val *get_const=(id_val*)$6;
-		p->list = get_const->list;
+		
+
+		if(p->type > TYPE_INT && p->type <=TYPE_DOUBLE && get_const->type == TYPE_INT)
+		{
+			char outstring[200];
+			sprintf(outstring,"%d",*(int*)get_const->list);
+			p->list = (void*)strdup(outstring);
+		}
+		else
+		{
+			p->list = get_const->list;
+		}
+
 
 		int result= find_redclair($4);
 
@@ -485,7 +497,19 @@ gvar_def
 		p->type = ((const_val*)$2)->basic_val;
 
 		id_val *get_const=(id_val*)$5;
-		p->list = get_const->list;
+		
+
+		if(p->type > TYPE_INT && p->type <=TYPE_DOUBLE && get_const->type == TYPE_INT)
+		{
+			char outstring[200];
+			sprintf(outstring,"%d",*(int*)get_const->list);
+			p->list = (void*)strdup(outstring);
+		}
+		else
+		{
+			p->list = get_const->list;
+		}
+
 
 
 		int result= find_redclair($3);
@@ -603,7 +627,19 @@ gconst_list
 		p->type = ((const_val*)$<v>0)->basic_val;
 
 		id_val *get_const=(id_val*)$4;
-		p->list = get_const->list;
+		
+
+		if(p->type > TYPE_INT && p->type <=TYPE_DOUBLE && get_const->type == TYPE_INT)
+		{
+			char outstring[200];
+			sprintf(outstring,"%d",*(int*)get_const->list);
+			p->list = (void*)strdup(outstring);
+		}
+		else
+		{
+			p->list = get_const->list;
+		}
+
 
 		int result= find_redclair($2);
 
@@ -625,7 +661,19 @@ gconst_list
 		p->type = ((const_val*)$<v>0)->basic_val;
 
 		id_val *get_const=(id_val*)$3;
-		p->list = get_const->list;
+		
+
+		if(p->type > TYPE_INT && p->type <=TYPE_DOUBLE && get_const->type == TYPE_INT)
+		{
+			char outstring[200];
+			sprintf(outstring,"%d",*(int*)get_const->list);
+			p->list = (void*)strdup(outstring);
+		}
+		else
+		{
+			p->list = get_const->list;
+		}
+
 
 		int result= find_redclair($1);
 
@@ -766,7 +814,20 @@ var_def
 		p->type = ((const_val*)$2)->basic_val;
 
 		id_val *get_const=(id_val*)$6;
-		p->list = get_const->list;
+		
+
+		if(p->type > TYPE_INT && p->type <=TYPE_DOUBLE && get_const->type == TYPE_INT)
+		{
+			char outstring[200];
+
+			sprintf(outstring,"%d",*(int*)get_const->list);
+			p->list = (void*)strdup(outstring);
+		}
+		else
+		{
+			p->list = get_const->list;
+		}
+
 
 		int result= find_redclair($4);
 
@@ -795,7 +856,17 @@ var_def
 
 		id_val *get_const=(id_val*)$5;
 
-		p->list = get_const->list;
+		if(p->type > TYPE_INT && p->type <=TYPE_DOUBLE && get_const->type == TYPE_INT)
+		{
+			char outstring[200];
+			sprintf(outstring,"%d",*(int*)get_const->list);
+			p->list = (void*)strdup(outstring);
+		}
+		else
+		{
+			p->list = get_const->list;
+		}
+
 
 		int result= find_redclair($3);
 
@@ -1699,7 +1770,18 @@ const_list
 		p->type = ((const_val*)$<v>0)->basic_val;
 
 		id_val *get_const=(id_val*)$4;
-		p->list = get_const->list;
+
+
+		if(p->type > TYPE_INT && p->type <=TYPE_DOUBLE && get_const->type == TYPE_INT)
+		{
+			char outstring[200];
+			sprintf(outstring,"%d",*(int*)get_const->list);
+			p->list = (void*)strdup(outstring);
+		}
+		else
+		{
+			p->list = get_const->list;
+		}
 
 		int result= find_redclair($2);
 
@@ -1720,7 +1802,18 @@ const_list
 		p->type = ((const_val*)$<v>0)->basic_val;
 
 		id_val *get_const=(id_val*)$3;
-		p->list = get_const->list;
+		
+		if(p->type > TYPE_INT && p->type <=TYPE_DOUBLE && get_const->type == TYPE_INT)
+		{
+			char outstring[200];
+			sprintf(outstring,"%d",*(int*)get_const->list);
+			p->list = (void*)strdup(outstring);
+		}
+		else
+		{
+			p->list = get_const->list;
+		}
+
 
 		int result= find_redclair($1);
 
@@ -1804,7 +1897,7 @@ expr
 		const_val *output;
 		check_and_set_scalar(v1);
 		check_and_set_scalar(v2);
-		if(!(v1,v2,TYPE_INT))
+		if(!check_type_one(v1,v2,TYPE_INT))
 		{
 			dump_error(ERROR_TYPE_ERROR);
 		}
@@ -2996,13 +3089,13 @@ jump_stat
 
 		//code_dump_expr(exp);
 
-
+		code_single_change_type(exp,func_type);
 
 		const_val *v1 = NEW_VAL(const_val);
 		v1->return_val = RETURN_YES;
 		output_list *new_node = NEW_VAL(output_list);
 		new_node->next = NULL;
-		new_node->content = f_get_s_type(exp->type);
+		new_node->content = f_get_s_type(func_type);
 		new_node->content = mergestring(new_node->content,"return\n");
 		v1->code_head = new_node;
 		v1->code_index = new_node;
