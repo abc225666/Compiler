@@ -1,7 +1,0 @@
-#!/bin/sh
-
-for a in ./p2example/src/*.cm
-do
-	echo $a
-	./parser $a 
-done

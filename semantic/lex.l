@@ -23,6 +23,7 @@ int Last_State = 0;
 
 char buf[MAX_LINE_LENGTH];
 char strContent[MAX_STRING_LENGTH];
+char specialstr[MAX_STRING_LENGTH];
 
 typedef struct ids{
 	char id_name[MAX_ID_LENGTH];
@@ -358,7 +359,8 @@ return {
 	}
 "\""	{ 
 		LIST;
-                strContent[0] = '\0';
+               strContent[0] = '\0';
+               specialstr[0] = '\0';
 		BEGIN STR;
 	}
 <STR>"\\"	{
@@ -369,24 +371,27 @@ return {
 		LIST;
 		//strlcat (strContent, "\"", MAX_STRING_LENGTH);
 		strcat (strContent, "\"");
+		strcat (specialstr, "\\\"");
 		BEGIN STR;
 	}
 <STR_ESCAPE>n	{
 		LIST;
 		//strlcat( strContent, "\\n", MAX_STRING_LENGTH);
 		strcat( strContent, "\\n");
+		strcat (specialstr, "\\n");
 		BEGIN STR;
 	}
 <STR_ESCAPE>t	{
 		LIST;
-		//strlcat( strContent, "\\t", MAX_STRING_LENGTH);
 		strcat( strContent, "\\t");
+		strcat (specialstr, "\\t");
 		BEGIN STR;
 	}
 <STR_ESCAPE>\\	{
 		LIST;
 		//strlcat( strContent, "\\", MAX_STRING_LENGTH);
 		strcat( strContent, "\\");
+		strcat (specialstr, "\\\\");
 		BEGIN STR;
 	}
 <STR_ESCAPE>\n  {
@@ -398,7 +403,9 @@ return {
 		//strlcat( strContent, "\\", MAX_STRING_LENGTH);
 		//strlcat( strContent, yytext, MAX_STRING_LENGTH);
 		strcat( strContent, "\\");
+		strcat (specialstr, "\\");
 		strcat( strContent, yytext);
+		strcat (specialstr, yytext);
 		BEGIN STR;
 	}
 <STR>"\n"	{
@@ -410,7 +417,7 @@ return {
 		tokenString("string", strContent);
 		BEGIN INITIAL;
 		//strcpy(yylval.str, strContent);
-		yylval.str=strdup(strContent);
+		yylval.str=strdup(specialstr);
 		return STRING_CONST;
 		
 	}
@@ -418,6 +425,7 @@ return {
 		LIST;
 		//strlcat( strContent, yytext, MAX_STRING_LENGTH);
 		strcat( strContent, yytext);
+		strcat (specialstr, yytext);
 	}
 
 "/*"	{

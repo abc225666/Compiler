@@ -8,9 +8,9 @@ a=5;
 
 int main()
 {
-	char *num = strdup("1e+5\naaa");
-	printf("%s",num);
-	return 0;
+	char a[5];
+	a= strdup("12");
+	printf("%s",a);
 }
 
 int b;
