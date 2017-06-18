@@ -3,12 +3,7 @@
 #pragma symbol on
 #pragma statistic off
 
-int z;
-int z()
+void main()
 {
+	int a,b;
 }
-int main()
-{
-	return 0;
-}
-

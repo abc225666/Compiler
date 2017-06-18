@@ -111,12 +111,7 @@ typedef struct S_output_list
 	struct S_output_list *next;
 } output_list;
 
-typedef struct S_invo_val
-{
-	char *name;
-	int listc;
-	void *listv;
-} invo_val;
+
 
 typedef struct S_const_val
 {
@@ -128,6 +123,14 @@ typedef struct S_const_val
 	output_list* code_head;
 	output_list* code_index;
 } const_val;
+
+typedef struct S_invo_val
+{
+	char *name;
+	int listc;
+	void *listv;
+	const_val *func_code;
+} invo_val;
 
 typedef struct S_id_val
 {
@@ -154,6 +157,12 @@ typedef struct S_func_val
 	int argc;
 	argu_val *argv;
 } func_val;
+
+typedef struct S_loop_stack
+{
+	int loop_val;
+	struct S_loop_stack *next;
+} loop_stack;
 
 typedef struct symbol_lists{
 	char *name;
@@ -231,11 +240,13 @@ output_list *output_main_head = NULL;
 output_list *output_main_index = NULL;
 output_list *output_cur_head = NULL;
 output_list *output_cur_index = NULL;
+loop_stack *l_stack = NULL;
 int output_stack = 0;
-int output_oper = 0;
-int output_cur_position = 1;
+int output_oper = 200;
+int output_cur_position = 0;
 
 int label = 0;
+int loop_label = 0;
 
 void gene_init_code();
 void code_gvar(char* name, int type);
@@ -254,6 +265,11 @@ void code_find_max_type(const_val *v1,const_val *v2);
 void code_cmp(const_val* output,const_val* v1,const_val* v2,int cmp);
 void code_read(const_val* v1,int type);
 void code_print(const_val* v1,int type);
+void code_call_func(const_val* v1, symbol_list *list);
+void code_dump_main();
+void code_gvar_init(char *name,const_val *v1,int type);
+void code_call_main(output_list** main_list);
+void code_void_return(const_val** v1);
 char *code_cmp_label(int cmp);
 void f_output_cur_init();
 void f_output_stack_add(int type);
@@ -262,7 +278,9 @@ char* f_get_s_type(int type);
 char* f_read_type(int type);
 char* f_print_type(int type);
 int f_type_need(int type);
-
+void f_push_loop_state();
+void f_pop_loop_state();
+char *f_argulist(symbol_list *type);
 void f_assign_by_const_val(const_val*);
 
 
@@ -310,7 +328,7 @@ int yylex();
 %type <v> liter_const value_type 
 %type <v> argu argu_list 
 %type <v> expr expr_list func_invo var_ref simple_stat bool_expr
-%type <c_type> basic void_reduce const_list gvar_list gconst_list
+%type <v> basic void_reduce const_list gvar_list gconst_list
 
 %type <v> var_list var_def compound_list init_expr init_expr_list incr_expr incr_expr_list
 %type <v> for_stat while_stat jump_stat condition statement compound compound_in_argu_func
@@ -355,7 +373,7 @@ gvar_def
 	{
 		id_val* p=NEW_VAL(id_val);
 		p->kind = KIND_VARIABLE;
-		p->type = $1;
+		p->type = ((const_val*)$1)->basic_val;
 
 		arr_val *t = NEW_VAL(arr_val);
 		t->stepc=0;
@@ -367,7 +385,7 @@ gvar_def
 		if(result==NO_ERROR)
 		{
 			add_id($3,(void*)p);
-			code_gvar($3,$1);
+			code_gvar($3,((const_val*)$1)->basic_val);
 		}
 		else
 			dump_error(result);
@@ -376,7 +394,7 @@ gvar_def
 	{
 		id_val* p=NEW_VAL(id_val);
 		p->kind = KIND_VARIABLE;
-		p->type = $1;
+		p->type = ((const_val*)$1)->basic_val;
 		
 		arr_val *t = NEW_VAL(arr_val);
 		t->stepc=0;
@@ -386,8 +404,11 @@ gvar_def
 
 		if(result==NO_ERROR)
 		{
+			init_type_check(p->type,((const_val*)$5)->type);
+			code_single_change_type((const_val*)$5,p->type);
 			add_id($3,(void*)p);
-			code_gvar($3,$1);
+			code_gvar($3,((const_val*)$1)->basic_val);
+			code_gvar_init($3,(const_val*)$5,((const_val*)$1)->basic_val);
 		}
 		else
 			dump_error(result);
@@ -396,7 +417,7 @@ gvar_def
 	{
 		id_val* p=NEW_VAL(id_val);
 		p->kind = KIND_VARIABLE;
-		p->type = $1;
+		p->type = ((const_val*)$1)->basic_val;
 		
 		arr_val *t = NEW_VAL(arr_val);
 		t->stepc=0;
@@ -407,7 +428,7 @@ gvar_def
 		if(result==NO_ERROR)
 		{
 			add_id($2,(void*)p);
-			code_gvar($2,$1);
+			code_gvar($2,((const_val*)$1)->basic_val);
 		}
 		else
 			dump_error(result);
@@ -416,7 +437,7 @@ gvar_def
 	{
 		id_val* p=NEW_VAL(id_val);
 		p->kind = KIND_VARIABLE;
-		p->type = $1;
+		p->type = ((const_val*)$1)->basic_val;
 		
 		arr_val *t = NEW_VAL(arr_val);
 		t->stepc=0;
@@ -426,8 +447,11 @@ gvar_def
 
 		if(result==NO_ERROR)
 		{
+			init_type_check(p->type,((const_val*)$4)->type);
+			code_single_change_type((const_val*)$4,p->type);
 			add_id($2,(void*)p);
-			code_gvar($2,$1);
+			code_gvar($2,((const_val*)$1)->basic_val);
+			code_gvar_init($2,(const_val*)$4,((const_val*)$1)->basic_val);
 		}
 		else
 			dump_error(result);
@@ -437,7 +461,7 @@ gvar_def
 	{
 		id_val *p=NEW_VAL(id_val);
 		p->kind = KIND_CONSTANT;
-		p->type = $2;
+		p->type = ((const_val*)$2)->basic_val;
 
 		id_val *get_const=(id_val*)$6;
 		p->list = get_const->list;
@@ -448,7 +472,7 @@ gvar_def
 		{
 			init_type_check(p->type,get_const->type);
 			add_id($4,(void*)p);
-			code_gvar($4,$2);
+			code_gvar($4,((const_val*)$2)->basic_val);
 		}
 		else
 			dump_error(result);
@@ -458,7 +482,7 @@ gvar_def
 	{
 		id_val *p=NEW_VAL(id_val);
 		p->kind = KIND_CONSTANT;
-		p->type = $2;
+		p->type = ((const_val*)$2)->basic_val;
 
 		id_val *get_const=(id_val*)$5;
 		p->list = get_const->list;
@@ -470,7 +494,7 @@ gvar_def
 		{
 			init_type_check(p->type,get_const->type);
 			add_id($3,(void*)p);
-			code_gvar($3,$2);
+			code_gvar($3,((const_val*)$2)->basic_val);
 		}
 		else
 			dump_error(result);
@@ -480,10 +504,10 @@ gvar_def
 gvar_list
 : gvar_list ID ','
 	{
-		$$ = $<c_type>0;
+		$$ = $<v>0;
 		id_val *p=NEW_VAL(id_val);
 		p->kind=KIND_VARIABLE;
-		p->type = $<c_type>0;
+		p->type = ((const_val*)$<v>0)->basic_val;
 
 		arr_val *t = NEW_VAL(arr_val);
 		t->stepc=0;
@@ -494,17 +518,17 @@ gvar_list
 		if(result==NO_ERROR)
 		{
 			add_id($2,(void*)p);
-			code_gvar($2,$<c_type>0);
+			code_gvar($2,((const_val*)$<v>0)->basic_val);
 		}
 		else
 			dump_error(result);
 	}
 | gvar_list ID '=' expr ','
 	{
-		$$ = $<c_type>0;
+		$$ = $<v>0;
 		id_val *p=NEW_VAL(id_val);
 		p->kind = KIND_VARIABLE;
-		p->type = $<c_type>0;
+		p->type = ((const_val*)$<v>0)->basic_val;
 
 		arr_val *t = NEW_VAL(arr_val);
 		t->stepc=0;
@@ -515,18 +539,21 @@ gvar_list
 
 		if(result==NO_ERROR)
 		{
+			init_type_check(p->type,((const_val*)$4)->type);
+			code_single_change_type((const_val*)$4,p->type);
 			add_id($2,(void*)p);
-			code_gvar($2,$<c_type>0);
+			code_gvar($2,((const_val*)$<v>0)->basic_val);
+			code_gvar_init($2,(const_val*)$4,((const_val*)$<v>0)->basic_val);
 		}
 		else
 			dump_error(result);
 	}
 | ID ','
 	{
-		$$ = $<c_type>0;
+		$$ = $<v>0;
 		id_val *p=NEW_VAL(id_val);
 		p->kind = KIND_VARIABLE;
-		p->type = $<c_type>0;
+		p->type = ((const_val*)$<v>0)->basic_val;
 		arr_val *t = NEW_VAL(arr_val);
 		t->stepc=0;
 		p->list=(void*)t;
@@ -536,17 +563,17 @@ gvar_list
 		if(result==NO_ERROR)
 		{
 			add_id($1,(void*)p);
-			code_gvar($1,$<c_type>0);
+			code_gvar($1,((const_val*)$<v>0)->basic_val);
 		}
 		else
 			dump_error(result);
 	}
 | ID '=' expr ','
 	{
-		$$ = $<c_type>0;
+		$$ = $<v>0;
 		id_val *p=NEW_VAL(id_val);
 		p->kind=KIND_VARIABLE;
-		p->type=$<c_type>0;
+		p->type=((const_val*)$<v>0)->basic_val;
 		arr_val *t = NEW_VAL(arr_val);
 		t->stepc=0;
 		p->list=(void*)t;
@@ -555,8 +582,11 @@ gvar_list
 
 		if(result==NO_ERROR)
 		{
+			init_type_check(p->type,((const_val*)$3)->type);
+			code_single_change_type((const_val*)$3,p->type);
 			add_id($1,(void*)p);
-			code_gvar($1,$<c_type>0);
+			code_gvar($1,((const_val*)$<v>0)->basic_val);
+			code_gvar_init($1,(const_val*)$3,((const_val*)$<v>0)->basic_val);
 		}
 		else
 			dump_error(result);
@@ -566,11 +596,11 @@ gvar_list
 gconst_list
 : gconst_list ID '=' liter_const ','
 	{
-		$$ = $<c_type>0;
+		$$ = $<v>0;
 
 		id_val *p=NEW_VAL(id_val);
 		p->kind = KIND_CONSTANT;
-		p->type = $<c_type>0;
+		p->type = ((const_val*)$<v>0)->basic_val;
 
 		id_val *get_const=(id_val*)$4;
 		p->list = get_const->list;
@@ -581,18 +611,18 @@ gconst_list
 		{
 			init_type_check(p->type,get_const->type);
 			add_id($2,(void*)p);
-			code_gvar($2,$<c_type>0);
+			code_gvar($2,((const_val*)$<v>0)->basic_val);
 		}
 		else
 			dump_error(result);
 	}
 | ID '=' liter_const ','
 	{
-		$$ = $<c_type>0;
+		$$ = $<v>0;
 
 		id_val *p=NEW_VAL(id_val);
 		p->kind = KIND_CONSTANT;
-		p->type = $<c_type>0;
+		p->type = ((const_val*)$<v>0)->basic_val;
 
 		id_val *get_const=(id_val*)$3;
 		p->list = get_const->list;
@@ -603,7 +633,7 @@ gconst_list
 		{
 			init_type_check(p->type,get_const->type);
 			add_id($1,(void*)p);
-			code_gvar($1,$<c_type>0);
+			code_gvar($1,((const_val*)$<v>0)->basic_val);
 		}
 		else
 			dump_error(result);
@@ -615,7 +645,7 @@ var_def
 	{
 		id_val* p=NEW_VAL(id_val);
 		p->kind = KIND_VARIABLE;
-		p->type = $1;
+		p->type = ((const_val*)$1)->basic_val;
 
 		arr_val *t = NEW_VAL(arr_val);
 		t->stepc=0;
@@ -627,10 +657,11 @@ var_def
 		if(result==NO_ERROR)
 		{
 			add_id($3,(void*)p);
-			f_output_stack_add($1);
+			f_output_stack_add(((const_val*)$1)->basic_val);
 		}
 		else
 			dump_error(result);
+
 
 
 		$$ = $2;
@@ -639,7 +670,7 @@ var_def
 	{
 		id_val* p=NEW_VAL(id_val);
 		p->kind = KIND_VARIABLE;
-		p->type = $1;
+		p->type = ((const_val*)$1)->basic_val;
 		
 		arr_val *t = NEW_VAL(arr_val);
 		t->stepc=0;
@@ -650,7 +681,7 @@ var_def
 		if(result==NO_ERROR)
 		{
 			add_id($3,(void*)p);
-			f_output_stack_add($1);
+			f_output_stack_add(((const_val*)$1)->basic_val);
 
 			const_val *exp = (const_val*)$5;
 			init_type_check(p->type,exp->type);
@@ -672,7 +703,7 @@ var_def
 	{
 		id_val* p=NEW_VAL(id_val);
 		p->kind = KIND_VARIABLE;
-		p->type = $1;
+		p->type = ((const_val*)$1)->basic_val;
 		
 		arr_val *t = NEW_VAL(arr_val);
 		t->stepc=0;
@@ -683,7 +714,7 @@ var_def
 		if(result==NO_ERROR)
 		{
 			add_id($2,(void*)p);
-			f_output_stack_add($1);
+			f_output_stack_add(((const_val*)$1)->basic_val);
 		}
 		else
 			dump_error(result);
@@ -701,7 +732,7 @@ var_def
 	{
 		id_val* p=NEW_VAL(id_val);
 		p->kind = KIND_VARIABLE;
-		p->type = $1;
+		p->type = ((const_val*)$1)->basic_val;
 		
 		arr_val *t = NEW_VAL(arr_val);
 		t->stepc=0;
@@ -712,7 +743,7 @@ var_def
 		if(result==NO_ERROR)
 		{
 			add_id($2,(void*)p);
-			f_output_stack_add($1);
+			f_output_stack_add(((const_val*)$1)->basic_val);
 
 			const_val *exp = (const_val*)$4;
 			init_type_check(p->type,exp->type);
@@ -732,7 +763,7 @@ var_def
 	{
 		id_val *p=NEW_VAL(id_val);
 		p->kind = KIND_CONSTANT;
-		p->type = $2;
+		p->type = ((const_val*)$2)->basic_val;
 
 		id_val *get_const=(id_val*)$6;
 		p->list = get_const->list;
@@ -760,7 +791,7 @@ var_def
 	{
 		id_val *p=NEW_VAL(id_val);
 		p->kind = KIND_CONSTANT;
-		p->type = $2;
+		p->type = ((const_val*)$2)->basic_val;
 
 		id_val *get_const=(id_val*)$5;
 
@@ -792,7 +823,7 @@ func_def
 	{
 		
 
-		func_type = $1;
+		func_type = ((const_val*)$1)->basic_val;
 		argu_val *co=(argu_val*)$5;
 
 		func_val *p_f = (func_val*)$4;
@@ -804,7 +835,7 @@ func_def
 
 		id_val *p = NEW_VAL(id_val);
 		p->kind = KIND_FUNCTION;
-		p->type = $1;
+		p->type = ((const_val*)$1)->basic_val;
 
 		p->list = (void*)p_f;
 
@@ -838,7 +869,7 @@ func_def
 	}
 | basic ID '(' argu ')'
 	{
-		func_type = $1;
+		func_type = ((const_val*)$1)->basic_val;
 		argu_val *co=(argu_val*)$4;
 
 		func_val *p_f = NEW_VAL(func_val);
@@ -851,7 +882,7 @@ func_def
 
 		id_val *p = NEW_VAL(id_val);
 		p->kind = KIND_FUNCTION;
-		p->type = $1;
+		p->type = ((const_val*)$1)->basic_val;
 
 		p->list = (void*)p_f;
 
@@ -884,11 +915,11 @@ func_def
 	}
 | basic ID '(' ')' 
 	{
-		func_type = $1;
+		func_type = ((const_val*)$1)->basic_val;
 		id_val *p = NEW_VAL(id_val);
 
 		p->kind = KIND_FUNCTION;
-		p->type = $1;
+		p->type = ((const_val*)$1)->basic_val;
 		func_val *t =NEW_VAL(func_val);
 		t->type=FUNC_DEF;
 		t->argc=0;
@@ -935,7 +966,7 @@ func_def
 
 		id_val *p = NEW_VAL(id_val);
 		p->kind = KIND_FUNCTION;
-		p->type = $1;
+		p->type = ((const_val*)$1)->basic_val;
 
 		p->list = (void*)p_f;
 
@@ -953,6 +984,7 @@ func_def
 	compound_in_argu_func '}'
 	{
 		const_val* code= (const_val*)$10;
+		code_void_return(&code);
 		code_dump_expr(code);
 		code_cur_func_end();
 		output_stack = 0;
@@ -974,7 +1006,7 @@ func_def
 
 		id_val *p = NEW_VAL(id_val);
 		p->kind = KIND_FUNCTION;
-		p->type = $1;
+		p->type = ((const_val*)$1)->basic_val;
 
 		p->list = (void*)p_f;
 
@@ -992,6 +1024,7 @@ func_def
 	compound_in_argu_func '}'
 	{
 		const_val* code= (const_val*)$9;
+		code_void_return(&code);
 		code_dump_expr(code);
 		code_cur_func_end();
 		if(Opt_symbol) dump_cur_table();
@@ -1003,7 +1036,7 @@ func_def
 		id_val *p = NEW_VAL(id_val);
 
 		p->kind = KIND_FUNCTION;
-		p->type = $1;
+		p->type = ((const_val*)$1)->basic_val;
 		func_val *t =NEW_VAL(func_val);
 		t->type=FUNC_DEF;
 		t->argc=0;
@@ -1023,6 +1056,7 @@ func_def
 	compound_in_argu_func '}'
 	{
 		const_val* code= (const_val*)$8;
+		code_void_return(&code);
 		code_dump_expr(code);
 		code_cur_func_end();
 		output_stack = 0;
@@ -1172,7 +1206,7 @@ func_decl
 
 		id_val *p = NEW_VAL(id_val);
 		p->kind = KIND_FUNCTION;
-		p->type = $1;
+		p->type = ((const_val*)$1)->basic_val;
 
 		p->list = (void*)p_f;
 
@@ -1197,7 +1231,7 @@ func_decl
 
 		id_val *p = NEW_VAL(id_val);
 		p->kind = KIND_FUNCTION;
-		p->type = $1;
+		p->type = ((const_val*)$1)->basic_val;
 
 		p->list = (void*)p_f;
 
@@ -1213,7 +1247,7 @@ func_decl
 		id_val *p = NEW_VAL(id_val);
 
 		p->kind = KIND_FUNCTION;
-		p->type = $1;
+		p->type = ((const_val*)$1)->basic_val;
 
 		func_val *t =NEW_VAL(func_val);
 		t->type=FUNC_DECL;
@@ -1240,7 +1274,7 @@ func_decl
 
 		id_val *p = NEW_VAL(id_val);
 		p->kind = KIND_FUNCTION;
-		p->type = $1;
+		p->type = ((const_val*)$1)->basic_val;
 
 		p->list = (void*)p_f;
 
@@ -1265,7 +1299,7 @@ func_decl
 
 		id_val *p = NEW_VAL(id_val);
 		p->kind = KIND_FUNCTION;
-		p->type = $1;
+		p->type = ((const_val*)$1)->basic_val;
 
 		p->list = (void*)p_f;
 
@@ -1281,7 +1315,7 @@ func_decl
 	{
 		id_val *p=NEW_VAL(id_val);
 		p->kind = KIND_FUNCTION;
-		p->type = $1;
+		p->type = ((const_val*)$1)->basic_val;
 
 		func_val *t =NEW_VAL(func_val);
 		t->type=FUNC_DECL;
@@ -1334,7 +1368,7 @@ argu
 		
 		p->val=NEW_VAL(id_val);
 		p->val->kind=KIND_PARAMETER;
-		p->val->type=$1;
+		p->val->type=((const_val*)$1)->basic_val;
 
 		arr_val *t = NEW_VAL(arr_val);
 		t->stepc=0;
@@ -1343,7 +1377,7 @@ argu
 
 		$$ = (void*)p;
 
-		f_output_stack_add($1);
+		f_output_stack_add(((const_val*)$1)->basic_val);
 	}
 ;
 
@@ -1351,25 +1385,33 @@ argu
 basic
 : BASIC_TYPE
 	{
+		const_val *re = NEW_VAL(const_val);
+
+
 		if(!strcmp($1,"bool"))
-			$$ = TYPE_BOOL;
+			re->basic_val = TYPE_BOOL;
 		else if(!strcmp($1,"int"))
-			$$ = TYPE_INT;
+			re->basic_val = TYPE_INT;
 		else if(!strcmp($1,"float"))
-			$$ = TYPE_FLOAT;
+			re->basic_val = TYPE_FLOAT;
 		else if(!strcmp($1,"double"))
-			$$ = TYPE_DOUBLE;
+			re->basic_val = TYPE_DOUBLE;
 		else if(!strcmp($1,"string"))
-			$$ = TYPE_STRING;
+			re->basic_val = TYPE_STRING;
 		else if(!strcmp($1,"boolean"))
-			$$ = TYPE_BOOL;
+			re->basic_val = TYPE_BOOL;
+
+		$$ = (void*)re;
 	}
 ;
 
 void_reduce
 : VOID
 	{
-		$$ = TYPE_VOID;
+		const_val *re = NEW_VAL(const_val);
+		re->basic_val = TYPE_VOID;
+		
+		$$ = (void*)re;
 	}
 ;
 
@@ -1515,10 +1557,11 @@ string_value
 var_list
 : var_list ID ','
 	{
-		//$$ = $<c_type>0;
+		//$$ = $<v>0;
 		const_val *ori = (const_val*)$<v>0;
 		const_val *v1 = (const_val*)$1;
 		v1->basic_val = ori->basic_val;
+
 
 		id_val *p=NEW_VAL(id_val);
 		p->kind=KIND_VARIABLE;
@@ -1533,7 +1576,7 @@ var_list
 		if(result==NO_ERROR)
 		{
 			add_id($2,(void*)p);
-			f_output_stack_add($<c_type>0);
+			f_output_stack_add(((const_val*)$<v>0)->basic_val);
 		}
 		else
 			dump_error(result);
@@ -1561,7 +1604,7 @@ var_list
 		if(result==NO_ERROR)
 		{
 			add_id($2,(void*)p);
-			f_output_stack_add($<c_type>0);
+			f_output_stack_add(((const_val*)$<v>0)->basic_val);
 
 			const_val *exp = (const_val*)$4;
 			init_type_check(p->type,exp->type);
@@ -1581,11 +1624,11 @@ var_list
 	}
 | ID ','
 	{
-		// $$ = $<c_type>0;
+		// $$ = $<v>0;
 		const_val *ori = (const_val*)$<v>0;
 		id_val *p=NEW_VAL(id_val);
 		p->kind = KIND_VARIABLE;
-		p->type = $<c_type>0;
+		p->type = ((const_val*)$<v>0)->basic_val;
 		arr_val *t = NEW_VAL(arr_val);
 		t->stepc=0;
 		p->list=(void*)t;
@@ -1595,7 +1638,7 @@ var_list
 		if(result==NO_ERROR)
 		{
 			add_id($1,(void*)p);
-			f_output_stack_add($<c_type>0);
+			f_output_stack_add(((const_val*)$<v>0)->basic_val);
 		}
 		else
 			dump_error(result);
@@ -1607,18 +1650,17 @@ var_list
 		new_node->content = strdup("");
 		v1->code_head = new_node;
 		v1->code_index = new_node;
-
 		$$ = (void*)v1;
 
 
 	}
 | ID '=' expr ','
 	{
-		//$$ = $<c_type>0;
+		//$$ = $<v>0;
 		const_val *ori = (const_val*)$<v>0;
 		id_val *p=NEW_VAL(id_val);
 		p->kind = KIND_VARIABLE;
-		p->type = $<c_type>0;
+		p->type = ((const_val*)$<v>0)->basic_val;
 		arr_val *t = NEW_VAL(arr_val);
 		t->stepc=0;
 		p->list=(void*)t;
@@ -1628,7 +1670,7 @@ var_list
 		if(result==NO_ERROR)
 		{
 			add_id($1,(void*)p);
-			f_output_stack_add($<c_type>0);
+			f_output_stack_add(((const_val*)$<v>0)->basic_val);
 
 			const_val *exp = (const_val*)$3;
 			init_type_check(p->type,exp->type);
@@ -1650,11 +1692,11 @@ var_list
 const_list
 : const_list ID '=' liter_const ','
 	{
-		$$ = $<c_type>0;
+		$$ = $<v>0;
 
 		id_val *p=NEW_VAL(id_val);
 		p->kind = KIND_CONSTANT;
-		p->type = $<c_type>0;
+		p->type = ((const_val*)$<v>0)->basic_val;
 
 		id_val *get_const=(id_val*)$4;
 		p->list = get_const->list;
@@ -1671,11 +1713,11 @@ const_list
 	}
 | ID '=' liter_const ','
 	{
-		$$ = $<c_type>0;
+		$$ = $<v>0;
 
 		id_val *p=NEW_VAL(id_val);
 		p->kind = KIND_CONSTANT;
-		p->type = $<c_type>0;
+		p->type = ((const_val*)$<v>0)->basic_val;
 
 		id_val *get_const=(id_val*)$3;
 		p->list = get_const->list;
@@ -1762,7 +1804,7 @@ expr
 		const_val *output;
 		check_and_set_scalar(v1);
 		check_and_set_scalar(v2);
-		if(!check_type_one(v1,v2,TYPE_INT))
+		if(!(v1,v2,TYPE_INT))
 		{
 			dump_error(ERROR_TYPE_ERROR);
 		}
@@ -1901,6 +1943,16 @@ expr
 			dump_error(ERROR_TYPE_ERROR);
 		}
 		output=geneValConstOne(v1,v2,TYPE_BOOL);
+
+		code_merge_expr(output,v1,v2);
+
+		output_list *new_node = NEW_VAL(output_list);
+		new_node->content = strdup("iand\n");
+		new_node->next = NULL;
+
+		output->code_index->next = new_node;
+		output->code_index = new_node;
+
 		$$=(void*)output;
 	}
 | expr OR expr
@@ -1915,6 +1967,16 @@ expr
 			dump_error(ERROR_TYPE_ERROR);
 		}
 		output=geneValConstOne(v1,v2,TYPE_BOOL);
+
+		code_merge_expr(output,v1,v2);
+
+		output_list *new_node = NEW_VAL(output_list);
+		new_node->content = strdup("ior\n");
+		new_node->next = NULL;
+
+		output->code_index->next = new_node;
+		output->code_index = new_node;
+
 		$$=(void*)output;
 	}
 | '!' expr %prec UNOT
@@ -1927,7 +1989,18 @@ expr
 			dump_error(ERROR_TYPE_ERROR);
 		}
 		output=geneOneVal(v1,TYPE_BOOL);
-		$$=(void*)v1;
+
+		output->code_head = v1->code_head;
+		output->code_index = v1->code_index;
+
+		output_list *new_node = NEW_VAL(output_list);
+		new_node->content = strdup("ixor\n");
+		new_node->next = NULL;
+
+		output->code_index->next = new_node;
+		output->code_index = new_node;
+
+		$$=(void*)output;
 
 	}
 | value_type
@@ -1985,6 +2058,12 @@ expr
 		q->type=TYPE_INT;
 		q->value = (void*)p;
 
+		output_list *new_node = NEW_VAL(output_list);
+		new_node->next = NULL;
+		new_node->content = strdup("");
+
+		q->code_head = new_node;
+		q->code_index = new_node;
 
 		if(sym!=NULL)
 		{
@@ -1997,10 +2076,13 @@ expr
 				if(!check_parameter(sym,p))
 					dump_error(ERROR_FUNC_ARGU_NOT_MATCH);
 			}
-			const_val *q=NEW_VAL(const_val);
+			//const_val *q=NEW_VAL(const_val);
 			q->kind=KIND_RVAL;
 			q->type=sym_id->type;
 			q->value = (void*)p;
+
+			code_merge_expr(q,q,p->func_code);
+			code_call_func(q,sym);
 		}
 
 		$$ = (void*)q;
@@ -2019,7 +2101,8 @@ func_invo
 		co[p->listc-1]= *((const_val*)$4);
 
 		p->listv=(void*)co;
-		
+
+		code_merge_expr(p->func_code,p->func_code,((const_val*)$4));
 
 		$$ = (void*)p;
 
@@ -2032,6 +2115,17 @@ func_invo
 		p->listv = malloc(sizeof(const_val));
 		((const_val*)p->listv)[0] = *(const_val*)($3);
 
+		const_val *code = NEW_VAL(const_val);
+		output_list *new_node = NEW_VAL(output_list);
+		new_node->next = NULL;
+		new_node->content = strdup("");
+
+		code->code_head = new_node;
+		code->code_index = new_node;
+
+		code_merge_expr(code,code,((const_val*)$3));
+
+		p->func_code = code;
 		$$ = (void*)p;
 
 	}
@@ -2040,6 +2134,16 @@ func_invo
 		invo_val *p = NEW_VAL(invo_val);
 		p->name = strdup($1);
 		p->listc = 0;
+
+		const_val *code = NEW_VAL(const_val);
+		output_list *new_node = NEW_VAL(output_list);
+		new_node->next = NULL;
+		new_node->content = strdup("");
+
+		code->code_head = new_node;
+		code->code_index = new_node;
+
+		p->func_code = code;
 
 		$$ = (void*)p;
 	}
@@ -2057,6 +2161,8 @@ expr_list
 		co[p->listc-1]=*((const_val*)$2);
 		p->listv = (void*)co;
 
+		code_merge_expr(p->func_code,p->func_code,((const_val*)$2));
+
 		$$ = (void*)p;
 	}
 | expr ','
@@ -2069,6 +2175,19 @@ expr_list
 
 		p->listv=(void*)co;
 
+	
+		const_val *code = NEW_VAL(const_val);
+		output_list *new_node = NEW_VAL(output_list);
+		new_node->next = NULL;
+		new_node->content = strdup("");
+
+		code->code_head = new_node;
+		code->code_index = new_node;
+
+		code_merge_expr(code,code,(const_val*)$1);
+
+		p->func_code = code;
+
 		$$ = (void*)p;
 	}
 ;
@@ -2078,6 +2197,7 @@ simple_stat
 	{
 		const_val* con=(const_val*)$1;
 		const_val* exp=(const_val*)$3;
+
 
 		equal_type_check(con,exp);
 
@@ -2262,13 +2382,14 @@ bool_expr
 while_stat
 : WHILE '(' bool_expr ')'
 	{
+		f_push_loop_state();
 		isInLoop+=1;
 	}
 	compound 
 	{
 		char outstring[2000];
 
-		int loop_label = 0;
+		int loop_label = l_stack->loop_val;
 
 		const_val *v1 = (const_val*)$6;
 		const_val *exp = (const_val*)$3;
@@ -2302,18 +2423,20 @@ while_stat
 		v1->code_index->next = new_node;
 		v1->code_index = new_node;
 
+		f_pop_loop_state();
 		isInLoop-=1;
 		$$ = (void*)v1;
 	}
 | DO 
 	{
+		f_push_loop_state();
 		isInLoop+=1;
 	}
 	compound WHILE '(' bool_expr ')' ';'
 	{
 		char outstring[2000];
 
-		int loop_label = 0;
+		int loop_label = l_stack->loop_val;
 
 		const_val *v1 = (const_val*)$3;
 		const_val *exp = (const_val*)$6;
@@ -2349,6 +2472,7 @@ while_stat
 		v1->code_index->next = new_node;
 		v1->code_index = new_node;
 
+		f_pop_loop_state();
 		isInLoop-=1;
 		$$ = (void*)v1;
 	}
@@ -2357,13 +2481,14 @@ while_stat
 for_stat
 : FOR '(' init_expr ';' bool_expr ';' incr_expr ')'
 	{
+		f_push_loop_state();
 		isInLoop+=1;
 	} 
 	compound 
 	{
 		char outstring[2000];
 		
-		int loop_label=0;
+		int loop_label=l_stack->loop_val;
 
 		const_val *v1 = (const_val*)$10;
 		const_val *init = (const_val*)$3;
@@ -2409,18 +2534,20 @@ for_stat
 		v1->code_index->next = new_node;
 		v1->code_index = new_node;
 
+		f_pop_loop_state();
 		isInLoop-=1;
 		$$ = (void*)v1;
 	}
 | FOR '(' init_expr ';' ';' incr_expr ')'
 	{
+		f_push_loop_state();
 		isInLoop+=1;
 	} compound
 	{
 
 		char outstring[2000];
 		
-		int loop_label=0;
+		int loop_label=l_stack->loop_val;
 
 		const_val *v1 = (const_val*)$9;
 		const_val *init = (const_val*)$3;
@@ -2455,6 +2582,7 @@ for_stat
 		v1->code_index->next = new_node;
 		v1->code_index = new_node;
 
+		f_pop_loop_state();
 		isInLoop-=1;
 		$$ = (void*)v1;
 	}
@@ -2894,6 +3022,12 @@ jump_stat
 		output_list *new_node = NEW_VAL(output_list);
 		new_node->next = NULL;
 		new_node->content = strdup("");
+		
+
+		char outstring[2000];
+		sprintf(outstring,"goto LOOP_END_%d\n",l_stack!=NULL?l_stack->loop_val:0);
+		new_node->content = mergestring(new_node->content,outstring);
+
 		v1->code_head = new_node;
 		v1->code_index = new_node;
 
@@ -2909,6 +3043,12 @@ jump_stat
 		output_list *new_node = NEW_VAL(output_list);
 		new_node->next = NULL;
 		new_node->content = strdup("");
+
+
+		char outstring[2000];
+		sprintf(outstring,"goto LOOP_END_%d\n",l_stack!=NULL?l_stack->loop_val:0);
+		new_node->content = mergestring(new_node->content,outstring);
+
 		v1->code_head = new_node;
 		v1->code_index = new_node;
 
@@ -2969,6 +3109,7 @@ void equal_type_check(const_val* con,const_val *exp)
 
 	}
 }
+
 
 int check_parameter(symbol_list* list, invo_val* invo)
 {
@@ -3635,7 +3776,7 @@ void add_newtable_with_argu(char* name)
 	symbol_list *argu_head=NULL;
 	symbol_list *argu_index=NULL;
 
-	output_cur_position = 1;
+	output_cur_position = 0;
 
 	for(int t=0; f_list!=NULL && t<f_list->argc;t++)
 	{
@@ -3844,6 +3985,9 @@ void gene_init_code()
 	output_main_head = new_node;
 	output_main_index = new_node;
 
+	
+	
+
 
 
 }
@@ -3915,7 +4059,7 @@ void code_read(const_val *v1,int type)
 	output_list *new_node = NEW_VAL(output_list);
 	new_node->next = NULL;
 	new_node->content = strdup("getstatic demo/_sc Ljava/util/Scanner;\n");
-	new_node->content = mergestring(new_node->content,"invokevirtual java/util/Scanner/");
+	new_node->content = mergestring(new_node->content,"invokevirtual java/util/Scanner/next");
 	new_node->content = mergestring(new_node->content,f_read_type(type));
 	new_node->content = mergestring(new_node->content,"()");
 	new_node->content = mergestring(new_node->content,f_get_type(type));
@@ -3944,7 +4088,7 @@ void code_cur_func_end()
 	new_node->next = NULL;
 
 	new_node->content = strdup(".limit stack ");
-	sprintf(num,"%d",output_oper);
+	sprintf(num,"%d",300);
 	new_node->content = mergestring(new_node->content,num);
 	new_node->content = mergestring(new_node->content,"\n");
 
@@ -3955,7 +4099,7 @@ void code_cur_func_end()
 	new_node->next = NULL;
 
 	new_node->content = strdup(".limit locals ");
-	sprintf(num,"%d",output_stack);
+	sprintf(num,"%d",output_stack+5);
 	new_node->content = mergestring(new_node->content,num);
 	new_node->content = mergestring(new_node->content,"\n");
 
@@ -3978,6 +4122,16 @@ void code_cur_func_end()
 
 	output_func_index->next = new_node;
 	output_func_index = new_node;
+}
+
+void code_void_return(const_val **v1)
+{
+	output_list *new_node = NEW_VAL(output_list);
+	new_node->next = NULL;
+	new_node->content = strdup("return\n");
+
+	(*v1)->code_index->next = new_node;
+	(*v1)->code_index = new_node;
 }
 
 void code_calculate(const_val *output,const_val *v1, const_val *v2, int cal_type)
@@ -4290,6 +4444,20 @@ void code_single_change_type(const_val *v1,int type)
 
 }
 
+void code_call_func(const_val *v1, symbol_list *list)
+{
+	if( ((id_val*)list->val)->kind != KIND_FUNCTION) return;
+	char outstring[2000];
+	output_list *new_node = NEW_VAL(output_list);
+	new_node->next = NULL;
+	new_node->content = strdup("");
+
+	sprintf(outstring,"invokestatic demo/_%s(%s)%s\n",list->name,f_argulist(list),f_get_type( ((id_val*)list->val)->type ));
+	new_node->content = mergestring(new_node->content,outstring);
+	v1->code_index->next = new_node;
+	v1->code_index = new_node;
+}
+
 void code_change_type(const_val* v1, const_val *v2, int type)
 {
 	output_list *new_node = NEW_VAL(output_list);
@@ -4360,8 +4528,143 @@ void code_final()
 		fprintf(fg,"%s",parser->content);
 		parser = parser->next;
 	}
+
+	code_dump_main();
+	parser = output_main_head;
+	while(parser!=NULL)
+	{
+		fprintf(fg,"%s",parser->content);
+		parser = parser->next;
+	}
 	fclose(fg);
 }
+
+void code_dump_main()
+{
+	printf("START\n");
+	output_list *new_node = NEW_VAL(output_list);
+	new_node->next = NULL;
+	new_node->content = strdup(".method public static main([Ljava/lang/String;)V\n");
+	new_node->content = mergestring(new_node->content ,".limit stack 100\n");
+	new_node->content = mergestring(new_node->content ,".limit locals 10\n");
+	new_node->content = mergestring(new_node->content ,"new java/util/Scanner\ndup\n");
+	new_node->content = mergestring(new_node->content ,"getstatic java/lang/System/in Ljava/io/InputStream;\n");
+	new_node->content = mergestring(new_node->content ,"invokespecial java/util/Scanner/<init>(Ljava/io/InputStream;)V\n");
+	new_node->content = mergestring(new_node->content ,"putstatic demo/_sc Ljava/util/Scanner;\n");
+
+	new_node->next = output_main_head;
+	output_main_head = new_node;
+
+	code_call_main(&output_main_index);
+
+	new_node = NEW_VAL(output_list);
+	new_node->next = NULL;
+	new_node->content = strdup("return\n.end method\n");
+
+
+	output_main_index->next = new_node;
+	output_main_index = new_node;
+
+}
+
+void code_call_main(output_list **main_list)
+{
+	symbol_list *id = find_symbol("main",0);
+
+
+
+	if(id!=NULL)
+	{
+		
+		const_val *v1 = NEW_VAL(const_val);
+		output_list *new_node = NEW_VAL(output_list);
+		new_node->next = NULL;
+		new_node->content = strdup("");
+
+		v1->code_head = new_node;
+		v1->code_index = new_node;
+
+		code_call_func(v1,id);
+
+		output_list *parser = v1->code_head;
+		
+		while(parser!=NULL)
+		{
+			new_node = NEW_VAL(output_list);
+			new_node->next = NULL;
+			new_node->content = strdup(parser->content);
+			(*main_list)->next = new_node;
+			(*main_list) = new_node;
+			parser= parser->next;
+		}
+	}
+
+}
+
+void code_gvar_init(char* name, const_val* v1,int type)
+{
+	output_list *parser = v1->code_head;
+	output_list *new_node;
+	while(parser!=NULL)
+	{
+		new_node = NEW_VAL(output_list);
+		new_node->next = NULL;
+		new_node->content = strdup(parser->content);
+
+		output_main_index->next = new_node;
+		output_main_index = new_node;
+
+		parser = parser->next;
+	}
+	new_node = NEW_VAL(output_list);
+	new_node->next = NULL;
+	new_node->content = strdup("putstatic demo/");
+	new_node->content = mergestring(new_node->content,name);
+	new_node->content = mergestring(new_node->content," ");
+	new_node->content = mergestring(new_node->content,f_get_type(type));
+	new_node->content = mergestring(new_node->content,"\n");
+	
+	output_main_index->next = new_node;
+	output_main_index = new_node;
+}
+
+char* f_argulist(symbol_list *list)
+{
+	id_val *pr =(id_val*)list->val;
+	if( pr->kind != KIND_FUNCTION ) return strdup("");
+
+	char *ans = strdup("");
+	func_val *p=(func_val*)pr->list;
+	for(int t=0;t<p->argc;t++)
+	{
+		argu_val *ar=(argu_val*)(p->argv+t);
+		id_val *id_argu=(id_val*)ar->val;
+		arr_val *arr_argu=(arr_val*)id_argu->list;
+
+		ans = mergestring(ans,f_get_type(id_argu->type));
+	}
+
+	return ans;
+}
+
+void f_push_loop_state()
+{
+	loop_stack *new_node = NEW_VAL(loop_stack);
+	new_node->loop_val = loop_label;
+	new_node->next = l_stack;
+	l_stack = new_node;
+
+	loop_label++;
+}
+
+void f_pop_loop_state()
+{
+	loop_stack *f = l_stack;
+	l_stack = l_stack->next;
+	
+	free(f);
+}
+
 
 char *f_print_type(int type)
 {
@@ -4516,6 +4819,7 @@ int main( int argc, char **argv )
 	
 	yyparse();
 
+	code_final();
 	if(Opt_symbol)
 		dump_cur_table();
 	else pop_cur_table();
@@ -4538,7 +4842,7 @@ int main( int argc, char **argv )
 		fprintf( stdout, "|-------------------------------------------|\n" );
 		fprintf( stdout, "| There is no syntactic and semantic error! |\n" );
 		fprintf( stdout, "|-------------------------------------------|\n" );
-		code_final();
+		
 	}
 
 
