@@ -4,13 +4,10 @@ using namespace std;
 
 int a;
 int c= a;
-a=5;
-
+char *z = strdup("4234");
 int main()
 {
-	char a[5];
-	a= strdup("12");
-	printf("%s",a);
+	printf("%s\n",z);
 }
 
 int b;

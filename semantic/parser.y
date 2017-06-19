@@ -284,6 +284,8 @@ char *f_argulist(symbol_list *type);
 void f_assign_by_const_val(const_val*);
 
 
+char *output_string = NULL;
+
 
 int yyerror( char *msg );
 int main( int argc, char **argv );
@@ -4039,8 +4041,13 @@ int yyerror( char *msg )
 
 void gene_init_code()
 {
+	output_string = strdup("output");
+
 	output_list *new_node = NEW_VAL(output_list);
-	new_node->content = strdup(".class public demo\n");
+	//new_node->content = strdup(".class public demo\n");
+	new_node->content = strdup(".class public ");
+	new_node->content = mergestring(new_node->content,output_string);
+	new_node->content = mergestring(new_node->content,"\n");
 	new_node->next = NULL;
 
 	output_head = new_node;
@@ -4151,7 +4158,10 @@ void code_read(const_val *v1,int type)
 {
 	output_list *new_node = NEW_VAL(output_list);
 	new_node->next = NULL;
-	new_node->content = strdup("getstatic demo/_sc Ljava/util/Scanner;\n");
+	//new_node->content = strdup("getstatic demo/_sc Ljava/util/Scanner;\n");
+	new_node->content = strdup("getstatic ");
+	new_node->content = mergestring(new_node->content,output_string);
+	new_node->content = mergestring(new_node->content,"/_sc Ljava/util/Scanner;\n");
 	new_node->content = mergestring(new_node->content,"invokevirtual java/util/Scanner/next");
 	new_node->content = mergestring(new_node->content,f_read_type(type));
 	new_node->content = mergestring(new_node->content,"()");
@@ -4452,7 +4462,10 @@ void code_load_val(const_val *v1)
 
 		if(f_id->cur_index==-1) //global
 		{
-			new_node->content = strdup("getstatic demo/");
+			//new_node->content = strdup("getstatic demo/");
+			new_node->content = strdup("getstatic ");
+			new_node->content = mergestring(new_node->content,output_string);
+			new_node->content = mergestring(new_node->content,"/");
 			new_node->content = mergestring(new_node->content,id_info->name);
 			new_node->content = mergestring(new_node->content," ");
 			new_node->content = mergestring(new_node->content,f_get_type(v1->type));
@@ -4487,7 +4500,10 @@ void code_store_val(char* name,const_val *v1)
 	id_val *id = (id_val*)f_id->val;
 	if(f_id->cur_index == -1) //global
 	{
-		new_node->content = strdup("putstatic demo/");
+		// new_node->content = strdup("putstatic demo/");
+		new_node->content = strdup("putstatic ");
+		new_node->content = mergestring(new_node->content,output_string);
+		new_node->content = mergestring(new_node->content,"/");
 		new_node->content = mergestring(new_node->content,name);
 		new_node->content = mergestring(new_node->content," ");
 		new_node->content = mergestring(new_node->content,f_get_type(id->type));
@@ -4545,7 +4561,8 @@ void code_call_func(const_val *v1, symbol_list *list)
 	new_node->next = NULL;
 	new_node->content = strdup("");
 
-	sprintf(outstring,"invokestatic demo/_%s(%s)%s\n",list->name,f_argulist(list),f_get_type( ((id_val*)list->val)->type ));
+	// sprintf(outstring,"invokestatic demo/_%s(%s)%s\n",list->name,f_argulist(list),f_get_type( ((id_val*)list->val)->type ));
+	sprintf(outstring,"invokestatic %s/_%s(%s)%s\n",output_string,list->name,f_argulist(list),f_get_type( ((id_val*)list->val)->type ));
 	new_node->content = mergestring(new_node->content,outstring);
 	v1->code_index->next = new_node;
 	v1->code_index = new_node;
@@ -4622,7 +4639,7 @@ void code_final()
 		parser = parser->next;
 	}
 
-	code_dump_main();
+	
 	parser = output_main_head;
 	while(parser!=NULL)
 	{
@@ -4643,7 +4660,10 @@ void code_dump_main()
 	new_node->content = mergestring(new_node->content ,"new java/util/Scanner\ndup\n");
 	new_node->content = mergestring(new_node->content ,"getstatic java/lang/System/in Ljava/io/InputStream;\n");
 	new_node->content = mergestring(new_node->content ,"invokespecial java/util/Scanner/<init>(Ljava/io/InputStream;)V\n");
-	new_node->content = mergestring(new_node->content ,"putstatic demo/_sc Ljava/util/Scanner;\n");
+	//new_node->content = mergestring(new_node->content ,"putstatic demo/_sc Ljava/util/Scanner;\n");
+	new_node->content = mergestring(new_node->content ,"putstatic ");
+	new_node->content = mergestring(new_node->content ,output_string);
+	new_node->content = mergestring(new_node->content ,"/_sc Ljava/util/Scanner;\n");
 
 	new_node->next = output_main_head;
 	output_main_head = new_node;
@@ -4711,7 +4731,10 @@ void code_gvar_init(char* name, const_val* v1,int type)
 	}
 	new_node = NEW_VAL(output_list);
 	new_node->next = NULL;
-	new_node->content = strdup("putstatic demo/");
+	//new_node->content = strdup("putstatic demo/");
+	new_node->content = strdup("putstatic ");
+	new_node->content = mergestring(new_node->content,output_string);
+	new_node->content = mergestring(new_node->content,"/");
 	new_node->content = mergestring(new_node->content,name);
 	new_node->content = mergestring(new_node->content," ");
 	new_node->content = mergestring(new_node->content,f_get_type(type));
@@ -4912,7 +4935,8 @@ int main( int argc, char **argv )
 	
 	yyparse();
 
-	code_final();
+
+	code_dump_main();
 	if(Opt_symbol)
 		dump_cur_table();
 	else pop_cur_table();
@@ -4935,7 +4959,7 @@ int main( int argc, char **argv )
 		fprintf( stdout, "|-------------------------------------------|\n" );
 		fprintf( stdout, "| There is no syntactic and semantic error! |\n" );
 		fprintf( stdout, "|-------------------------------------------|\n" );
-		
+		code_final();
 	}
 
 
@@ -4959,6 +4983,5 @@ int main( int argc, char **argv )
 
 	 
 	 fclose(fp);
-	 fclose(fg);
 	exit(0);
 }
